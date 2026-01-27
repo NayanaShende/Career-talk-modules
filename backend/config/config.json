@@ -5,5 +5,19 @@
     "database": "job_portal_db",
     "host": "localhost",
     "dialect": "postgres"
+  },
+  "test": {
+    "username": "postgres",
+    "password": "postgres",
+    "database": "job_portal_db_test",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "postgres",
+    "password": "postgres",
+    "database": "job_portal_db_production",
+    "host": "localhost",
+    "dialect": "postgres"
   }
 }
