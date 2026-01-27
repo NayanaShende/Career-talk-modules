@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+//enum
+enum UserRole {
+  jobseeker
+  expert
+  admin
+}
+
+enum ExperienceLevel {
+  fresher
+  junior
+  mid
+  senior
+}
+
+enum SessionMode {
+  chat
+  voice
+  video
+}
+
+enum SessionStatus {
+  requested
+  active
+  completed
+  disputed
+  refunded
+}
+
+enum WalletTxType {
+  topup
+  hold
+  debit
+  refund
+  release
+}
+
+//user
+model User {
+  id              String           @id @default(uuid())
+  role            UserRole
+  name            String
+  email           String?          @unique
+  mobile          String           @unique
+  location        String?
+  experienceLevel ExperienceLevel?
+  skills          String[]
+  resumeUrl       String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  walletTransactions WalletTransaction[]
+
+  expert         Expert?
+  sessionsAsUser Session[] @relation("JobSeekerSessions")
+  messages       Message[]
+}
+
+//Expert
+model Expert {
+  id              String   @id
+  user            User     @relation(fields: [id], references: [id])
+  headline        String
+  bio             String
+  yearsExperience Int
+  hourlyRate      Decimal
+  perMinRate      Decimal
+  languages       String[]
+  ratingAvg       Decimal  @default(0)
+  totalReviews    Int      @default(0)
+  verified        Boolean  @default(false)
+  company         String?
+  domains         String[]
+
+  skills   ExpertSkill[]
+  sessions Session[]
+}
+
+//expert-skill
+model ExpertSkill {
+  id       String @id @default(uuid())
+  expertId String
+  skill    String
+  level    String
+
+  expert Expert @relation(fields: [expertId], references: [id])
+}
+
+//chat/call
+model Session {
+  id              String        @id @default(uuid())
+  jobseekerId     String
+  expertId        String
+  mode            SessionMode
+  status          SessionStatus
+  startTime       DateTime?
+  endTime         DateTime?
+  durationMinutes Int?
+  ratePerMin      Decimal
+  grossAmount     Decimal?
+  netAmount       Decimal?
+
+  jobseeker User      @relation("JobSeekerSessions", fields: [jobseekerId], references: [id])
+  expert    Expert    @relation(fields: [expertId], references: [id])
+  messages  Message[]
+}
+
+//message
+model Message {
+  id        String   @id @default(uuid())
+  sessionId String
+  senderId  String
+  type      String
+  content   String
+  fileUrl   String?
+  sentAt    DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id])
+  sender  User    @relation(fields: [senderId], references: [id])
+}
+
+//payment
+model WalletTransaction {
+  id        String       @id @default(uuid())
+  userId    String
+  type      WalletTxType
+  amount    Decimal
+  currency  String
+  refId     String?
+  createdAt DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
