@@ -1,16 +1,21 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-
-// Pages
-import Login from "./pages/home/Login";
-import OtpVerify from "./pages/home/OtpVerify";
+import Sidebar from "./components/Sidebar";
+import SearchExperts from "./pages/expert/SearchExperts";
+import RecommendedExperts from "./pages/expert/RecommendedExperts";
 
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/verify-otp" element={<OtpVerify />} />
-      </Routes>
+      <div className="app-layout">
+        <Sidebar />
+
+        <div className="main-content">
+          <Routes>
+            <Route path="/" element={<SearchExperts />} />
+            <Route path="/recommended" element={<RecommendedExperts />} />
+          </Routes>
+        </div>
+      </div>
     </BrowserRouter>
   );
 }
