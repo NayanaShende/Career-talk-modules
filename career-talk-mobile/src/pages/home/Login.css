@@ -1,11 +1,7 @@
+
 /* ---------------------------------------------------
-   Background Animation (Soft gradient + image overlay)
+   Background (Simple gradient, no animation)
 --------------------------------------------------- */
-@keyframes gradientFade {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
 
 .login-wrapper {
   width: 100%;
@@ -13,36 +9,17 @@
   display: flex;
   justify-content: center;
   align-items: center;
-
-   background: linear-gradient(135deg, #447D9B, #0B1D51, #1C4D8D, #6EACDA);
-  background-size: 300% 300%;
-  animation: gradientFlow 12s ease infinite;
-
+  background: linear-gradient(135deg, #3395c9, #0B1D51, #428ae9, #152893);
+  background-size: cover;
 }
-
-
 
 /* ---------------------------------------------------
-   Card Pop Animation (Slight bounce + fade)
+   Card (Static, no animation)
 --------------------------------------------------- */
-@keyframes cardPopup {
-  0% {
-    opacity: 0;
-    transform: scale(0.6) translateY(40px);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(1.05) translateY(0);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
 
 .login-card {
-  width: 580px;
-  height: 480px;
+  width: 550px;
+  height: 450px;
   padding: 40px;
 
   background: white;
@@ -53,25 +30,11 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-
-  animation: cardPopup 0.9s ease-out forwards;
 }
-
-
 
 /* ---------------------------------------------------
-   Header Text Animation
+   Headers (Static)
 --------------------------------------------------- */
-@keyframes textPopup {
-  0% {
-    opacity: 0;
-    transform: translateY(25px) scale(0.9);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
 
 .welcome-text {
   font-size: 3rem;
@@ -80,25 +43,18 @@
   margin-bottom: 8px;
   color: #024CAA;
   font-family: 'Lucida Sans', sans-serif;
-
-  animation: textPopup 0.8s ease-out 0.3s forwards;
-  opacity: 0;
 }
 
 .log {
   padding-bottom: 2rem;
   font-size: 2rem;
   font-family: 'Lucida Sans', sans-serif;
-
-  animation: textPopup 0.8s ease-out 0.45s forwards;
-  opacity: 0;
 }
-
-
 
 /* ---------------------------------------------------
    Inputs
 --------------------------------------------------- */
+
 .mobile-input {
   text-align: center;
   width: 100%;
@@ -111,9 +67,6 @@
   font-size: 1rem;
   border: none;
   outline: none;
-
-  animation: textPopup 0.8s ease-out 0.55s forwards;
-  opacity: 0;
 }
 
 /* intl-tel-input customization */
@@ -137,21 +90,9 @@
   width: 100% !important;
 }
 
-
-
 /* ---------------------------------------------------
-   Button Animation (Pop + gentle float)
+   Button (No animation)
 --------------------------------------------------- */
-@keyframes btnPop {
-  0% { opacity: 0; transform: scale(0.5); }
-  100% { opacity: 1; transform: scale(1); }
-}
-
-@keyframes btnFloat {
-  0% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-  100% { transform: translateY(0); }
-}
 
 .send-btn {
   width: 100%;
@@ -166,27 +107,21 @@
   color: white;
   font-weight: bold;
   font-size: 20px;
-
-  animation: 
-    btnPop 0.9s ease-out 0.7s forwards,
-    btnFloat 3s ease-in-out infinite 2s;
-
-  opacity: 0;
 }
 
-
-
 /* ---------------------------------------------------
-   Register text fade animation
+   Register Text
 --------------------------------------------------- */
+
 .register-text {
   margin-top: 18px;
-  color:black;
+  color: black;
   font-weight: 500;
   cursor: pointer;
   text-decoration: underline;
   font-family: 'Lucida Sans', sans-serif;
+}
 
-  animation: textPopup 1s ease-out 1s forwards;
-  opacity: 0;
+.register-text:hover {
+  color: red;
 }
