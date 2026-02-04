@@ -18,7 +18,7 @@ function App() {
         <Route path="/expert" element={<ExpertPage />} />
       </Routes>
     </BrowserRouter>
-  );
+);
 }
 
 export default App;
