@@ -1,37 +1,82 @@
-import React from "react";
-import "./RecommendedExperts.css"; // Import the CSS file
+import React, { useEffect, useState } from "react";
+import "./RecommendedExperts.css";
+import { getRecommendedExperts } from "../../services/expertService";
 
+// ✅ KEEP STATIC DATA (fallback)
 const experts = [
   {
     name: "Anita Verma",
     role: "Backend Developer",
     experience: 7,
-    photo: "https://randomuser.me/api/portraits/women/44.jpg",
   },
   {
     name: "Amit Singh",
     role: "Data Scientist",
     experience: 6,
-    photo: "https://randomuser.me/api/portraits/men/45.jpg",
   },
   {
     name: "Rahul Sharma",
     role: "Frontend Developer",
     experience: 5,
-    photo: "https://randomuser.me/api/portraits/men/46.jpg",
   },
 ];
 
 function RecommendedExperts() {
+  // ✅ NEW STATE for backend data
+  const [apiExperts, setApiExperts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // ✅ FETCH from backend
+  const fetchRecommendedExperts = async () => {
+    try {
+      const response = await getRecommendedExperts();
+      console.log("Recommended Experts API:", response);
+
+      // backend returns { success, data }
+      if (response?.data?.length > 0) {
+        setApiExperts(response.data);
+      }
+    } catch (error) {
+      console.error("Failed to load recommended experts:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ✅ load on page open
+  useEffect(() => {
+    fetchRecommendedExperts();
+  }, []);
+
+  // ✅ Decide which data to show
+  const displayExperts = apiExperts.length > 0 ? apiExperts : experts;
+
   return (
     <div className="recommended-container">
-      <h1>Recommended Experts</h1>
+      <h1>Top Experts</h1>
+
+      {loading && <p>Loading top experts...</p>}
+
       <div className="experts-grid">
-        {experts.map((expert, index) => (
-          <div key={index} className="expert-card">
-            <img src={expert.photo} alt={expert.name} className="expert-photo" />
+        {displayExperts.map((expert, index) => (
+          <div key={expert.id || index} className="expert-card">
+            <img
+              src={
+                expert.photo ||
+                expert.image ||
+                "https://via.placeholder.com/150"
+              }
+              alt={expert.name}
+              className="expert-photo"
+            />
+
             <h2>{expert.name}</h2>
-            <p>{expert.role} ({expert.experience} yrs)</p>
+
+            <p>
+              <strong>{expert.role || "Expert"}</strong> ({expert.experience}{" "}
+              yrs)
+            </p>
+
             <button className="view-btn">View Profile</button>
           </div>
         ))}

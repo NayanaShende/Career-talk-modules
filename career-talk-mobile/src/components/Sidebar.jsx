@@ -8,11 +8,11 @@ function Sidebar() {
 
       <nav>
         <Link to="/" className="menu-item">
-          🔍 Search Experts
+        Search Experts
         </Link>
 
         <Link to="/recommended" className="menu-item">
-          ⭐ Recommended Experts
+        Top Experts
         </Link>
       </nav>
     </div>

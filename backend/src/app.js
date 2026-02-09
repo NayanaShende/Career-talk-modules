@@ -1,20 +1,23 @@
-var createError = require("http-errors");
-var express = require("express");
-var logger = require("morgan");
+const express = require("express");
+const cors = require("cors");
 
-var apiRouter = require("./routes/index");
+const app = express();
 
-var app = express();
+app.use(cors({
+  origin: "http://localhost:5173"
+}));
 
-app.use(logger("dev"));
+
+// Middlewares
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
-app.use("/api", apiRouter);
+// Routes
+const routes = require("./routes");
+app.use("/api", routes);
 
-// catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  next(createError(404));
+// Server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
-module.exports = app;
