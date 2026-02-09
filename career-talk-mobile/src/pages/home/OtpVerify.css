@@ -1,0 +1,94 @@
+/* ---------------------------------------------------
+   OTP Container (Static background, NO animation)
+--------------------------------------------------- */
+.otp-container {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  background: linear-gradient(135deg, #3395c9, #0B1D51, #428ae9, #152893);
+  background-size: cover;
+}
+
+/* --------------------------------------------------- 
+   OTP Card
+--------------------------------------------------- */
+.otp-card {
+  width: 500px;
+  height: 360px;
+  padding: 30px;
+  background: white;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0px 8px 18px rgba(0, 0, 0, 0.2);
+}
+
+/* ---------------------------------------------------
+   Text Elements
+--------------------------------------------------- */
+.heading {
+  font-size: 2rem;
+}
+
+.text {
+  padding: 1rem 0rem;
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.otp-instruction {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #555;
+}
+
+.otp-timer {
+  font-size: 1rem;
+  font-weight: bold;
+}
+
+/* ---------------------------------------------------
+   OTP Input Boxes
+--------------------------------------------------- */
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  margin: 25px 0;
+  gap: 12px;
+}
+
+.otp-box {
+  width: 45px;
+  height: 50px;
+  font-size: 22px;
+  border: 2px solid #003c8f;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: bold;
+}
+
+.otp-box:focus {
+  outline: none;
+  border-color: #005eff;
+  box-shadow: 0px 0px 6px #005eff;
+}
+
+/* ---------------------------------------------------
+   Verify Button
+--------------------------------------------------- */
+.verify-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 1rem;
+  background: #024CAA;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.verify-btn:hover {
+  background: #0041b3;
+}
