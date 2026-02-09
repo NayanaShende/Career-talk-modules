@@ -2,6 +2,9 @@ import React, { useEffect, useState } from "react";
 import "./Login.css";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
+const normalize = (m) => m.replace(/\D/g, "").slice(-10);
+
+
 
 const Login = () => {
   const navigate = useNavigate();
@@ -9,7 +12,8 @@ const Login = () => {
   const [dial, setDial] = useState("91");
 
   useEffect(() => {
-    const input = document.querySelector("#phoneInput");
+    const input = document.getElementById("phoneInput");
+    if (!input) return;
 
     const wait = setInterval(() => {
       if (window.intlTelInput) {
@@ -37,25 +41,22 @@ const Login = () => {
     }
 
     const fullPhone = "+" + dial + phone;
-    console.log("Sending OTP to:", fullPhone);
+    const normalizedPhone = normalize(fullPhone); // ⭐ FIX
 
     try {
       const { data } = await axiosInstance.post("/auth/send-otp", {
-        mobile: fullPhone,
+        mobile: normalizedPhone, // ⭐ SEND ONLY LAST 10 DIGITS
       });
 
-      console.log("API Response:", data);
-
       if (data.success) {
-        localStorage.setItem("tempPhone", fullPhone);
-        alert("OTP Sent Successfully!");
-        navigate("/verify-otp");
+        localStorage.setItem("tempPhone", normalizedPhone); // ⭐ STORE FIXED NUMBER
+        navigate("/verify-otp", { state: { mobile: normalizedPhone } });
       } else {
-        alert(data.message || "OTP sending failed");
+        alert(data.message);
       }
-    } catch (err) {
-      console.error("Error:", err);
-      alert("Backend Not Connected!");
+    } catch (e) {
+      console.error(e);
+      alert("Backend Not Connected");
     }
   };
 
@@ -76,8 +77,6 @@ const Login = () => {
         <button className="send-btn" onClick={sendOtp}>
           Send OTP
         </button>
-
-        <h2 className="register-text">Register</h2>
       </div>
     </div>
   );

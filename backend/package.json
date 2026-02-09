@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "dev": "node src/app.js"
   },
   "keywords": [],
   "author": "",
@@ -12,15 +13,17 @@
   "type": "commonjs",
   "dependencies": {
     "cors": "^2.8.6",
+    "debug": "~2.6.9",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "http-errors": "~1.6.3",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "~1.9.1",
+    "mysql2": "^3.16.2",
     "pg": "^8.17.2",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
-    "uuid": "^13.0.0",
-    "debug": "~2.6.9",
-    "http-errors": "~1.6.3",
-    "morgan": "~1.9.1"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "sequelize-cli": "^6.6.5"

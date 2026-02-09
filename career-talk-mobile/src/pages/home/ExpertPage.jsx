@@ -1,114 +1,95 @@
 import React, { useState } from "react";
-import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import axiosInstance from "../../utils/axiosInstance";
 import "./ExpertPage.css";
 
-
 const ExpertPage = () => {
+  const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
-    mobile: "",
+    dob: "",
     qualification: "",
     experience: "",
     domain: "",
-    bio: "",
-    certificate: null,
   });
 
   const handleChange = (e) => {
-    if (e.target.type === "file") {
-      setFormData({ ...formData, certificate: e.target.files[0] });
-    } else {
-      setFormData({ ...formData, [e.target.name]: e.target.value });
-    }
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+  const submitProfile = async (e) => {
     e.preventDefault();
 
     try {
-      let submitData = new FormData();
-      Object.keys(formData).forEach((key) => {
-        submitData.append(key, formData[key]);
-      });
+      await axiosInstance.post("/profile/create", formData);
 
-      await axios.post("https://your-api-url.com/expert", submitData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      alert("Expert profile created successfully!");
-    } catch (error) {
-      alert("Failed to create profile");
-      console.error(error);
+      alert("Expert Profile Created Successfully!");
+      navigate("/home");
+    } catch (err) {
+      console.log(err);
+      alert("Profile already exists or error occurred");
     }
   };
 
   return (
     <div className="expert-wrapper">
-      {/* LEFT IMAGE */}
-      <div className="left-sections">
-        {/* <img src={expertImg} alt="expert" className="expert-image" /> */}
-      </div>
-
-      {/* RIGHT FORM */}
-      <div className="right-sections">
+      <div className="expert-card">
         <h2>Create Expert Profile</h2>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={submitProfile}>
           <input
             name="fullName"
             placeholder="Full Name"
+            value={formData.fullName}
             onChange={handleChange}
           />
 
           <input
             name="email"
-            placeholder="Email"
             type="email"
+            placeholder="Email"
+            value={formData.email}
             onChange={handleChange}
           />
 
           <input
-            name="mobile"
-            placeholder="Mobile Number"
+            name="dob"
+            type="date"
+            value={formData.dob}
             onChange={handleChange}
           />
 
           <input
             name="qualification"
             placeholder="Highest Qualification"
+            value={formData.qualification}
             onChange={handleChange}
           />
 
-          <select name="experience" className="experience" onChange={handleChange}>
-            <option value="">Years of Experience</option>
-            <option>0–1 years</option>
-            <option>1–3 years</option>
-            <option>3–5 years</option>
-            <option>5–10 years</option>
-            <option>10+ years</option>
+          <select
+            name="experience"
+            onChange={handleChange}
+            value={formData.experience}
+          >
+            <option value="">Experience Level</option>
+            <option>1-3 Years</option>
+            <option>3-5 Years</option>
+            <option>5+ Years</option>
+            <option>10+ Years</option>
           </select>
 
           <input
             name="domain"
-            placeholder="Expertise / Domain"
+            placeholder="Expertise Domain"
+            value={formData.domain}
             onChange={handleChange}
           />
 
-          <textarea
-            name="bio"
-            placeholder="Short Bio"
-            rows="2"
-            onChange={handleChange}
-          ></textarea>
-
-          <label className="file-label">Certification (Optional)</label>
-          <input name="certificate" type="file" onChange={handleChange} />
-
           <button type="submit" className="expert-submit-btn">
-            Submit
+            Submit Profile
           </button>
-          
         </form>
       </div>
     </div>

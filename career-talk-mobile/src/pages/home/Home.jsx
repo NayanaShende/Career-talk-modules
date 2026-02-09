@@ -1,23 +1,7 @@
-import { useNavigate } from "react-router-dom";
-import "./Home.css";
-
-const Home = () => {
-  const navigate = useNavigate();
-
+export default function Home() {
   return (
-    <div className="home-container">
-      <div className="home-card">
-        <h1>Employee Home</h1>
-        <p>
-          Welcome! From here you can manage expert onboarding and availability.
-        </p>
-
-        <button onClick={() => navigate("/expert")}>
-          Go to Expert Onboarding
-        </button>
-      </div>
-    </div>
+    <h1 style={{ textAlign: "center", marginTop: "50px" }}>
+      Welcome to Home Dashboard 🎉
+    </h1>
   );
-};
-
-export default Home;
+}

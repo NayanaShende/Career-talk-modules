@@ -1,36 +1,36 @@
-'use strict';
-const { Model } = require('sequelize');
-
 module.exports = (sequelize, DataTypes) => {
-  class User extends Model {}
-
-  User.init({
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true
-    },
-    role: DataTypes.ENUM('jobseeker', 'expert', 'admin'),
-    name: DataTypes.TEXT,
-    email: {
-      type: DataTypes.TEXT,
-      unique: true
-    },
+  const User = sequelize.define("User", {
     mobile: {
-      type: DataTypes.TEXT,
-      unique: true
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: true,
     },
-    location: DataTypes.TEXT,
-    experience_level: DataTypes.ENUM('fresher', 'junior', 'mid', 'senior'),
-    skills: DataTypes.ARRAY(DataTypes.TEXT),
-    resume_url: DataTypes.TEXT,
-    is_active: {
+
+    role: {
+      type: DataTypes.STRING,
+      allowNull: true, // ❗ KEEP NULL
+      defaultValue: null,
+    },
+
+    hasProfile: {
       type: DataTypes.BOOLEAN,
-      defaultValue: true
-    }
-  }, {
-    sequelize,
-    modelName: 'User'
+      defaultValue: false, // ❗ VERY IMPORTANT
+    },
+
+    otp: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+
+    otpExpiryAt: {
+      type: DataTypes.DATE, // ✅ Use DataTypes.DATE instead of Sequelize.DATE
+      allowNull: true,
+    },
+
+    isVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
   });
 
   return User;

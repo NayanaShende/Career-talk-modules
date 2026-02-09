@@ -7,7 +7,7 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  background: white url(../../assets/home.png) no-repeat left;
+  background: white url(../../assets/home/home.png) no-repeat left;
   background-size: 55%;
   padding-right: 140px;
   font-family: 'Lucida Sans', sans-serif;
