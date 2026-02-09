@@ -4,17 +4,16 @@ var logger = require("morgan");
 const cors = require("cors");
 
 var apiRouter = require("./routes/index.routes");
-
 const { sequelize } = require("./models");
 
-var app = express();
+var app = express(); // <-- you were missing this
 
 // ------------------------------------------------------
-// ✅ DATABASE SYNC (RUN THIS ONCE)
+// DATABASE SYNC
 // ------------------------------------------------------
 sequelize
-  .sync({ alter: true }) // <--- ADD THIS HERE
-  .then(() => console.log("✅ Database synced with ALTER"))
+  .sync({ alter: true }) // will update tables automatically
+  .then(() => console.log("✅ Database synced"))
   .catch((err) => console.error("❌ Sync error:", err));
 
 // ------------------------------------------------------
@@ -22,14 +21,14 @@ sequelize
 // ------------------------------------------------------
 app.use(
   cors({
-    origin: "*",
+    origin: "http://localhost:5173", // your frontend port
     methods: ["GET", "POST", "PUT", "DELETE"],
   }),
 );
 
 app.use(logger("dev"));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
 // ------------------------------------------------------
 // MAIN API ROUTES

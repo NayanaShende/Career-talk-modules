@@ -1,4 +1,8 @@
 node_modules/
-.env
+
 dist/
 coverage/
+# in .gitignore
+/config/config.json
+# .gitignore
+.env
