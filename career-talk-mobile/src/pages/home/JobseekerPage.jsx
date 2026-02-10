@@ -13,7 +13,7 @@ const JobseekerPage = () => {
     qualification: "",
     experience: "",
     domain: "",
-    cv: null,
+    cvFile: null, // <-- rename to match backend field
   });
 
   // Handle text inputs
@@ -21,9 +21,9 @@ const JobseekerPage = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Handle file upload (CV)
+  // Handle file upload
   const handleFileChange = (e) => {
-    setFormData({ ...formData, cv: e.target.files[0] });
+    setFormData({ ...formData, cvFile: e.target.files[0] });
   };
 
   const handleSubmit = async (e) => {
@@ -38,82 +38,116 @@ const JobseekerPage = () => {
       payload.append("experience", formData.experience);
       payload.append("domain", formData.domain);
 
-      if (formData.cv) {
-        payload.append("cvFile", formData.cv);
+      if (formData.cvFile) {
+        payload.append("cvFile", formData.cvFile); // MUST match backend key
       }
 
-      // 🔥 Protected API call using token automatically
-      await axiosInstance.post("/profile/create", payload, {
+      const res = await axiosInstance.post("/profile/create", payload, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      alert("Profile created successfully!");
+      console.log("🔥 SERVER RESPONSE:", res.data);
+
+      alert(" Jobseeker Profile Created !");
       navigate("/home");
     } catch (err) {
-      console.error(err);
-      alert("Profile already exists or an error occurred.");
+      console.error("❌ ERROR:", err);
+      alert("Error occurred while submitting profile.");
     }
   };
 
   return (
     <div className="job-wrapper">
-      {/* Left Illustration */}
       <div className="left-section"></div>
 
-      {/* Right Form */}
       <div className="right-section">
-        <h2>Create Jobseeker Profile</h2>
+        <h2 className="form-title">Create Your Jobseeker Profile</h2>
 
-        <form onSubmit={handleSubmit}>
-          <label>FullName</label>
-          <input
-            name="fullName"
-            placeholder="Full Name"
-            onChange={handleChange}
-          />
-          <label>Email</label>
-          <input
-            name="email"
-            placeholder="Email"
-            type="email"
-            onChange={handleChange}
-          />
+        <form className="job-form" onSubmit={handleSubmit}>
+          <div className="form-group">
+            <input
+              name="fullName"
+              type="text"
+              placeholder="Enter your full name"
+              value={formData.fullName}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-          <label>Date of Birth:</label>
-          <input name="dob" type="date" onChange={handleChange} />
+          <div className="form-group">
+            <input
+              name="email"
+              type="email"
+              placeholder="Enter your email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-          <label>Qualification</label>
-          <input
-            name="qualification"
-            placeholder="Highest Qualification"
-            onChange={handleChange}
-          />
+          <div className="form-group">
+            <label>Date of Birth</label>
+            <input
+              name="dob"
+              type="date"
+              value={formData.dob}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-          <select
-            name="experience"
-            className="experience"
-            onChange={handleChange}
-          >
-            <option value="">Experience Level</option>
-            <option>Fresher</option>
-            <option>1-3 Years</option>
-            <option>3-5 Years</option>
-            <option>5+ Years</option>
-          </select>
+          <div className="form-group">
+            <label>Highest Qualification</label>
+            <input
+              name="qualification"
+              type="text"
+              placeholder="e.g., B.Tech, MBA"
+              value={formData.qualification}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-          <input
-            name="domain"
-            placeholder="Looking for (Domain)"
-            onChange={handleChange}
-          />
+          <div className="form-group">
+            <label>Experience Level</label>
+            <select
+              name="experience"
+              value={formData.experience}
+              onChange={handleChange}
+              required
+            >
+              <option value="">Select experience level</option>
+              <option>Fresher</option>
+              <option>1-3 Years</option>
+              <option>3-5 Years</option>
+              <option>5+ Years</option>
+            </select>
+          </div>
 
-          <br />
+          <div className="form-group">
+            <label>Desired Domain / Job Role</label>
+            <input
+              name="domain"
+              type="text"
+              placeholder="e.g., Web Development"
+              value={formData.domain}
+              onChange={handleChange}
+              required
+            />
+          </div>
 
-          <label className="file-label">Upload CV</label>
-          <input name="cv" type="file" onChange={handleFileChange} />
+          <div className="form-group">
+            <label>Upload CV</label>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileChange}
+            />
+          </div>
 
           <button type="submit" className="job-submit-btn">
-            Submit
+            Submit Profile
           </button>
         </form>
       </div>

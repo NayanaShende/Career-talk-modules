@@ -8,3 +8,5 @@ router.post("/verify-otp", authController.verifyOtp);
 router.post("/set-role", protect, authController.setRole);
 
 module.exports = router;
+
+

@@ -7,6 +7,10 @@ module.exports = (sequelize, DataTypes) => {
     experience: DataTypes.STRING,
     domain: DataTypes.STRING,
     cvFile: DataTypes.STRING,
+    userId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
   });
 
   UserProfile.associate = (models) => {

@@ -1,25 +1,27 @@
 const { Sequelize, DataTypes } = require("sequelize");
-require("dotenv").config(); // load .env
+const env = process.env.NODE_ENV || "development";
 
-// Read DB config from environment
+const config = require("../config/config.js")[env];
+
 const sequelize = new Sequelize(
-  process.env.DB_NAME,
-  process.env.DB_USER,
-  process.env.DB_PASS,
-  {
-    host: process.env.DB_HOST,
-    dialect: process.env.DB_DIALECT || "mysql",
-    port: process.env.DB_PORT || 3306,
-    logging: false, // set to true if you want SQL logs
-  },
+  config.database,
+  config.username,
+  config.password,
+  config,
 );
 
 const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-// Import models
+// Models
+db.User = require("./user")(sequelize, Sequelize.DataTypes);
 db.Expert = require("./expert")(sequelize, DataTypes);
-// db.Jobseeker = require("./jobseeker")(sequelize, DataTypes); // if needed
+db.UserProfile = require("./user.profile")(sequelize, DataTypes);
+
+// Associations
+db.User.hasOne(db.UserProfile, { foreignKey: "userId" });
+db.UserProfile.belongsTo(db.User, { foreignKey: "userId" });
+db.ExpertProfile = require("./expert.profile")(sequelize, Sequelize);
 
 module.exports = db;

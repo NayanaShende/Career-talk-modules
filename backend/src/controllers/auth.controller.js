@@ -1,6 +1,12 @@
+// src/controllers/auth.controller.js
+
 const jwt = require("jsonwebtoken");
 const { User } = require("../models");
-const normalizeMobile = (m) => m.replace(/\D/g, "").slice(-10);
+
+// ------------------------------
+// HELPER FUNCTION TO NORMALIZE MOBILE
+// ------------------------------
+const normalizeMobile = (mobile) => mobile.replace(/\D/g, "").slice(-10);
 
 // ---------------------------------------
 // SEND OTP
@@ -15,21 +21,29 @@ exports.sendOtp = async (req, res) => {
 
     const normalizedMobile = normalizeMobile(mobile);
 
+    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-const otpExpiryAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
+    const otpExpiryAt = new Date(Date.now() + 10 * 60 * 1000); // JS Date object
 
+    // Find or create user
     let user = await User.findOne({ where: { mobile: normalizedMobile } });
 
     if (!user) {
-      user = await User.create({ mobile: normalizedMobile, otp, otpExpiryAt });
+      user = await User.create({
+        mobile: normalizedMobile,
+        otp: otp, // ensure this is passed
+        otpExpiryAt: otpExpiryAt,
+        isVerified: false,
+      });
     } else {
-      user.otp = otp;
-      user.otpExpiryAt = otpExpiryAt;
-      await user.save();
+      await user.update({
+        otp: otp,
+        otpExpiryAt: otpExpiryAt,
+        isVerified: false,
+      });
     }
 
-    console.log("OTP:", otp);
-
+    console.log("🔥 OTP SAVED:", otp, otpExpiryAt);
     return res.json({ success: true, message: "OTP sent successfully" });
   } catch (err) {
     console.error(err);
@@ -63,26 +77,24 @@ exports.verifyOtp = async (req, res) => {
     const now = Date.now();
     const expiry = new Date(user.otpExpiryAt).getTime();
 
-    console.log("Now:", now, "Expiry:", expiry);
-
-    // ✅ Correct expiry check
-    if (now > expiry + 10 * 1000) {
+    if (now > expiry) {
       return res.status(400).json({ success: false, message: "OTP expired" });
     }
 
+    // ✅ OTP is valid
     user.otp = null;
     user.otpExpiryAt = null;
     user.isVerified = true;
-
     await user.save();
 
+    // Generate JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
+      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     });
 
     return res.json({
       success: true,
-      message: "OTP Verified",
+      message: "OTP verified successfully",
       token,
       user: {
         id: user.id,
@@ -92,38 +104,24 @@ exports.verifyOtp = async (req, res) => {
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error("Verify OTP error:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 // ---------------------------------------
 // SET ROLE
 // ---------------------------------------
 exports.setRole = async (req, res) => {
   try {
+    if (!req.user) return res.status(404).json({ message: "User not found" });
+
     const { role } = req.body;
-    const userId = req.userId;
+    req.user.role = role;
+    await req.user.save();
 
-    if (!role)
-      return res
-        .status(400)
-        .json({ success: false, message: "Role is required" });
-
-    const user = await User.findByPk(userId);
-
-    if (!user)
-      return res
-        .status(404)
-        .json({ success: false, message: "User not found" });
-
-    user.role = role;
-    await user.save();
-
-    return res.json({ success: true, message: "Role updated", role });
+    res.json({ success: true, message: "Role updated", user: req.user });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
