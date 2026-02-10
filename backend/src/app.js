@@ -1,19 +1,21 @@
 const express = require("express");
 const cors = require("cors");
+const routes = require("./routes");
+const { sequelize } = require("./models");
 
 const app = express();
 
-app.use(cors({
-  origin: "http://localhost:5173"
-}));
-
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+  }),
+);
 
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
-const routes = require("./routes");
 app.use("/api", routes);
 
 // Server

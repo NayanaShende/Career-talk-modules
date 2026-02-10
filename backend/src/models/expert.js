@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       tableName: "experts",
-      timestamps: false   // 🔥 THIS FIXES YOUR ERROR
+      timestamps: false   
     }
   );
 

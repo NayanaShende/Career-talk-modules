@@ -1,23 +1,26 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Sidebar from "./components/Sidebar";
+import { Routes, Route } from "react-router-dom";
+import Home from "./pages/dashboard/home";
 import SearchExperts from "./pages/expert/SearchExperts";
 import RecommendedExperts from "./pages/expert/RecommendedExperts";
+import Sidebar from "./components/dashboard/Sidebar";
+import "./App.css";
 
-function App() {
+
+export default function App() {
   return (
-    <BrowserRouter>
-      <div className="app-layout">
-        <Sidebar />
+    <div className="dashboard-layout">
 
-        <div className="main-content">
-          <Routes>
-            <Route path="/" element={<SearchExperts />} />
-            <Route path="/recommended" element={<RecommendedExperts />} />
-          </Routes>
-        </div>
+      {/* LEFT SIDEBAR */}
+      <Sidebar />
+
+      {/* RIGHT CONTENT */}
+      <div className="dashboard-content">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/search" element={<SearchExperts />} />
+          <Route path="/recommended" element={<RecommendedExperts />} />
+        </Routes>
       </div>
-    </BrowserRouter>
+    </div>
   );
 }
-
-export default App;

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import "./SearchExperts.css";
 
 // ✅ KEEP previous import
-import { getRecommendedExperts } from "../../services/expertService";
+// import { getRecommendedExperts } from "../../services/expertService";
 
 // ✅ ADD new import (DO NOT REMOVE OLD)
 import { getAllExperts } from "../../services/expertService";
@@ -40,15 +40,34 @@ export default function SearchExperts() {
   return (
     <div className="search-page">
       <h1>Search Experts</h1>
-
       <div className="search-box-wrapper">
-        <span className="search-icon">🔍</span>
+        <span className="search-icon"></span>
         <input
           type="text"
           className="search-input"
           placeholder="Search by skill, domain, experience..."
         />
-      </div>
+      
+{/* 
+      <div className="card-grid">
+        <div className="expert-card">
+          <h3>Rohit Sharma</h3>
+          <p>Frontend Developer (5 yrs)</p>
+          <button>View Profile</button>
+        </div>
+
+        <div className="expert-card">
+          <h3>Anita Verma</h3>
+          <p>Backend Developer (7 yrs)</p>
+          <button>View Profile</button>
+        </div>
+
+        <div className="expert-card">
+          <h3>Amit Singh</h3>
+          <p>Data Scientist (6 yrs)</p>
+          <button>View Profile</button>
+        </div>
+      </div> */}
 
       <div className="experts-row">
         {experts.length === 0 ? (
@@ -75,6 +94,7 @@ export default function SearchExperts() {
           ))
         )}
       </div>
+    </div>
     </div>
   );
 }

@@ -1,0 +1,27 @@
+.experts-section {
+  margin-top: 40px;
+}
+
+.experts-section h2 {
+  margin-bottom: 20px;
+}
+
+/* grid layout */
+.experts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* card */
+.expert-card {
+  background: white;
+  padding: 18px;
+  border-radius: 14px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  transition: 0.2s;
+}
+
+.expert-card:hover {
+  transform: translateY(-4px);
+}
