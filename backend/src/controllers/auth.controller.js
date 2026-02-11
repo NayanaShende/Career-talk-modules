@@ -81,26 +81,46 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "OTP expired" });
     }
 
-    // ✅ OTP is valid
+    // OTP valid
     user.otp = null;
     user.otpExpiryAt = null;
     user.isVerified = true;
     await user.save();
 
-    // Generate JWT token
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     });
+
+    // Refresh user to include latest hasProfile
+    const freshUser = await User.findByPk(user.id);
+
+    // ------------------------------
+    // Decide where user should go
+    // ------------------------------
+    let redirectTo = "";
+
+    if (freshUser.hasProfile === true) {
+      redirectTo = "/dashboard";
+    } else {
+      if (!freshUser.role) {
+        redirectTo = "/select-role";
+      } else if (freshUser.role === "jobseeker") {
+        redirectTo = "/jobseeker";
+      } else if (freshUser.role === "expert") {
+        redirectTo = "/expert";
+      }
+    }
 
     return res.json({
       success: true,
       message: "OTP verified successfully",
       token,
+      redirectTo,
       user: {
-        id: user.id,
-        mobile: user.mobile,
-        role: user.role,
-        hasProfile: user.hasProfile,
+        id: freshUser.id,
+        mobile: freshUser.mobile,
+        role: freshUser.role,
+        hasProfile: freshUser.hasProfile,
       },
     });
   } catch (err) {

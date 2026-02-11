@@ -2,7 +2,8 @@ node_modules/
 
 dist/
 coverage/
-# in .gitignore
-/config/config.json
+# Ignore config file
+src/config/config.js
+
 # .gitignore
 .env

@@ -1,5 +1,3 @@
-// src/controllers/expert.controller.js
-
 const db = require("../models"); // import your models
 const ExpertProfile = db.ExpertProfile; // ✅ ADD THIS
 const upload = require("../middleware/upload"); // multer middleware
@@ -33,29 +31,25 @@ exports.createExpertProfile = async (req, res) => {
       userId: req.user.id,
     };
 
-
     // Check if profile exists
     let profile = await ExpertProfile.findOne({
       where: { userId: req.user.id },
     });
 
     if (profile) {
-      // Update existing profile
-      await profile.update(profileData);
-      return res.status(200).json({
-        success: true,
-        message: "Profile updated successfully",
-        data: profile,
-      });
+      profile = await profile.update(profileData);
     } else {
-      // Create new profile
-      profile = await ExpertProfile.create(profileData);
-      return res.status(201).json({
-        success: true,
-        message: "Profile created successfully",
-        data: profile,
-      });
+      profile = await UserProfile.create(profileData);
     }
+
+    // ⭐ Mark user as having completed profile
+    await req.user.update({ hasProfile: true });
+
+    return res.status(200).json({
+      success: true,
+      message: "Profile saved successfully",
+      data: profile,
+    });
   } catch (err) {
     console.error("❌ ERROR creating/updating expert profile:", err);
     return res.status(500).json({
