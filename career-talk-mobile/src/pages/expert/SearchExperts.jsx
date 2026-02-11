@@ -3,10 +3,10 @@ import { useEffect, useState } from "react";
 import "./SearchExperts.css";
 
 // ✅ KEEP previous import
-import { getRecommendedExperts } from "../../services/expertService";
+import { getRecommendedExperts } from "../../../../career-talk-expo/services/expertService";
 
 // ✅ ADD new import (DO NOT REMOVE OLD)
-import { getAllExperts } from "../../services/expertService";
+import { getAllExperts } from "../../../../career-talk-expo/services/expertService";
 
 export default function SearchExperts() {
   const [experts, setExperts] = useState([]);

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./RecommendedExperts.css";
-import { getRecommendedExperts } from "../../services/expertService";
+import { getRecommendedExperts } from "../../../../career-talk-expo/services/expertService";
 
 // ✅ KEEP STATIC DATA (fallback)
 const experts = [
