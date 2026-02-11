@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import "./OtpVerify.css";
 import otpIcon from "../../assets/home/otp.png";
-import axios from "axios";
-import { useLocation, useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
-const normalize = (m) => m.replace(/\D/g, "").slice(-10);
+import { useLocation, useNavigate } from "react-router-dom";
 
+const normalize = (m) => m.replace(/\D/g, "").slice(-10);
 
 const OtpVerify = () => {
   const navigate = useNavigate();
@@ -45,41 +44,42 @@ const OtpVerify = () => {
       document.getElementById(`otp-${index + 1}`)?.focus();
   };
 
-  const handleVerify = async () => {
-    const otpString = otp.join("");
+ const handleVerify = async () => {
+   const otpString = otp.join("");
 
-    if (otpString.length !== 6) {
-      alert("Please enter all 6 digits");
-      return;
-    }
+   if (otpString.length !== 6) {
+     alert("Please enter all 6 digits");
+     return;
+   }
 
-    try {
-      const res = await axiosInstance.post("/auth/verify-otp", {
-        mobile: normalize(mobile),
-        otp: otpString,
-      });
+   try {
+     const res = await axiosInstance.post("/auth/verify-otp", {
+       mobile: normalize(mobile),
+       otp: otpString,
+     });
 
-      if (!res.data.success) {
-        alert(res.data.message || "Invalid OTP");
-        return;
-      }
+     if (!res.data.success) {
+       alert(res.data.message || "Invalid OTP");
+       return;
+     }
 
-      localStorage.setItem("token", res.data.token);
+     // Save token
+     localStorage.setItem("token", res.data.token);
 
-      const user = res.data.user;
+     // Get backend redirect
+     const redirectTo = res.data.redirectTo;
 
-      if (!user.role) {
-        navigate("/select-role");
-        return;
-      }
+     if (!redirectTo) {
+       alert("Something went wrong: no redirect provided.");
+       return;
+     }
 
-      if (user.role === "jobseeker") navigate("/jobseeker");
-      if (user.role === "expert") navigate("/expert");
-    } catch (err) {
-      console.error("OTP VERIFY ERROR:", err);
-      alert("OTP verification failed. Try again.");
-    }
-  };
+     navigate(redirectTo);
+   } catch (err) {
+     console.error("OTP VERIFY ERROR:", err);
+     alert("OTP verification failed. Try again.");
+   }
+ };
 
 
   return (

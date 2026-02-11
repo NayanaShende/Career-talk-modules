@@ -7,7 +7,7 @@ import RoleSelection from "./pages/home/RoleSelection";
 import JobseekerPage from "./pages/home/JobseekerPage";
 import ExpertPage from "./pages/home/ExpertPage";
 import ProtectedRoute from "./pages/home/ProtectedRoute";
-import Home from "./pages/home/Home";
+import Dashboard from "./pages/home/Dashboard"; // adjust path
 
 // Expert Pages
 import Sidebar from "./components/Sidebar";
@@ -36,10 +36,10 @@ function App() {
 
         {/* Protected Home Route */}
         <Route
-          path="/home"
+          path="/dashboard"
           element={
             <ProtectedRoute>
-              <Home />
+              <Dashboard />
             </ProtectedRoute>
           }
         />

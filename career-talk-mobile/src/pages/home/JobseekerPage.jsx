@@ -30,6 +30,12 @@ const JobseekerPage = () => {
     e.preventDefault();
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Session expired! Please login again.");
+        navigate("/");
+        return;
+      }
       const payload = new FormData();
       payload.append("fullName", formData.fullName);
       payload.append("email", formData.email);
@@ -43,13 +49,15 @@ const JobseekerPage = () => {
       }
 
       const res = await axiosInstance.post("/profile/create", payload, {
-        headers: { "Content-Type": "multipart/form-data" },
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`, // 🔥 VERY IMPORTANT
+        },
       });
 
       console.log("🔥 SERVER RESPONSE:", res.data);
-
       alert(" Jobseeker Profile Created !");
-      navigate("/home");
+      navigate("/dashboard");
     } catch (err) {
       console.error("❌ ERROR:", err);
       alert("Error occurred while submitting profile.");

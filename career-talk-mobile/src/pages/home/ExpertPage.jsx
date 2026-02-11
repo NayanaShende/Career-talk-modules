@@ -32,6 +32,12 @@ const ExpertPage = () => {
     e.preventDefault();
 
     try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Session expired! Please login again.");
+        navigate("/");
+        return;
+      }
       const payload = new FormData();
       payload.append("fullName", formData.fullName);
       payload.append("email", formData.email);
@@ -46,18 +52,19 @@ const ExpertPage = () => {
         payload.append("cv", formData.cv);
       }
 
-      const res = await axiosInstance.post("/expert/create", payload, {
-        headers: { "Content-Type": "multipart/form-data" },
+      const res = await axiosInstance.post("/profile/create", payload, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`, // 🔥 VERY IMPORTANT
+        },
       });
 
       console.log("🔥 SERVER RESPONSE:", res.data);
-      alert(res.data.message || "Expert Profile Created!");
-
-      // Navigate after success
-      navigate("/home");
+      alert( "Expert Profile Created!");
+      navigate("/dashboard");
     } catch (error) {
       console.error("Error submitting expert profile:", error);
-      alert(error.response?.data?.message || "Error creating expert profile");
+      alert("Error creating expert profile");
     }
   };
 

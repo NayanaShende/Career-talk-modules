@@ -24,7 +24,7 @@ const RoleSelection = () => {
       // Navigate to the profile page based on role
       if (role === "jobseeker") navigate("/jobseeker");
       else if (role === "expert") navigate("/expert");
-      else navigate("/home");
+      else navigate("/dashboard");
     } catch (err) {
       console.error(err);
       alert("Error setting role. Please try again.");
