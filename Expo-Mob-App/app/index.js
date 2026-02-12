@@ -7,7 +7,6 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
-  Image,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
@@ -37,46 +36,20 @@ export default function Home() {
     e.name?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const renderExpert = ({ item }) => (
-    <Pressable
-      style={styles.card}
-      onPress={() => router.push(`/expert/${item.id}`)}
-    >
-      <View style={styles.cardRow}>
-        <Image
-          source={{
-            uri:
-              item.photo ||
-              "https://ui-avatars.com/api/?name=" + item.name,
-          }}
-          style={styles.avatar}
-        />
-
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.role}>
-            {item.role || "Expert"} • {item.experience || 0} yrs
-          </Text>
-
-          <View style={styles.ratingRow}>
-            <Text style={styles.rating}>⭐ {item.rating || "4.5"}</Text>
-          </View>
-        </View>
-      </View>
-    </Pressable>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Find Your Expert</Text>
+      <Text style={styles.header}>Find Your Expert</Text>
 
+      {/* Search Input */}
       <TextInput
         style={styles.input}
         placeholder="Search by name..."
+        placeholderTextColor="#888"
         value={search}
         onChangeText={setSearch}
       />
 
+      {/* Recommended Button */}
       <Pressable
         style={styles.recommendedBtn}
         onPress={() => router.push("/recommended")}
@@ -85,15 +58,36 @@ export default function Home() {
       </Pressable>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#2563eb" />
-      ) : filteredExperts.length === 0 ? (
-        <Text style={styles.empty}>No experts found</Text>
+        <ActivityIndicator size="large" color="#3B82F6" />
       ) : (
         <FlatList
           data={filteredExperts}
-          keyExtractor={(item) => item.id.toString()}
-          renderItem={renderExpert}
+          keyExtractor={(item) =>
+            item.id ? item.id.toString() : Math.random().toString()
+          }
           showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <Pressable
+              style={styles.card}
+              onPress={() => router.push(`/expert/${item.id}`)}
+            >
+              <View style={styles.avatar}>
+                <Text style={styles.avatarText}>
+                  {item.name?.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+
+              <View style={{ flex: 1 }}>
+                <Text style={styles.name}>{item.name}</Text>
+
+                <Text style={styles.role}>
+                  {item.role || "Expert"} • {item.experience || 5} yrs
+                </Text>
+
+                <Text style={styles.rating}>⭐ {item.rating || 4.5}</Text>
+              </View>
+            </Pressable>
+          )}
         />
       )}
     </SafeAreaView>
@@ -104,64 +98,79 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#f1f5f9",
+    backgroundColor: "#F3F4F6",
   },
-  title: {
-    fontSize: 26,
+
+  header: {
+    fontSize: 28,
     fontWeight: "bold",
     marginBottom: 15,
   },
+
   input: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 16,
+    padding: 16,
     marginBottom: 12,
+    backgroundColor: "#FFFFFF",
+    fontSize: 16,
+    color: "#000",
   },
+
   recommendedBtn: {
-    backgroundColor: "#2563eb",
+    backgroundColor: "#2563EB",
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: "center",
-    marginBottom: 15,
+    marginBottom: 18,
+    elevation: 3,
   },
+
   recommendedText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "bold",
+    fontSize: 16,
   },
+
   card: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 14,
-    elevation: 4,
-  },
-  cardRow: {
     flexDirection: "row",
     alignItems: "center",
+    padding: 18,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    marginBottom: 15,
+    elevation: 4,
   },
+
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 55,
+    height: 55,
+    borderRadius: 27,
+    backgroundColor: "#E5E7EB",
+    justifyContent: "center",
+    alignItems: "center",
     marginRight: 15,
   },
+
+  avatarText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#555",
+  },
+
   name: {
     fontSize: 18,
     fontWeight: "bold",
   },
+
   role: {
-    color: "#64748b",
+    color: "#6B7280",
     marginTop: 4,
   },
-  ratingRow: {
-    marginTop: 6,
-  },
+
   rating: {
+    marginTop: 6,
     fontWeight: "600",
-  },
-  empty: {
-    textAlign: "center",
-    marginTop: 30,
-    color: "#888",
   },
 });
