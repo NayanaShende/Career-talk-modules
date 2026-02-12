@@ -2,10 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./SearchExperts.css";
 
-// ✅ KEEP previous import
-// import { getRecommendedExperts } from "../../services/expertService";
-
-// ✅ ADD new import (DO NOT REMOVE OLD)
+// ✅ only correct service path (mobile app services)
 import { getAllExperts } from "../../services/expertService";
 
 export default function SearchExperts() {
@@ -15,10 +12,7 @@ export default function SearchExperts() {
   useEffect(() => {
     const fetchExperts = async () => {
       try {
-        // ❌ OLD (caused problem – kept but NOT used)
-        // const response = await getRecommendedExperts();
-
-        // ✅ NEW – fetch ALL experts (this fixes disappearing issue)
+        // ✅ fetch ALL experts
         const response = await getAllExperts();
 
         // backend returns { success: true, data: [...] }
@@ -40,6 +34,7 @@ export default function SearchExperts() {
   return (
     <div className="search-page">
       <h1>Search Experts</h1>
+
       <div className="search-box-wrapper">
         <span className="search-icon"></span>
         <input
@@ -47,27 +42,7 @@ export default function SearchExperts() {
           className="search-input"
           placeholder="Search by skill, domain, experience..."
         />
-      
-{/* 
-      <div className="card-grid">
-        <div className="expert-card">
-          <h3>Rohit Sharma</h3>
-          <p>Frontend Developer (5 yrs)</p>
-          <button>View Profile</button>
-        </div>
-
-        <div className="expert-card">
-          <h3>Anita Verma</h3>
-          <p>Backend Developer (7 yrs)</p>
-          <button>View Profile</button>
-        </div>
-
-        <div className="expert-card">
-          <h3>Amit Singh</h3>
-          <p>Data Scientist (6 yrs)</p>
-          <button>View Profile</button>
-        </div>
-      </div> */}
+      </div>
 
       <div className="experts-row">
         {experts.length === 0 ? (
@@ -83,8 +58,7 @@ export default function SearchExperts() {
               <h3>{expert.name}</h3>
 
               <p>
-                <strong>{expert.role || "Expert"}</strong> ({expert.experience}{" "}
-                yrs)
+                <strong>{expert.role || "Expert"}</strong> ({expert.experience} yrs)
               </p>
 
               <Link to={`/expert/${expert.id}`}>
@@ -94,7 +68,6 @@ export default function SearchExperts() {
           ))
         )}
       </div>
-    </div>
     </div>
   );
 }
