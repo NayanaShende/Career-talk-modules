@@ -2,11 +2,10 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./SearchExperts.css";
 
-// ✅ KEEP previous import
-import { getRecommendedExperts } from "../../../../career-talk-expo/services/expertService";
-
-// ✅ ADD new import (DO NOT REMOVE OLD)
-import { getAllExperts } from "../../../../career-talk-expo/services/expertService";
+import {
+  getRecommendedExperts,
+  getAllExperts,
+} from "../../services/expertService";
 
 export default function SearchExperts() {
   const [experts, setExperts] = useState([]);

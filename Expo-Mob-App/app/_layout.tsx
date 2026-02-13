@@ -4,12 +4,16 @@ import { StatusBar } from "expo-status-bar";
 export default function Layout() {
   return (
     <>
+      {/* Status bar style */}
       <StatusBar style="dark" />
+
+      {/* Stack controls navigation */}
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: "#ffffff" },
-          headerTintColor: "#000000",
-          contentStyle: { backgroundColor: "#ffffff" },
+          headerShown: false, // hides top header (recommended)
+          contentStyle: {
+            backgroundColor: "#ffffff",
+          },
         }}
       />
     </>
