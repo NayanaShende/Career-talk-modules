@@ -1,89 +1,109 @@
 import React, { useState, useEffect } from "react";
 import "./OtpVerify.css";
-import { useNavigate } from "react-router-dom";
+import otpIcon from "../../assets/home/otp.png";
 import axiosInstance from "../../utils/axiosInstance";
+import { useLocation, useNavigate } from "react-router-dom";
+
+const normalize = (m) => m.replace(/\D/g, "").slice(-10);
 
 const OtpVerify = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const mobile = location.state?.mobile || localStorage.getItem("tempPhone");
   const [otp, setOtp] = useState(new Array(6).fill(""));
-  const [timeLeft, setTimeLeft] = useState(0);
-  const phone = localStorage.getItem("tempPhone");
+  const [timeLeft, setTimeLeft] = useState(5 * 60); // 5 minutes timer
 
+  // Redirect if no mobile number found
   useEffect(() => {
-    if (!phone) {
-      alert("Phone number missing. Please login again.");
+    if (!mobile) {
+      alert("Mobile number missing. Please login again.");
       navigate("/");
-    } else {
-      setTimeLeft(5 * 60);
     }
-  }, [phone, navigate]);
+  }, [mobile, navigate]);
 
+  // Timer countdown
   useEffect(() => {
     if (timeLeft <= 0) return;
     const timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  const formatTime = (sec) => {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   };
 
   const handleChange = (value, index) => {
-    if (isNaN(value)) return;
-
-    let updated = [...otp];
-    updated[index] = value;
-    setOtp(updated);
-
-    if (value && index < 5) {
-      document.getElementById(`otp-${index + 1}`).focus();
-    }
+    if (!/^\d?$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5)
+      document.getElementById(`otp-${index + 1}`)?.focus();
   };
 
-  const handleVerify = async () => {
-    const finalOtp = otp.join("");
+ const handleVerify = async () => {
+   const otpString = otp.join("");
 
-    if (finalOtp.length !== 6) {
-      alert("Please enter all 6 digits");
-      return;
-    }
+   if (otpString.length !== 6) {
+     alert("Please enter all 6 digits");
+     return;
+   }
 
-    try {
-      const { data } = await axiosInstance.post("/auth/verify-otp", {
-        mobile: phone,
-        otp: finalOtp,
-      });
+   try {
+     const res = await axiosInstance.post("/auth/verify-otp", {
+       mobile: normalize(mobile),
+       otp: otpString,
+     });
 
-      if (data.success) {
-        alert("OTP Verified Successfully!");
-        localStorage.removeItem("tempPhone");
-        navigate("/select-role");
-      } else {
-        alert(data.message || "Invalid OTP");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Server error");
-    }
-  };
+     if (!res.data.success) {
+       alert(res.data.message || "Invalid OTP");
+       return;
+     }
+
+     // Save token
+     localStorage.setItem("token", res.data.token);
+
+     // Get backend redirect
+     const redirectTo = res.data.redirectTo;
+
+     if (!redirectTo) {
+       alert("Something went wrong: no redirect provided.");
+       return;
+     }
+
+     navigate(redirectTo);
+   } catch (err) {
+     console.error("OTP VERIFY ERROR:", err);
+     alert("OTP verification failed. Try again.");
+   }
+ };
+
 
   return (
     <div className="otp-container">
       <div className="otp-card">
-        <h2 className="heading">Verify OTP</h2>
-        <p className="text">Enter the 6-digit OTP sent to: {phone}</p>
+        <img
+          src={otpIcon}
+          alt="OTP Icon"
+          className="otp-icon"
+          onError={(e) => (e.target.style.display = "none")}
+        />
+        <p className="text">Enter the 6-digit OTP sent to: {mobile}</p>
 
         <div className="otp-inputs">
           {otp.map((digit, index) => (
             <input
               key={index}
               id={`otp-${index}`}
+              type="text"
               maxLength="1"
               className="otp-box"
               value={digit}
               onChange={(e) => handleChange(e.target.value, index)}
+              onFocus={(e) => e.target.select()}
             />
           ))}
         </div>

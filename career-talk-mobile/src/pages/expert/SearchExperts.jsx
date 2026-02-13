@@ -2,7 +2,18 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./SearchExperts.css";
 
+<<<<<<< HEAD
 // ✅ only correct service path (mobile app services)
+=======
+import {
+  getRecommendedExperts,
+  getAllExperts,
+} from "../../services/expertService";
+// ✅ KEEP previous import
+import { getRecommendedExperts } from "../../services/expertService";
+
+// ✅ ADD new import (DO NOT REMOVE OLD)
+>>>>>>> origin/Mob_app
 import { getAllExperts } from "../../services/expertService";
 
 export default function SearchExperts() {
@@ -60,7 +71,6 @@ export default function SearchExperts() {
               <p>
                 <strong>{expert.role || "Expert"}</strong> ({expert.experience} yrs)
               </p>
-
               <Link to={`/expert/${expert.id}`}>
                 <button className="view-btn">View Profile</button>
               </Link>

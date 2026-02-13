@@ -2,53 +2,61 @@ import React, { useEffect, useState } from "react";
 import "./Login.css";
 import { useNavigate } from "react-router-dom";
 import axiosInstance from "../../utils/axiosInstance";
+const normalize = (m) => m.replace(/\D/g, "").slice(-10);
+
+
 
 const Login = () => {
   const navigate = useNavigate();
   const [phone, setPhone] = useState("");
-  const [selectedCountry, setSelectedCountry] = useState("91"); // default India
+  const [dial, setDial] = useState("91");
 
   useEffect(() => {
-    const input = document.querySelector("#phoneInput");
-    if (window.intlTelInput) {
-      const iti = window.intlTelInput(input, {
-        initialCountry: "in",
-        separateDialCode: true,
-      });
+    const input = document.getElementById("phoneInput");
+    if (!input) return;
 
-      input.addEventListener("countrychange", () => {
-        setSelectedCountry(iti.getSelectedCountryData().dialCode);
-      });
-    }
+    const wait = setInterval(() => {
+      if (window.intlTelInput) {
+        clearInterval(wait);
+
+        const iti = window.intlTelInput(input, {
+          initialCountry: "in",
+          separateDialCode: true,
+          utilsScript:
+            "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.19/js/utils.js",
+        });
+
+        input.addEventListener("countrychange", () => {
+          const data = iti.getSelectedCountryData();
+          setDial(data.dialCode);
+        });
+      }
+    }, 200);
   }, []);
 
-  const handleSendOtp = async (e) => {
-    e.preventDefault();
-
-    if (!phone || phone.length < 10) {
-      alert("Enter a valid mobile number");
+  const sendOtp = async () => {
+    if (phone.length < 10) {
+      alert("Enter valid phone number");
       return;
     }
 
-    const fullNumber = "+" + selectedCountry + phone;
-    console.log("Phone number used:", fullNumber);
+    const fullPhone = "+" + dial + phone;
+    const normalizedPhone = normalize(fullPhone); // ⭐ FIX
 
     try {
       const { data } = await axiosInstance.post("/auth/send-otp", {
-        mobile: fullNumber,
+        mobile: normalizedPhone, // ⭐ SEND ONLY LAST 10 DIGITS
       });
 
-      console.log("Server Response:", data);
-
       if (data.success) {
-        localStorage.setItem("tempPhone", fullNumber);
-        navigate("/verify-otp");
+        localStorage.setItem("tempPhone", normalizedPhone); // ⭐ STORE FIXED NUMBER
+        navigate("/verify-otp", { state: { mobile: normalizedPhone } });
       } else {
-        alert(data.message || "OTP sending failed");
+        alert(data.message);
       }
-    } catch (err) {
-      console.error("Error:", err);
-      alert("Backend not connected!");
+    } catch (e) {
+      console.error(e);
+      alert("Backend Not Connected");
     }
   };
 
@@ -63,15 +71,12 @@ const Login = () => {
           type="tel"
           className="mobile-input"
           placeholder="Enter Mobile Number"
-          value={phone}
           onChange={(e) => setPhone(e.target.value)}
         />
 
-        <button type="button" className="send-btn" onClick={handleSendOtp}>
+        <button className="send-btn" onClick={sendOtp}>
           Send OTP
         </button>
-
-        <h2 className="register-text">Register</h2>
       </div>
     </div>
   );

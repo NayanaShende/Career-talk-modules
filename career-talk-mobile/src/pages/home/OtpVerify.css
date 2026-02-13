@@ -6,9 +6,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  
-  background: linear-gradient(135deg, #3395c9, #0B1D51, #428ae9, #152893);
-  background-size: cover;
+    font-family: 'Lucida Sans', sans-serif;
+background-color: white;
+  /* background-size: cover; */
 }
 
 /* --------------------------------------------------- 
@@ -16,29 +16,30 @@
 --------------------------------------------------- */
 .otp-card {
   width: 500px;
-  height: 360px;
-  padding: 30px;
+  height: 500px;
+  /* padding: 30px; */
   background: white;
   border-radius: 12px;
   text-align: center;
-  box-shadow: 0px 8px 18px rgba(0, 0, 0, 0.2);
+  box-shadow: 40px 30px 40px rgba(9, 63, 213, 0.35);
 }
 
 /* ---------------------------------------------------
    Text Elements
 --------------------------------------------------- */
-.heading {
-  font-size: 2rem;
+.otp-icon {
+    width: 300px;
+    height: 250px;
 }
 
 .text {
-  padding: 1rem 0rem;
+  
   font-size: 1.2rem;
   font-weight: bold;
 }
 
 .otp-instruction {
-  margin-top: 10px;
+  /* margin-top: 10px; */
   font-size: 14px;
   color: #555;
 }
@@ -78,7 +79,7 @@
    Verify Button
 --------------------------------------------------- */
 .verify-btn {
-  width: 100%;
+  width: 80%;
   padding: 12px;
   margin-top: 1rem;
   background: #024CAA;
@@ -90,5 +91,5 @@
 }
 
 .verify-btn:hover {
-  background: #0041b3;
+  background: #0582c1;
 }

@@ -1,0 +1,104 @@
+/* ---------- WRAPPER ---------- */
+.role-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+
+    background-color:white ;
+   font-family: 'Lucida Sans', sans-serif;
+  background-size: cover;
+}
+
+/* ---------- MAIN BOX ---------- */
+.role-card {
+  background: #024CAA;
+  width: 550px;
+  height:520px;
+  padding: 25px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+/* ---------- TITLE ---------- */
+.role-title {
+  font-size: 28px;
+  color:white;
+  margin-bottom: 25px;
+  font-weight: 600;
+  font-family: 'Lucida Sans', Geneva, Verdana, sans-serif;
+}
+
+/* ---------- OPTIONS CONTAINER ---------- */
+.role-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+/* ---------- ROLE CARD ---------- */
+.role-option {
+  width: 600px;
+  height: 350px;
+  background: white;
+  padding: 25px 20px;
+  border-radius: 12px;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  color: black;
+
+  transition: transform 0.25s ease, background-color 0.25s ease;
+}
+
+/* Hover effect */
+.role-option:hover {
+  background: #C2E2FA;
+  transform: translateY(3px);
+}
+
+/* ---------- INNER CIRCLE ---------- */
+.role-circle {
+  width: 200px;
+  height: 200px;
+  background: #607b8f;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.role-circle img {
+  width: 120px;
+}
+
+/* ---------- TEXT ---------- */
+.role-text {
+  margin-top: 20px;
+  font-size: 2rem;
+  font-weight: 500;
+  color: black;
+  font-family:'Lucida Sans', Geneva, Verdana, sans-serif;
+}
+
+/* ---------- BACK BUTTON ---------- */
+.back-btn {
+  margin-top: 20px;
+  width: 120px;
+  padding: 12px;
+  background-color: #ddd;
+  color: black;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.back-btn:hover {
+  background-color: #c5c5c5;
+}
