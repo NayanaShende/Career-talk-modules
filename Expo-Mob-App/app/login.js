@@ -1,5 +1,11 @@
 import { useRef, useState } from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  StyleSheet,
+} from "react-native";
 import PhoneInput from "react-native-phone-input";
 import axios from "axios";
 import { router } from "expo-router";
@@ -43,36 +49,74 @@ const API_URL = "http://192.168.1.22:3000/api/auth/send-otp";
   };
 
   return (
-    <View style={{ padding: 20, marginTop: 50 }}>
-      <Text style={{ fontSize: 24, fontWeight: "bold", textAlign: "center" }}>
-        WELCOME
-      </Text>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.card}>
+        <Text style={styles.title}>WELCOME</Text>
 
-      <PhoneInput
-        ref={phoneInput}
-        initialCountry="in"
-        textProps={{ placeholder: "Enter phone number" }}
-        style={{
-          marginVertical: 20,
-          padding: 15,
-          borderWidth: 1,
-          borderRadius: 10,
-        }}
-      />
+        <PhoneInput
+          ref={phoneInput}
+          initialCountry="in"
+          textProps={{ placeholder: "Enter phone number" }}
+          style={styles.input}
+        />
 
-      <TouchableOpacity
-        onPress={sendOtp}
-        style={{
-          backgroundColor: "blue",
-          padding: 15,
-          borderRadius: 10,
-        }}
-        disabled={loading}
-      >
-        <Text style={{ color: "white", textAlign: "center" }}>
-          {loading ? "Sending..." : "Send OTP"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          onPress={sendOtp}
+          style={styles.button}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Sending..." : "Send OTP"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </SafeAreaView>
   );
 }
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f2f2f2",
+  },
+  card: {
+    width: "90%",
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 15,
+    elevation: 5,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 15,
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 15,
+    color: "#777",
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 18,
+    textAlign: "center",
+  },
+  button: {
+    backgroundColor: "#007bff",
+    paddingVertical: 15,
+    borderRadius: 10,
+    marginTop: 20,
+    alignItems: "center",
+  },
+  buttonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+});

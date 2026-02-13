@@ -9,7 +9,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import axiosInstance from "../src/services/api";
+import axiosInstance from "../services/api";
 
 export default function OtpVerify() {
   const { mobile } = useLocalSearchParams();
@@ -45,7 +45,7 @@ export default function OtpVerify() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.card}>
-        <Text style={styles.title}>Enter OTP</Text>
+        <Text style={styles.title}>Verification Code</Text>
         <Text style={styles.subtitle}>Sent to: {mobile}</Text>
 
         <TextInput
@@ -83,6 +83,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: "bold",
     textAlign: "center",
+    marginBottom: 15,
   },
   subtitle: {
     fontSize: 16,

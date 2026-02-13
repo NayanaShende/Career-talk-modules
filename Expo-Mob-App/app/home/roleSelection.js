@@ -9,7 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { router } from "expo-router";
-import axiosInstance from "../../src/services/api";
+import axiosInstance from "../../services/api";
 import userIcon from "../../assets/user.png";
 import expertIcon from "../../assets/expert.png";
 

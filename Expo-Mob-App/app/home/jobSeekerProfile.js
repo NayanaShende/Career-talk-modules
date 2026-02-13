@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { Picker } from "@react-native-picker/picker";
-import axiosInstance from "../../src/services/api";
+import axiosInstance from "../../services/api";
 
 const JobseekerProfileScreen = () => {
   const [formData, setFormData] = useState({
