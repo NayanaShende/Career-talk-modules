@@ -1,8 +1,4 @@
-import { Redirect } from "expo-router";
 
-export default function Index() {
-  return <Redirect href="/login" />;
-}
 import {
   View,
   Text,
@@ -12,12 +8,12 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  Image, // ✅ added (was missing)
 } from "react-native";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import "expo-router/entry";
-import axiosInstance from "../src/services/api";
-import axiosInstance from "../services/api"; // ✅ FIXED PATH
+import axiosInstance from "../services/api";
 
 export default function Home() {
   const [experts, setExperts] = useState([]);
@@ -40,9 +36,10 @@ export default function Home() {
   };
 
   const filteredExperts = experts.filter((e) =>
-    e.name?.toLowerCase().includes(search.toLowerCase()),
+    e.name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  /* ================= Expert Card (kept same, fixed syntax only) ================= */
   const renderExpert = ({ item }) => (
     <Pressable
       style={styles.card}
@@ -63,6 +60,7 @@ export default function Home() {
           </Text>
           <Text style={styles.rating}>⭐ {item.rating || "4.5"}</Text>
         </View>
+
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>Find Your Dream Career</Text>
           <Text style={styles.heroSub}>
@@ -71,7 +69,6 @@ export default function Home() {
         </View>
       </View>
     </Pressable>
-    e?.name?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -99,7 +96,7 @@ export default function Home() {
         onChangeText={setSearch}
       />
 
-      {/* ================= Expert List ================= */}
+      {/* ================= Recommended Button ================= */}
       <Pressable
         style={styles.recommendedBtn}
         onPress={() => router.push("/expert/recommended")}
@@ -107,6 +104,7 @@ export default function Home() {
         <Text style={styles.recommendedText}>🔥 View Top Experts</Text>
       </Pressable>
 
+      {/* ================= Expert List ================= */}
       {loading ? (
         <ActivityIndicator size="large" color="#3B82F6" />
       ) : (
@@ -116,37 +114,14 @@ export default function Home() {
             item?.id ? item.id.toString() : index.toString()
           }
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.card}
-              onPress={() => router.push(`/expert/${item.id}`)}
-            >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {item?.name
-                    ? item.name.charAt(0).toUpperCase()
-                    : "E"}
-                </Text>
-              </View>
-
-              <View style={{ flex: 1 }}>
-                <Text style={styles.name}>{item?.name}</Text>
-
-                <Text style={styles.role}>
-                  {item?.role || "Expert"} • {item?.experience || 5} yrs
-                </Text>
-
-                <Text style={styles.rating}>
-                  ⭐ {item?.rating || 4.5}
-                </Text>
-              </View>
-            </Pressable>
-          )}
+          renderItem={renderExpert}
         />
       )}
     </SafeAreaView>
   );
 }
+
+/* ================= Styles ================= */
 
 const styles = StyleSheet.create({
   container: {
@@ -164,8 +139,6 @@ const styles = StyleSheet.create({
 
   heroTitle: {
     fontSize: 26,
-  header: {
-    fontSize: 28,
     fontWeight: "bold",
     color: "#fff",
   },
@@ -175,24 +148,34 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
 
+  header: {
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+
   /* ===== Dashboard ===== */
   dashboardTitle: {
     fontSize: 26,
     fontWeight: "bold",
   },
+
   subtitle: {
     color: "#6B7280",
     marginBottom: 12,
   },
+
   dashboardRow: {
     flexDirection: "row",
     marginBottom: 14,
   },
+
   dashboardBtn: {
     backgroundColor: "#2563eb",
     padding: 12,
     borderRadius: 10,
   },
+
   dashboardText: {
     color: "#fff",
     fontWeight: "600",
@@ -219,11 +202,13 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     elevation: 3,
   },
+
   recommendedText: {
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
   },
+
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -233,36 +218,32 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 4,
   },
-  avatar: {
-    width: 55,
-    height: 55,
-    borderRadius: 27,
-    backgroundColor: "#E5E7EB",
-    justifyContent: "center",
+
+  cardRow: {
+    flexDirection: "row",
     alignItems: "center",
+    flex: 1,
+  },
+
+  avatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     marginRight: 15,
   },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#555",
-  },
+
   name: {
     fontSize: 18,
     fontWeight: "bold",
   },
+
   role: {
     color: "#6B7280",
     marginTop: 4,
   },
+
   rating: {
     marginTop: 6,
     fontWeight: "600",
-  },
-
-  empty: {
-    textAlign: "center",
-    marginTop: 30,
-    color: "#888",
   },
 });

@@ -9,7 +9,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
-import axiosInstance from "../src/services/api";
+import axiosInstance from "../services/api";
 
 export default function OtpVerify() {
   const { mobile } = useLocalSearchParams();
