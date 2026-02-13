@@ -6,13 +6,13 @@ const cors = require("cors");
 var apiRouter = require("./routes/index.routes");
 const { sequelize } = require("./models");
 
-var app = express(); // <-- you were missing this
+var app = express();
 
 // ------------------------------------------------------
 // DATABASE SYNC
 // ------------------------------------------------------
 sequelize
-  .sync({ alter: true }) // will update tables automatically
+  .sync({ alter: true })
   .then(() => console.log("✅ Database synced"))
   .catch((err) => console.error("❌ Sync error:", err));
 
@@ -21,7 +21,7 @@ sequelize
 // ------------------------------------------------------
 app.use(
   cors({
-    origin: "http://localhost:5173", // your frontend port
+    origin: "*", // Allow Expo mobile & web
     methods: ["GET", "POST", "PUT", "DELETE"],
   }),
 );
@@ -36,10 +36,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api", apiRouter);
 
 // ------------------------------------------------------
-// 404 Handler
+// 404 HANDLER
 // ------------------------------------------------------
 app.use(function (req, res, next) {
-  next(createError(404));
+  res.status(404).json({ error: "Not Found" });
 });
 
 module.exports = app;
