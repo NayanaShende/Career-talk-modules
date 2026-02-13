@@ -1,8 +1,11 @@
 import axios from "axios";
 
-const API = axios.create({
-baseURL: "http://192.168.1.16:3000/api",  
-// IMPORTANT: Replace YOUR_IP_ADDRESS with your computer IP
+const axiosInstance = axios.create({
+  baseURL: "http://172.20.10.9:3000/api", 
+  timeout: 5000,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-export default API;
+export default axiosInstance;
