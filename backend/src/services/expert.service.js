@@ -1,15 +1,13 @@
-const { Expert } = require("../models");
+const { Expert, ExpertSkill } = require("../models");
 const { Op } = require("sequelize");
-
 // Recommended experts (rating + experience) ✅ KEEP AS IS
 exports.getRecommendedExperts = async () => {
   try {
     return await Expert.findAll({
-      order: [
-        ["rating", "DESC"],
-        ["experience", "DESC"],
-      ],
       limit: 5,
+    order: [
+      ["experience_years", "DESC"] // ✅ correct column
+    ]
     });
   } catch (error) {
     console.error("Service Error (Recommended):", error);
@@ -46,3 +44,32 @@ exports.searchExperts = async (skill) => {
     throw error;
   }
 };
+
+exports.createExpert = async (data) => {
+  return await Expert.create(data);
+};
+
+exports.updateProfile = async (id, data) => {
+  await Expert.update(data, { where: { id } });
+  return await Expert.findByPk(id);
+};
+
+exports.addSkills = async (expert_id, skills) => {
+  const payload = skills.map((s) => ({
+    expert_id,
+    skill_name: s
+  }));
+
+  return await ExpertSkill.bulkCreate(payload);
+};
+
+exports.searchExperts = async (skill) => {
+  return await Expert.findAll({
+    include: {
+      model: ExpertSkill,
+      as: "skills",
+      where: { skill_name: skill }
+    }
+  });
+};
+

@@ -15,20 +15,20 @@ router.get("/", (req, res) => {
   });
 });
 
-router.get("/recommended", async (req, res) => {
-  try {
-    const result = await pool.query(
-      "SELECT id, name, role, experience, rating, image FROM experts"
-    );
+// router.get("/recommended", async (req, res) => {
+//   try {
+//     const result = await pool.query(
+//       "SELECT id, name, role, experience, rating, image FROM experts"
+//     );
 
-    res.json({
-      success: true,
-      data: result.rows
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false });
-  }
-});
+//     res.json({
+//       success: true,
+//       data: result.rows
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ success: false });
+//   }
+// });
 
 module.exports = router;

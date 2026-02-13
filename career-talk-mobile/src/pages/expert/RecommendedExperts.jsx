@@ -15,7 +15,7 @@ const experts = [
     experience: 6,
   },
   {
-    name: "Rahul Sharma",
+    name: "Rohit Sharma",
     role: "Frontend Developer",
     experience: 5,
   },
@@ -57,6 +57,7 @@ function RecommendedExperts() {
 
       {loading && <p>Loading top experts...</p>}
 
+     
       <div className="experts-grid">
         {displayExperts.map((expert, index) => (
           <div key={expert.id || index} className="expert-card">
@@ -77,6 +78,9 @@ function RecommendedExperts() {
               yrs)
             </p>
 
+            <p>
+              {expert.role} ({expert.experience} yrs)
+            </p>
             <button className="view-btn">View Profile</button>
           </div>
         ))}

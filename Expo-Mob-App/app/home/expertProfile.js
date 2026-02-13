@@ -12,7 +12,6 @@ import { Picker } from "@react-native-picker/picker";
 import * as DocumentPicker from "expo-document-picker";
 import axiosInstance from "../../services/api";
 
-
 const ExpertProfileScreen = () => {
   const [formData, setFormData] = useState({
     fullName: "",
