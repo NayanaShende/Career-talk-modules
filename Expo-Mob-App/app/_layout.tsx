@@ -1,21 +1,32 @@
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
 
-export default function Layout() {
+export default function ExpertLayout() {
   return (
-    <>
-      {/* Status bar style */}
-      <StatusBar style="dark" />
-
-      {/* Stack controls navigation */}
-      <Stack
-        screenOptions={{
-          headerShown: false, // hides top header (recommended)
-          contentStyle: {
-            backgroundColor: "#ffffff",
-          },
+    <Stack
+      screenOptions={{
+        headerTitleAlign: "center",
+      }}
+    >
+      <Stack.Screen
+        name="index"
+        options={{
+          title: "Experts",
         }}
       />
-    </>
+
+      <Stack.Screen
+        name="recommended"
+        options={{
+          title: "Top Recommended Experts",
+        }}
+      />
+
+      <Stack.Screen
+        name="[id]"
+        options={{
+          title: "Expert Profile",
+        }}
+      />
+    </Stack>
   );
 }

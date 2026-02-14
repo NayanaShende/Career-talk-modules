@@ -2,19 +2,11 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./SearchExperts.css";
 
-<<<<<<< HEAD
-// ✅ only correct service path (mobile app services)
-=======
+// ✅ MERGED ALL DUPLICATE IMPORTS INTO ONE (FIX)
 import {
   getRecommendedExperts,
   getAllExperts,
 } from "../../services/expertService";
-// ✅ KEEP previous import
-import { getRecommendedExperts } from "../../services/expertService";
-
-// ✅ ADD new import (DO NOT REMOVE OLD)
->>>>>>> origin/Mob_app
-import { getAllExperts } from "../../services/expertService";
 
 export default function SearchExperts() {
   const [experts, setExperts] = useState([]);
@@ -27,7 +19,7 @@ export default function SearchExperts() {
         const response = await getAllExperts();
 
         // backend returns { success: true, data: [...] }
-        setExperts(response.data || []);
+        setExperts(response?.data || []);
       } catch (error) {
         console.error("Error fetching experts:", error);
       } finally {
@@ -71,6 +63,7 @@ export default function SearchExperts() {
               <p>
                 <strong>{expert.role || "Expert"}</strong> ({expert.experience} yrs)
               </p>
+
               <Link to={`/expert/${expert.id}`}>
                 <button className="view-btn">View Profile</button>
               </Link>

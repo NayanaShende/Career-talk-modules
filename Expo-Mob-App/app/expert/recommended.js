@@ -8,8 +8,8 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { router } from "expo-router";
-import axiosInstance from "../../services/api";   // ✅ FIXED PATH
+import { router, Stack } from "expo-router";   // ✅ Added Stack here
+import axiosInstance from "../../services/api";
 
 export default function Recommended() {
   const [experts, setExperts] = useState([]);
@@ -31,36 +31,46 @@ export default function Recommended() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>🔥 Top Recommended Experts</Text>
+    <>
+      {/* ✅ FIXED HEADER TITLE */}
+      <Stack.Screen
+        options={{
+          title: "Top Recommended Experts",
+          headerTitleAlign: "center",
+        }}
+      />
 
-      {loading ? (
-        <ActivityIndicator size="large" color="#2563EB" />
-      ) : (
-        <FlatList
-          data={experts}
-          keyExtractor={(item, index) =>
-            item?.id ? item.id.toString() : index.toString()
-          }
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.card}
-              onPress={() => router.push(`/expert/${item.id}`)}
-            >
-              <Text style={styles.name}>{item?.name}</Text>
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.header}>🔥 Top Recommended Experts</Text>
 
-              <Text style={styles.role}>
-                {item?.role || "Expert"} • {item?.experience || 5} yrs
-              </Text>
+        {loading ? (
+          <ActivityIndicator size="large" color="#2563EB" />
+        ) : (
+          <FlatList
+            data={experts}
+            keyExtractor={(item, index) =>
+              item?.id ? item.id.toString() : index.toString()
+            }
+            renderItem={({ item }) => (
+              <Pressable
+                style={styles.card}
+                onPress={() => router.push(`/expert/${item.id}`)}
+              >
+                <Text style={styles.name}>{item?.name}</Text>
 
-              <Text style={styles.rating}>
-                ⭐ {item?.rating || 4.5}
-              </Text>
-            </Pressable>
-          )}
-        />
-      )}
-    </SafeAreaView>
+                <Text style={styles.role}>
+                  {item?.role || "Expert"} • {item?.experience || 5} yrs
+                </Text>
+
+                <Text style={styles.rating}>
+                  ⭐ {item?.rating || 4.5}
+                </Text>
+              </Pressable>
+            )}
+          />
+        )}
+      </SafeAreaView>
+    </>
   );
 }
 
