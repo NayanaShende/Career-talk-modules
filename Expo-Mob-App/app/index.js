@@ -11,11 +11,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
-  Image, // ✅ added (was missing)
+  Image,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { router } from "expo-router";
-import "expo-router/entry";
 import axiosInstance from "../services/api";
 
 export default function Home() {
@@ -29,20 +28,41 @@ export default function Home() {
 
   const fetchExperts = async () => {
     try {
+      setLoading(true);
+
+      // ✅ IMPORTANT: confirm backend URL in api.js
       const res = await axiosInstance.get("/experts");
-      setExperts(res?.data?.data || []);
+
+      console.log("FULL API RESPONSE:", JSON.stringify(res.data, null, 2));
+
+      // ✅ handle all backend formats safely
+      let expertsData = [];
+
+      if (Array.isArray(res.data)) {
+        expertsData = res.data;
+      } else if (Array.isArray(res.data?.data)) {
+        expertsData = res.data.data;
+      } else if (Array.isArray(res.data?.experts)) {
+        expertsData = res.data.experts;
+      }
+
+      console.log("EXPERTS COUNT:", expertsData.length);
+
+      setExperts(expertsData);
     } catch (error) {
-      console.log("Error fetching experts:", error?.message);
+      console.log("FETCH ERROR:", error?.message);
+      console.log("DETAIL:", error?.response?.data);
     } finally {
       setLoading(false);
     }
   };
 
   const filteredExperts = experts.filter((e) =>
-    e.name?.toLowerCase().includes(search.toLowerCase())
+    (e?.name || "")
+      .toLowerCase()
+      .includes(search.toLowerCase())
   );
 
-  /* ================= Expert Card (kept same, fixed syntax only) ================= */
   const renderExpert = ({ item }) => (
     <Pressable
       style={styles.card}
@@ -51,23 +71,24 @@ export default function Home() {
       <View style={styles.cardRow}>
         <Image
           source={{
-            uri: item.photo || "https://ui-avatars.com/api/?name=" + item.name,
+            uri:
+              item.image ||
+              item.photo ||
+              `https://ui-avatars.com/api/?name=${item.name}`,
           }}
           style={styles.avatar}
         />
 
         <View style={{ flex: 1 }}>
           <Text style={styles.name}>{item.name}</Text>
-          <Text style={styles.role}>
-            {item.role || "Expert"} • {item.experience || 0} yrs
-          </Text>
-          <Text style={styles.rating}>⭐ {item.rating || "4.5"}</Text>
-        </View>
 
-        <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Find Your Dream Career</Text>
-          <Text style={styles.heroSub}>
-            Search from 10,000+ experts & get guidance
+          <Text style={styles.role}>
+            {item.role || "Expert"} •{" "}
+            {item.experience || item.experience_years || 0} yrs
+          </Text>
+
+          <Text style={styles.rating}>
+            ⭐ {item.rating || "4.5"}
           </Text>
         </View>
       </View>
@@ -76,7 +97,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* ================= Dashboard Header ================= */}
+
       <Text style={styles.dashboardTitle}>Career Talk Dashboard</Text>
       <Text style={styles.subtitle}>Welcome 👋 Explore Experts Below</Text>
       <Text style={styles.header}>Find Your Expert</Text>
@@ -84,13 +105,12 @@ export default function Home() {
       <View style={styles.dashboardRow}>
         <Pressable
           style={styles.dashboardBtn}
-          onPress={() => router.push("/recommended")}
+          onPress={() => router.push("/expert/recommended")}
         >
           <Text style={styles.dashboardText}>🔥 Top Experts</Text>
         </Pressable>
       </View>
 
-      {/* ================= Search ================= */}
       <TextInput
         style={styles.input}
         placeholder="Search by name..."
@@ -99,7 +119,6 @@ export default function Home() {
         onChangeText={setSearch}
       />
 
-      {/* ================= Recommended Button ================= */}
       <Pressable
         style={styles.recommendedBtn}
         onPress={() => router.push("/expert/recommended")}
@@ -107,7 +126,6 @@ export default function Home() {
         <Text style={styles.recommendedText}>🔥 View Top Experts</Text>
       </Pressable>
 
-      {/* ================= Expert List ================= */}
       {loading ? (
         <ActivityIndicator size="large" color="#3B82F6" />
       ) : (
@@ -118,73 +136,25 @@ export default function Home() {
           }
           showsVerticalScrollIndicator={false}
           renderItem={renderExpert}
+          ListEmptyComponent={
+            <Text style={{ textAlign: "center", marginTop: 40 }}>
+              No experts found from database
+            </Text>
+          }
         />
       )}
     </SafeAreaView>
   );
 }
 
-/* ================= Styles ================= */
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-    backgroundColor: "#F3F4F6",
-  },
-
-  hero: {
-    backgroundColor: "#6366F1",
-    padding: 30,
-    borderRadius: 20,
-    marginBottom: 20,
-  },
-
-  heroTitle: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-
-  heroSub: {
-    color: "#e0e7ff",
-    marginTop: 6,
-  },
-
-  header: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-
-  /* ===== Dashboard ===== */
-  dashboardTitle: {
-    fontSize: 26,
-    fontWeight: "bold",
-  },
-
-  subtitle: {
-    color: "#6B7280",
-    marginBottom: 12,
-  },
-
-  dashboardRow: {
-    flexDirection: "row",
-    marginBottom: 14,
-  },
-
-  dashboardBtn: {
-    backgroundColor: "#2563eb",
-    padding: 12,
-    borderRadius: 10,
-  },
-
-  dashboardText: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-
-  /* ===== Search ===== */
+  container: { flex: 1, padding: 16, backgroundColor: "#F3F4F6" },
+  header: { fontSize: 28, fontWeight: "bold", marginBottom: 10 },
+  dashboardTitle: { fontSize: 26, fontWeight: "bold" },
+  subtitle: { color: "#6B7280", marginBottom: 12 },
+  dashboardRow: { flexDirection: "row", marginBottom: 14 },
+  dashboardBtn: { backgroundColor: "#2563eb", padding: 12, borderRadius: 10 },
+  dashboardText: { color: "#fff", fontWeight: "600" },
   input: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -195,8 +165,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#000",
   },
-
-  /* ===== Cards ===== */
   recommendedBtn: {
     backgroundColor: "#2563EB",
     padding: 14,
@@ -205,13 +173,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
     elevation: 3,
   },
-
-  recommendedText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 16,
-  },
-
+  recommendedText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -221,32 +183,9 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     elevation: 4,
   },
-
-  cardRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    marginRight: 15,
-  },
-
-  name: {
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-
-  role: {
-    color: "#6B7280",
-    marginTop: 4,
-  },
-
-  rating: {
-    marginTop: 6,
-    fontWeight: "600",
-  },
+  cardRow: { flexDirection: "row", alignItems: "center", flex: 1 },
+  avatar: { width: 60, height: 60, borderRadius: 30, marginRight: 15 },
+  name: { fontSize: 18, fontWeight: "bold" },
+  role: { color: "#6B7280", marginTop: 4 },
+  rating: { marginTop: 6, fontWeight: "600" },
 });
