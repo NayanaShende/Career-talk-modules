@@ -9,10 +9,12 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 import axiosInstance from "../../services/api";
 
 export default function Home() {
+  const router = useRouter();
+
   const [experts, setExperts] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Find Your Expert</Text>
+      <Text style={styles.heading}>Find Your Expert</Text>
 
       <TextInput
         style={styles.input}
@@ -47,13 +49,6 @@ export default function Home() {
         value={search}
         onChangeText={setSearch}
       />
-
-      <Pressable
-        style={styles.recommendedBtn}
-        onPress={() => router.push("/expert/recommended")}
-      >
-        <Text style={styles.recommendedText}>🔥 View Top Experts</Text>
-      </Pressable>
 
       {loading ? (
         <ActivityIndicator size="large" color="#3B82F6" />
@@ -71,7 +66,7 @@ export default function Home() {
             >
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
-                  {item?.name ? item.name.charAt(0).toUpperCase() : "E"}
+                  {item?.name?.charAt(0).toUpperCase()}
                 </Text>
               </View>
 
@@ -79,7 +74,7 @@ export default function Home() {
                 <Text style={styles.name}>{item?.name}</Text>
 
                 <Text style={styles.role}>
-                  {item?.role || "Expert"} • {item?.experience || 5} yrs
+                  Expert • {item?.experience || 5} yrs
                 </Text>
 
                 <Text style={styles.rating}>⭐ {item?.rating || 4.5}</Text>
@@ -95,62 +90,47 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
     backgroundColor: "#F3F4F6",
+    padding: 16,
   },
-  header: {
-    fontSize: 28,
+  heading: {
+    fontSize: 32,
     fontWeight: "bold",
-    marginBottom: 15,
+    marginBottom: 14,
   },
   input: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 16,
+    borderRadius: 20,
     padding: 16,
-    marginBottom: 12,
-    backgroundColor: "#FFFFFF",
-    fontSize: 16,
-    color: "#000",
-  },
-  recommendedBtn: {
-    backgroundColor: "#2563EB",
-    padding: 14,
-    borderRadius: 16,
-    alignItems: "center",
-    marginBottom: 18,
-    elevation: 3,
-  },
-  recommendedText: {
-    color: "#fff",
-    fontWeight: "bold",
+    marginBottom: 20,
+    backgroundColor: "#fff",
     fontSize: 16,
   },
   card: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#E5E7EB",
     padding: 18,
-    backgroundColor: "#fff",
-    borderRadius: 20,
+    borderRadius: 22,
     marginBottom: 15,
-    elevation: 4,
   },
   avatar: {
     width: 55,
     height: 55,
     borderRadius: 27,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#D1D5DB",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 15,
   },
   avatarText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#555",
   },
   name: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
   },
   role: {

@@ -8,7 +8,7 @@ import {
   SafeAreaView,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { router, Stack } from "expo-router";   // ✅ Added Stack here
+import { router, Stack } from "expo-router";
 import axiosInstance from "../../services/api";
 
 export default function Recommended() {
@@ -22,9 +22,13 @@ export default function Recommended() {
   const fetchRecommended = async () => {
     try {
       const res = await axiosInstance.get("/experts/recommended");
+
+      console.log("API RESULT:", res.data);
+
+      // ✅ IMPORTANT FIX
       setExperts(res?.data?.data || []);
     } catch (error) {
-      console.log("Error fetching recommended experts:", error?.message);
+      console.log("Error fetching experts:", error.message);
     } finally {
       setLoading(false);
     }
@@ -32,7 +36,7 @@ export default function Recommended() {
 
   return (
     <>
-      {/* ✅ FIXED HEADER TITLE */}
+      {/* Header title */}
       <Stack.Screen
         options={{
           title: "Top Recommended Experts",
@@ -48,23 +52,20 @@ export default function Recommended() {
         ) : (
           <FlatList
             data={experts}
-            keyExtractor={(item, index) =>
-              item?.id ? item.id.toString() : index.toString()
-            }
+            keyExtractor={(item) => item.id.toString()}
+            showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
               <Pressable
                 style={styles.card}
                 onPress={() => router.push(`/expert/${item.id}`)}
               >
-                <Text style={styles.name}>{item?.name}</Text>
+                <Text style={styles.name}>{item.name}</Text>
 
                 <Text style={styles.role}>
-                  {item?.role || "Expert"} • {item?.experience || 5} yrs
+                  {item.role || "Expert"} • {item.experience_years || 5} yrs
                 </Text>
 
-                <Text style={styles.rating}>
-                  ⭐ {item?.rating || 4.5}
-                </Text>
+                <Text style={styles.rating}>⭐ {item.rating || 4.5}</Text>
               </Pressable>
             )}
           />

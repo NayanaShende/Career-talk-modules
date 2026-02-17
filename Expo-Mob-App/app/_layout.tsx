@@ -1,32 +1,11 @@
 import { Stack } from "expo-router";
 
-export default function ExpertLayout() {
+export default function RootLayout() {
   return (
     <Stack
       screenOptions={{
-        headerTitleAlign: "center",
+        headerShown: false, // ✅ removes header globally
       }}
-    >
-      <Stack.Screen
-        name="index"
-        options={{
-          title: "Experts",
-        }}
-      />
-
-      <Stack.Screen
-        name="recommended"
-        options={{
-          title: "Top Recommended Experts",
-        }}
-      />
-
-      <Stack.Screen
-        name="[id]"
-        options={{
-          title: "Expert Profile",
-        }}
-      />
-    </Stack>
+    />
   );
 }
