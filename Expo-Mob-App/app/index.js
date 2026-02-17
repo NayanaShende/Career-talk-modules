@@ -13,6 +13,9 @@ import { useEffect, useState } from "react";
 import { router } from "expo-router";
 import axiosInstance from "../services/api";
 
+// ✅ ADDED: service import (NEW)
+import { getAllExperts } from "../services/api.js";
+
 export default function Home() {
   const [experts, setExperts] = useState([]);
   const [search, setSearch] = useState("");
@@ -26,20 +29,31 @@ export default function Home() {
     try {
       setLoading(true);
 
-      // ✅ IMPORTANT: confirm backend URL in api.js
-      const res = await axiosInstance.get("/experts");
+      let serviceData = [];
+      try {
+        serviceData = await getAllExperts();
+        console.log("SERVICE RESPONSE:", JSON.stringify(serviceData, null, 2));
+      } catch (e) {
+        console.log("Service failed, fallback to axios");
+      }
 
-      console.log("FULL API RESPONSE:", JSON.stringify(res.data, null, 2));
+      let resData = null;
+      if (!serviceData || serviceData.length === 0) {
+        const res = await axiosInstance.get("/experts");
+        console.log("FULL API RESPONSE:", JSON.stringify(res.data, null, 2));
+        resData = res.data;
+      }
 
-      // ✅ handle all backend formats safely
+      const data = serviceData?.length ? serviceData : resData;
+
       let expertsData = [];
 
-      if (Array.isArray(res.data)) {
-        expertsData = res.data;
-      } else if (Array.isArray(res.data?.data)) {
-        expertsData = res.data.data;
-      } else if (Array.isArray(res.data?.experts)) {
-        expertsData = res.data.experts;
+      if (Array.isArray(data)) {
+        expertsData = data;
+      } else if (Array.isArray(data?.data)) {
+        expertsData = data.data;
+      } else if (Array.isArray(data?.experts)) {
+        expertsData = data.experts;
       }
 
       console.log("EXPERTS COUNT:", expertsData.length);
@@ -54,16 +68,13 @@ export default function Home() {
   };
 
   const filteredExperts = experts.filter((e) =>
-    (e?.name || "")
-      .toLowerCase()
-      .includes(search.toLowerCase())
+    (e?.name || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   const renderExpert = ({ item }) => (
     <Pressable
       style={styles.card}
-      onPress={() => router.push(`/expert/${item.id}`)}
-    >
+      onPress={() => router.push(`/expert/${item.id}`)}>
       <View style={styles.cardRow}>
         <Image
           source={{
@@ -83,9 +94,7 @@ export default function Home() {
             {item.experience || item.experience_years || 0} yrs
           </Text>
 
-          <Text style={styles.rating}>
-            ⭐ {item.rating || "4.5"}
-          </Text>
+          <Text style={styles.rating}>⭐ {item.rating || "4.5"}</Text>
         </View>
       </View>
     </Pressable>
@@ -93,19 +102,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-
-      <Text style={styles.dashboardTitle}>Career Talk Dashboard</Text>
-      <Text style={styles.subtitle}>Welcome 👋 Explore Experts Below</Text>
       <Text style={styles.header}>Find Your Expert</Text>
-
-      <View style={styles.dashboardRow}>
-        <Pressable
-          style={styles.dashboardBtn}
-          onPress={() => router.push("/expert/recommended")}
-        >
-          <Text style={styles.dashboardText}>🔥 Top Experts</Text>
-        </Pressable>
-      </View>
 
       <TextInput
         style={styles.input}
@@ -117,8 +114,7 @@ export default function Home() {
 
       <Pressable
         style={styles.recommendedBtn}
-        onPress={() => router.push("/expert/recommended")}
-      >
+        onPress={() => router.push("/expert/recommended")}>
         <Text style={styles.recommendedText}>🔥 View Top Experts</Text>
       </Pressable>
 
@@ -148,9 +144,6 @@ const styles = StyleSheet.create({
   header: { fontSize: 28, fontWeight: "bold", marginBottom: 10 },
   dashboardTitle: { fontSize: 26, fontWeight: "bold" },
   subtitle: { color: "#6B7280", marginBottom: 12 },
-  dashboardRow: { flexDirection: "row", marginBottom: 14 },
-  dashboardBtn: { backgroundColor: "#2563eb", padding: 12, borderRadius: 10 },
-  dashboardText: { color: "#fff", fontWeight: "600" },
   input: {
     borderWidth: 1,
     borderColor: "#E5E7EB",

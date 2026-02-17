@@ -2,57 +2,40 @@ const API_BASE_URL = "http://localhost:3000/api";
 
 // GET recommended experts
 export const getRecommendedExperts = async () => {
-  const response = await fetch(
-    `${API_BASE_URL}/experts/recommended`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  const response = await fetch(`${API_BASE_URL}/experts/recommended`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch experts");
   }
 
-  // backend returns: { success: true, data: [...] }
-  return response.json();
+  const json = await response.json();
+  return json.data;   // ✅ IMPORTANT
 };
 
-// SEARCH experts by skill / domain / experience
+
+// SEARCH experts
 export const searchExperts = async (query) => {
   const response = await fetch(
-    `${API_BASE_URL}/experts/search?skill=${encodeURIComponent(query)}`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
+    `${API_BASE_URL}/experts/search?skill=${encodeURIComponent(query)}`
   );
 
   if (!response.ok) {
     throw new Error("Failed to search experts");
   }
 
-  return response.json();
+  const json = await response.json();
+  return json.data;   // ✅ IMPORTANT
 };
-// ✅ GET ALL experts (for Search page)
+
+
+// GET ALL experts
 export const getAllExperts = async () => {
-  const response = await fetch(
-    `${API_BASE_URL}/experts`,
-    {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    }
-  );
+  const response = await fetch(`${API_BASE_URL}/experts`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch all experts");
   }
 
-  return response.json();
+  const json = await response.json();
+  return json.data;   // ✅ IMPORTANT
 };

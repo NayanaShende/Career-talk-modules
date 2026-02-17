@@ -1,5 +1,4 @@
-const { Expert } = require("../models");
-const { ExpertSkill } = require("../models");
+const { Expert, ExpertSkill } = require("../models");
 const expertService = require("../services/expert.service");
 
 // ================= GET ALL =================
@@ -9,10 +8,17 @@ exports.getAllExperts = async (req, res) => {
       include: { model: ExpertSkill, as: "skills" }
     });
 
-    res.json(experts);
+    return res.status(200).json({
+      success: true,
+      data: experts
+    });
+
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
@@ -21,41 +27,55 @@ exports.getAllExperts = async (req, res) => {
 exports.createExpert = async (req, res) => {
   try {
     const expert = await Expert.create(req.body);
-    res.status(201).json(expert);
+
+    return res.status(201).json({
+      success: true,
+      data: expert
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
 
-// ================= ADD SKILL =================
-
+// ================= ADD SKILLS =================
 exports.addSkills = async (req, res) => {
   try {
-    const expertId = req.params.expertId; // ✅ correct param
+    const expertId = req.params.expertId;
     const { skills } = req.body;
 
     if (!skills || !Array.isArray(skills)) {
-      return res.status(400).json({ error: "skills must be array" });
+      return res.status(400).json({
+        success: false,
+        message: "skills must be array"
+      });
     }
 
     const skillRows = skills.map((skill) => ({
       expert_id: expertId,
-      skill_name: skill   // ✅ MUST match model column
+      skill_name: skill
     }));
 
     await ExpertSkill.bulkCreate(skillRows);
 
-    res.json({
+    return res.json({
       success: true,
       message: "Skills added"
     });
 
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
+
 
 // ================= UPDATE PROFILE =================
 exports.updateExpert = async (req, res) => {
@@ -64,26 +84,36 @@ exports.updateExpert = async (req, res) => {
 
     await Expert.update(req.body, { where: { id } });
 
-    res.json({ message: "Updated successfully" });
+    return res.json({
+      success: true,
+      message: "Updated successfully"
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
   }
 };
 
+
+// ================= RECOMMENDED =================
 exports.getRecommendedExperts = async (req, res) => {
   try {
     const experts = await expertService.getRecommendedExperts();
 
     return res.status(200).json({
       success: true,
-      data: experts,
+      data: experts
     });
+
   } catch (error) {
     console.error("getRecommendedExperts error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch recommended experts",
+      message: "Failed to fetch recommended experts"
     });
   }
 };

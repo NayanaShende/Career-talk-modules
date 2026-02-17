@@ -1,13 +1,12 @@
 const { Expert, ExpertSkill } = require("../models");
 const { Op } = require("sequelize");
-// Recommended experts (rating + experience) ✅ KEEP AS IS
+
+// ✅ Recommended experts
 exports.getRecommendedExperts = async () => {
   try {
     return await Expert.findAll({
       limit: 5,
-    order: [
-      ["experience_years", "DESC"] // ✅ correct column
-    ]
+      order: [["experience_years", "DESC"]],
     });
   } catch (error) {
     console.error("Service Error (Recommended):", error);
@@ -15,30 +14,28 @@ exports.getRecommendedExperts = async () => {
   }
 };
 
-// Search experts by skill ✅ SAFE & BEGINNER-FRIENDLY
+// ✅ Search experts by skill (ONLY ONE FUNCTION)
 exports.searchExperts = async (skill) => {
   try {
-    // 1️⃣ No skill → return all experts
+
+    // No skill → return all
     if (!skill) {
       return await Expert.findAll();
     }
 
-    // 2️⃣ Try matching skill from TEXT[]
-    const matchedExperts = await Expert.findAll({
-      where: {
-        skills: {
-          [Op.overlap]: [skill], // PostgreSQL TEXT[]
+    return await Expert.findAll({
+      include: {
+        model: ExpertSkill,
+        as: "skills",
+        where: {
+          skill_name: {
+            [Op.iLike]: `%${skill}%`
+          }
         },
-      },
+        required: false
+      }
     });
 
-    // 3️⃣ If no match found → return ALL experts (important!)
-    if (matchedExperts.length === 0) {
-      return await Expert.findAll();
-    }
-
-    // 4️⃣ Otherwise return matched experts
-    return matchedExperts;
   } catch (error) {
     console.error("Service Error (Search):", error);
     throw error;
@@ -62,14 +59,3 @@ exports.addSkills = async (expert_id, skills) => {
 
   return await ExpertSkill.bulkCreate(payload);
 };
-
-exports.searchExperts = async (skill) => {
-  return await Expert.findAll({
-    include: {
-      model: ExpertSkill,
-      as: "skills",
-      where: { skill_name: skill }
-    }
-  });
-};
-
