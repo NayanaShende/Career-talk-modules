@@ -10,13 +10,13 @@ import {
   Image,
 } from "react-native";
 import { useEffect, useState } from "react";
-import { router } from "expo-router";
+import { router, Redirect } from "expo-router";
 import axiosInstance from "../services/api";
-
-// ✅ ADDED: service import (NEW)
 import { getAllExperts } from "../services/api.js";
 
-export default function Home() {
+
+// ✅ CHANGED: removed "export default"
+function Home() {
   const [experts, setExperts] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -68,13 +68,14 @@ export default function Home() {
   };
 
   const filteredExperts = experts.filter((e) =>
-    (e?.name || "").toLowerCase().includes(search.toLowerCase()),
+    (e?.name || "").toLowerCase().includes(search.toLowerCase())
   );
 
   const renderExpert = ({ item }) => (
     <Pressable
       style={styles.card}
-      onPress={() => router.push(`/expert/${item.id}`)}>
+      onPress={() => router.push(`/expert/${item.id}`)}
+    >
       <View style={styles.cardRow}>
         <Image
           source={{
@@ -114,7 +115,8 @@ export default function Home() {
 
       <Pressable
         style={styles.recommendedBtn}
-        onPress={() => router.push("/expert/recommended")}>
+        onPress={() => router.push("/expert/recommended")}
+      >
         <Text style={styles.recommendedText}>🔥 View Top Experts</Text>
       </Pressable>
 
@@ -138,6 +140,13 @@ export default function Home() {
     </SafeAreaView>
   );
 }
+
+
+// ✅ ONLY ONE DEFAULT EXPORT NOW
+export default function Index() {
+  return <Redirect href="/welcome" />;
+}
+
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#F3F4F6" },
@@ -178,7 +187,3 @@ const styles = StyleSheet.create({
   role: { color: "#6B7280", marginTop: 4 },
   rating: { marginTop: 6, fontWeight: "600" },
 });
-import { Redirect } from "expo-router";
-export default function Index() {
-  return <Redirect href="/welcome" />;
-}

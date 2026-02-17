@@ -6,7 +6,10 @@ const { User } = require("../models");
 // ------------------------------
 // HELPER FUNCTION TO NORMALIZE MOBILE
 // ------------------------------
-const normalizeMobile = (mobile) => mobile.replace(/\D/g, "").slice(-10);
+const normalizeMobile = (mobile) =>
+  String(mobile || "")
+    .replace(/\D/g, "")
+    .slice(-10);
 
 // ---------------------------------------
 // SEND OTP
@@ -14,6 +17,7 @@ const normalizeMobile = (mobile) => mobile.replace(/\D/g, "").slice(-10);
 exports.sendOtp = async (req, res) => {
   try {
     const { mobile } = req.body;
+
     if (!mobile)
       return res
         .status(400)
@@ -21,36 +25,39 @@ exports.sendOtp = async (req, res) => {
 
     const normalizedMobile = normalizeMobile(mobile);
 
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiryAt = new Date(Date.now() + 10 * 60 * 1000); // JS Date object
+    const otpExpiryAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    // Find or create user
     let user = await User.findOne({ where: { mobile: normalizedMobile } });
 
     if (!user) {
       user = await User.create({
         mobile: normalizedMobile,
-        otp: otp, // ensure this is passed
-        otpExpiryAt: otpExpiryAt,
+        otp,
+        otpExpiryAt,
         isVerified: false,
       });
     } else {
       await user.update({
-        otp: otp,
-        otpExpiryAt: otpExpiryAt,
+        otp,
+        otpExpiryAt,
         isVerified: false,
       });
     }
 
-    console.log("🔥 OTP SAVED:", otp, otpExpiryAt);
-    return res.json({ success: true, message: "OTP sent successfully" });
+    console.log("🔥 OTP SAVED FOR", normalizedMobile, ":", otp);
+
+    return res.json({
+      success: true,
+      message: "OTP sent successfully",
+      // TEMP for testing — remove later
+      otp,
+    });
   } catch (err) {
-    console.error(err);
+    console.error("SEND OTP ERROR:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
-
 
 // ---------------------------------------
 // VERIFY OTP
@@ -63,22 +70,35 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: "Missing data" });
 
     const normalizedMobile = normalizeMobile(mobile);
+    const cleanOtp = String(otp).trim();
 
-    const user = await User.findOne({ where: { mobile: normalizedMobile } });
+    const user = await User.findOne({
+      where: { mobile: normalizedMobile },
+    });
+
+    console.log("VERIFY REQUEST:", normalizedMobile, cleanOtp);
 
     if (!user)
       return res
         .status(400)
         .json({ success: false, message: "User not found" });
 
-    if (String(user.otp) !== String(otp))
-      return res.status(400).json({ success: false, message: "Invalid OTP" });
+    console.log("DB OTP:", user.otp);
 
-    const now = Date.now();
-    const expiry = new Date(user.otpExpiryAt).getTime();
+    // ---- FIX: safe OTP comparison ----
+    if (!user.otp || String(user.otp).trim() !== cleanOtp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
 
-    if (now > expiry) {
-      return res.status(400).json({ success: false, message: "OTP expired" });
+    // ---- FIX: safe expiry check ----
+    if (!user.otpExpiryAt || Date.now() > new Date(user.otpExpiryAt).getTime()) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired",
+      });
     }
 
     // OTP valid
@@ -91,24 +111,16 @@ exports.verifyOtp = async (req, res) => {
       expiresIn: process.env.JWT_EXPIRES_IN || "7d",
     });
 
-    // Refresh user to include latest hasProfile
     const freshUser = await User.findByPk(user.id);
 
-    // ------------------------------
-    // Decide where user should go
-    // ------------------------------
     let redirectTo = "";
 
     if (freshUser.hasProfile === true) {
       redirectTo = "/dashboard";
     } else {
-      if (!freshUser.role) {
-        redirectTo = "/select-role";
-      } else if (freshUser.role === "jobseeker") {
-        redirectTo = "/jobseeker";
-      } else if (freshUser.role === "expert") {
-        redirectTo = "/expert";
-      }
+      if (!freshUser.role) redirectTo = "/select-role";
+      else if (freshUser.role === "jobseeker") redirectTo = "/jobseeker";
+      else if (freshUser.role === "expert") redirectTo = "/expert";
     }
 
     return res.json({

@@ -1,3 +1,4 @@
+require("dotenv").config();
 var createError = require("http-errors");
 var express = require("express");
 var logger = require("morgan");
@@ -13,10 +14,10 @@ var app = express();
 // ------------------------------------------------------
 // DATABASE SYNC
 // ------------------------------------------------------
-sequelize
-  .sync({ alter: true })
-  .then(() => console.log("✅ Database synced"))
-  .catch((err) => console.error("❌ Sync error:", err));
+// sequelize
+//   .sync({ alter: true })
+//   .then(() => console.log("✅ Database synced"))
+//   .catch((err) => console.error("❌ Sync error:", err));
 
 // ------------------------------------------------------
 // CORS

@@ -7,6 +7,12 @@ import {
   StyleSheet,
   Alert,
   Image,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -16,6 +22,7 @@ import { LinearGradient } from "expo-linear-gradient";
 export default function OtpVerify() {
   const { mobile } = useLocalSearchParams();
   const [otp, setOtp] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const verifyOtp = async () => {
     if (otp.length !== 6) {
@@ -24,147 +31,171 @@ export default function OtpVerify() {
     }
 
     try {
+      setLoading(true);
+
       const response = await axiosInstance.post("/auth/verify-otp", {
         mobile,
         otp,
       });
 
-      if (response.data.success) {
+      setLoading(false);
+
+      if (response?.data?.success || response?.data?.token || response.status === 200) {
         router.replace("/home/roleSelection");
       } else {
         Alert.alert("Invalid OTP");
       }
     } catch (err) {
-      Alert.alert("Backend not connected");
+      setLoading(false);
+      Alert.alert(
+        "OTP verification failed",
+        err?.response?.data?.message || "Backend error"
+      );
     }
   };
 
   return (
-    <LinearGradient
-      colors={["#0c69ff", "#fffef7", "#5b9cff"]}
-      style={{ flex: 1 }}
-    >
-      {/* Background Wave */}
-      {/* <Image
-        source={require("../assets/bg-wave.png")}
-        style={styles.bgImage}
-        resizeMode="cover"
-      /> */}
+    <LinearGradient colors={["#0c69ff", "#fffef7", "#5b9cff"]} style={{ flex: 1 }}>
+      
+      <SafeAreaView style={{ flex: 1 }}>
+        
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+            
+            <ScrollView
+              contentContainerStyle={styles.scroll}
+              keyboardShouldPersistTaps="handled"
+            >
+              
+              <View style={styles.card}>
 
-      <SafeAreaView style={styles.container}>
-        <View style={styles.card}>
-          {/* Illustration */}
-          <Image
-            source={require("../assets/otp.png")}
-            style={styles.image}
-            resizeMode="contain"
-          />
+                <Image
+                  source={require("../assets/otp.png")}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
 
-          <Text style={styles.title}>OTP Verification</Text>
-          <Text style={styles.subtitle}>Code sent to</Text>
-          <Text style={styles.mobile}>{mobile}</Text>
+                <Text style={styles.title}>OTP Verification</Text>
+                <Text style={styles.subtitle}>Code sent to</Text>
+                <Text style={styles.mobile}>{mobile}</Text>
 
-          <TextInput
-            style={styles.input}
-            placeholder="Enter 6-digit OTP"
-            keyboardType="numeric"
-            maxLength={6}
-            value={otp}
-            onChangeText={setOtp}
-          />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter 6-digit OTP"
+                  keyboardType="numeric"
+                  maxLength={6}
+                  value={otp}
+                  onChangeText={setOtp}
+                />
 
-          <TouchableOpacity style={styles.button} onPress={verifyOtp}>
-            <Text style={styles.buttonText}>Verify OTP</Text>
-          </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, loading && { opacity: 0.7 }]}
+                  onPress={verifyOtp}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.buttonText}>Verify OTP</Text>
+                  )}
+                </TouchableOpacity>
 
-          <Text style={styles.resend}>Didn't receive code? Resend</Text>
-        </View>
+                <Text style={styles.resend}>Didn't receive code? Resend</Text>
+
+              </View>
+
+            </ScrollView>
+
+          </TouchableWithoutFeedback>
+
+        </KeyboardAvoidingView>
+
       </SafeAreaView>
+
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  scroll: {
+    flexGrow: 1,
     justifyContent: "center",
-    alignItems: "center",
-  },
-
-  bgImage: {
-    position: "absolute",
-    width: "120%",
-    height: "100%",
+    padding: 20,
   },
 
   card: {
-    width: "90%",
-    backgroundColor: "#ffffffee",
-    borderRadius: 25,
-    padding: 25,
-    alignItems: "center",
-
+    backgroundColor: "#ffffff",
+    borderRadius: 22,
+    padding: 28,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 10,
+    shadowOpacity: 0.12,
+    shadowRadius: 18,
+    elevation: 8,
+    alignItems: "center",
   },
 
   image: {
-    width: 150,
-    height: 150,
+    width: 180,
+    height: 140,
     marginBottom: 10,
   },
 
   title: {
     fontSize: 24,
-    fontWeight: "bold",
-    color: "#1e2a78",
+    fontWeight: "700",
+    color: "#0c69ff",
+    marginTop: 10,
   },
 
   subtitle: {
     fontSize: 14,
-    color: "#50565b",
-    marginTop: 4,
+    color: "#777",
+    marginTop: 8,
   },
 
   mobile: {
     fontSize: 16,
-    fontWeight: "bold",
-    color: "#2f5cff",
-    marginBottom: 20,
+    fontWeight: "600",
+    color: "#222",
+    marginBottom: 18,
   },
 
   input: {
     width: "100%",
-    borderWidth: 1,
-    borderColor: "#d0d7ff",
-    borderRadius: 12,
-    padding: 14,
+    borderWidth: 1.5,
+    borderColor: "#e3e8ff",
+    backgroundColor: "#f7f9ff",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     fontSize: 18,
+    letterSpacing: 4,
     textAlign: "center",
-    letterSpacing: 8,
-    backgroundColor: "#fff",
+    marginBottom: 18,
   },
 
   button: {
     width: "100%",
-    backgroundColor: "#2f5cff",
-    paddingVertical: 15,
-    borderRadius: 12,
-    marginTop: 25,
+    backgroundColor: "#0c69ff",
+    paddingVertical: 16,
+    borderRadius: 14,
     alignItems: "center",
+    elevation: 6,
   },
 
   buttonText: {
     color: "#fff",
-    fontSize: 17,
-    fontWeight: "bold",
+    fontSize: 16,
+    fontWeight: "700",
   },
 
   resend: {
     marginTop: 18,
-    color: "#6c757d",
-    fontSize: 13,
+    color: "#0c69ff",
+    fontWeight: "600",
   },
 });

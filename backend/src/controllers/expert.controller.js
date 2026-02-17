@@ -97,11 +97,18 @@ exports.updateExpert = async (req, res) => {
   }
 };
 
-
 // ================= RECOMMENDED =================
 exports.getRecommendedExperts = async (req, res) => {
   try {
-    const experts = await expertService.getRecommendedExperts();
+
+    const experts = await Expert.findAll({
+      include: { model: ExpertSkill, as: "skills" },
+
+      // ✅ ORDER BY ID INSTEAD OF createdAt
+      order: [["id", "DESC"]],
+
+      limit: 5,
+    });
 
     return res.status(200).json({
       success: true,
@@ -109,11 +116,12 @@ exports.getRecommendedExperts = async (req, res) => {
     });
 
   } catch (error) {
+
     console.error("getRecommendedExperts error:", error);
 
     return res.status(500).json({
       success: false,
-      message: "Failed to fetch recommended experts"
+      message: error.message
     });
   }
 };
