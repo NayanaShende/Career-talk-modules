@@ -6,6 +6,7 @@ const protect = require("../middleware/protect");
 
 // OTP ROUTES
 router.post("/send-otp", authController.sendOtp);
+// console.log("OTP request received", req.body);
 router.post("/verify-otp", authController.verifyOtp);
 
 // When user logs in and gets OTP verified

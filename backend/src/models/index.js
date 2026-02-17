@@ -1,7 +1,9 @@
 const { Sequelize, DataTypes } = require("sequelize");
 
 const env = process.env.NODE_ENV || "development";
-const config = require("../../config/config.json")[env];
+
+// ✅ load config correctly
+const config = require("../config/config.js")[env];
 
 const sequelize = new Sequelize(
   config.database,
@@ -9,8 +11,8 @@ const sequelize = new Sequelize(
   config.password,
   {
     host: config.host,
-    dialect: "postgres",
-  }
+    dialect: config.dialect || "postgres",
+  },
 );
 
 const db = {};

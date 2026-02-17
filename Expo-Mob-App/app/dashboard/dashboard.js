@@ -37,10 +37,10 @@ export default function Dashboard() {
 
         {/* BUTTON GRID */}
         <View style={styles.grid}>
-          
+
           <Pressable
-            style={[styles.gridCard, { backgroundColor: "#0A66C2" }]}
-            onPress={() => router.push("/index")}
+            style={[styles.gridCard, { backgroundColor: "#FF9B00" }]}
+            onPress={() => router.push("/home")}
           >
             <Text style={styles.gridIcon}>🔎</Text>
             <Text style={styles.gridText}>Search Experts</Text>
@@ -55,7 +55,7 @@ export default function Dashboard() {
           </Pressable>
 
           <Pressable
-            style={[styles.gridCard, { backgroundColor: "#047857" }]}
+            style={[styles.gridCard, { backgroundColor: "#D34E4E" }]}
             onPress={() => router.push("/expert/1")}
           >
             <Text style={styles.gridIcon}>👤</Text>
@@ -63,7 +63,7 @@ export default function Dashboard() {
           </Pressable>
 
           <Pressable
-            style={[styles.gridCard, { backgroundColor: "#B45309" }]}
+            style={[styles.gridCard, { backgroundColor: "#7C4585" }]}
           >
             <Text style={styles.gridIcon}>💬</Text>
             <Text style={styles.gridText}>Messages</Text>
@@ -100,13 +100,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#F1F5F9",
   },
 
-  /* NAVBAR */
-
   navbar: {
     flexDirection: "row",
     alignItems: "center",
     padding: 14,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#5A7ACD",
     elevation: 4,
   },
 
@@ -114,7 +112,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     fontSize: 18,
     marginRight: 12,
-    color: "#0A66C2",
+    color: "#ffffff",
   },
 
   search: {
@@ -124,8 +122,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 40,
   },
-
-  /* WELCOME */
 
   welcome: {
     backgroundColor: "#FFFFFF",
@@ -146,8 +142,6 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
 
-  /* GRID */
-
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -161,7 +155,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     marginBottom: 16,
     alignItems: "center",
-
     shadowColor: "#000",
     shadowOpacity: 0.25,
     shadowRadius: 10,
@@ -180,8 +173,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
   },
-
-  /* FEED */
 
   sectionTitle: {
     marginLeft: 15,
