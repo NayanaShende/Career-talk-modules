@@ -202,3 +202,4 @@ const styles = StyleSheet.create({
   role: { color: "#6B7280", marginTop: 4 },
   rating: { marginTop: 6, fontWeight: "600" },
 });
+ 
