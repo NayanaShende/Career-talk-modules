@@ -122,7 +122,7 @@ export default function Dashboard() {
         <NavItem icon="🏠" label="Home" active route="/dashboard/dashboard" />
         <NavItem icon="🔎" label="Search" route="/expert/search" />
         <NavItem icon="💬" label="Chat" route="/chat" />
-        <NavItem icon="👤" label="Profile" route="/profile" />
+        <NavItem icon="👤" label="Profile" route="/home/profile" />
       </View>
     </SafeAreaView>
   );

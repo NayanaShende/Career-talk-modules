@@ -91,9 +91,7 @@ export default function Recommended() {
                     {item.role || "Expert"} • {item.exp} yrs
                   </Text>
 
-                  <Text style={styles.rating}>
-                    ⭐ {item.rating || 0}
-                  </Text>
+                  <Text style={styles.rating}>⭐ {item.rating || 0}</Text>
                 </Pressable>
               )}
             />
