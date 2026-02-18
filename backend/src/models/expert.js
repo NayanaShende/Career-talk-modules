@@ -48,6 +48,12 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+
+      // ✅ ✅ NEW FIELD (ONLINE STATUS)
+      is_online: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
     },
     {
       tableName: "Experts",

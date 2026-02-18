@@ -12,10 +12,12 @@ import {
 import { useEffect, useState } from "react";
 import { router, Redirect } from "expo-router";
 import axiosInstance from "../services/api";
-import { getAllExperts } from "../services/api.js";
+
+// ✅ FIXED: correct service import
+import { getAllExperts } from "../services/expertService";
 
 
-// ✅ CHANGED: removed "export default"
+// ===== HOME SCREEN =====
 function Home() {
   const [experts, setExperts] = useState([]);
   const [search, setSearch] = useState("");
@@ -57,8 +59,8 @@ function Home() {
       }
 
       console.log("EXPERTS COUNT:", expertsData.length);
-
       setExperts(expertsData);
+
     } catch (error) {
       console.log("FETCH ERROR:", error?.message);
       console.log("DETAIL:", error?.response?.data);
@@ -113,11 +115,20 @@ function Home() {
         onChangeText={setSearch}
       />
 
+      {/* 🔥 TOP EXPERTS */}
       <Pressable
         style={styles.recommendedBtn}
         onPress={() => router.push("/expert/recommended")}
       >
         <Text style={styles.recommendedText}>🔥 View Top Experts</Text>
+      </Pressable>
+
+      {/* 🟢 ONLINE EXPERTS (NEW) */}
+      <Pressable
+        style={[styles.recommendedBtn, { backgroundColor: "#16A34A" }]}
+        onPress={() => router.push("/expert/online")}
+      >
+        <Text style={styles.recommendedText}>🟢 View Online Experts</Text>
       </Pressable>
 
       {loading ? (
@@ -142,17 +153,21 @@ function Home() {
 }
 
 
-// ✅ ONLY ONE DEFAULT EXPORT NOW
+// ===== ROOT INDEX =====
+
+// ✅ If you WANT welcome first → keep this
 export default function Index() {
   return <Redirect href="/welcome" />;
 }
+
+// ❗ IF you want Home instead, replace above with:
+// export default Home;
+
 
 
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 16, backgroundColor: "#F3F4F6" },
   header: { fontSize: 28, fontWeight: "bold", marginBottom: 10 },
-  dashboardTitle: { fontSize: 26, fontWeight: "bold" },
-  subtitle: { color: "#6B7280", marginBottom: 12 },
   input: {
     borderWidth: 1,
     borderColor: "#E5E7EB",
@@ -168,7 +183,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     alignItems: "center",
-    marginBottom: 18,
+    marginBottom: 12,
     elevation: 3,
   },
   recommendedText: { color: "#fff", fontWeight: "bold", fontSize: 16 },

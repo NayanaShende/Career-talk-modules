@@ -7,7 +7,7 @@ const cors = require("cors");
 const routes = require("./routes");
 const apiRouter = require("./routes/index.routes");
 const { sequelize } = require("./models");
-
+const expertRoutes = require("./routes/expert.routes");
 // ✅ CREATE APP FIRST
 var app = express();
 
@@ -41,7 +41,7 @@ app.use(express.urlencoded({ extended: true }));
 // ------------------------------------------------------
 app.use("/api", routes);
 app.use("/api", apiRouter);
-
+app.use("/api/experts", expertRoutes);
 // ------------------------------------------------------
 // 404 HANDLER
 // ------------------------------------------------------
