@@ -50,9 +50,7 @@ export default function OnlineExperts() {
           {item.headline || item.role || "Expert"}
         </Text>
 
-        <Text style={styles.rating}>
-          ⭐ {item.rating || 0}
-        </Text>
+        <Text style={styles.rating}>⭐ {item.rating || 0}</Text>
 
         <Text style={styles.online}>🟢 Online</Text>
       </View>
