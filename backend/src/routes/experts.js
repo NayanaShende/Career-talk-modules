@@ -17,6 +17,9 @@ router.post("/", expertController.createExpert);
 router.put("/:id", expertController.updateExpert);
 
 router.post("/:expertId/skills", expertController.addSkills);
+router.get("/recommended", expertController.getRecommendedExperts);
+
+router.get("/online", expertController.getOnlineExperts);
 
 
 module.exports = router;

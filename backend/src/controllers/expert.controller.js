@@ -97,17 +97,43 @@ exports.updateExpert = async (req, res) => {
   }
 };
 
+
 // ================= RECOMMENDED =================
 exports.getRecommendedExperts = async (req, res) => {
   try {
+    const limit = parseInt(req.query.limit) || 10;
 
     const experts = await Expert.findAll({
+      order: [["createdAt", "DESC"]],
+      limit: limit,
+    });
+
+    res.json(experts);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+// ================= ONLINE TOP EXPERTS (NEW) =================
+exports.getOnlineExperts = async (req, res) => {
+  try {
+
+    const limit = parseInt(req.query.limit) || 10;
+
+    const experts = await Expert.findAll({
+      where: { is_online: true },   // only online experts
+
       include: { model: ExpertSkill, as: "skills" },
 
-      // ✅ ORDER BY ID INSTEAD OF createdAt
-      order: [["id", "DESC"]],
+      order: [
+        ["rating", "DESC"],
+        ["experience", "DESC"],
+        ["id", "DESC"],
+      ],
 
-      limit: 5,
+      limit: limit,
     });
 
     return res.status(200).json({
@@ -115,13 +141,12 @@ exports.getRecommendedExperts = async (req, res) => {
       data: experts
     });
 
-  } catch (error) {
-
-    console.error("getRecommendedExperts error:", error);
+  } catch (err) {
+    console.error("getOnlineExperts error:", err);
 
     return res.status(500).json({
       success: false,
-      message: error.message
+      message: err.message
     });
   }
 };

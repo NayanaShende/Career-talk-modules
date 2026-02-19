@@ -68,10 +68,17 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
 
-      certification: {
+           certification: {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+
+      // ✅ ✅ NEW FIELD (ONLINE STATUS)
+      is_online: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+
     },
     {
       tableName: "Experts",
