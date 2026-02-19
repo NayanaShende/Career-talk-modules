@@ -125,3 +125,65 @@ exports.getRecommendedExperts = async (req, res) => {
     });
   }
 };
+
+
+// ================= GET BY ID =================
+exports.getExpertById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // ✅ use service (clean architecture)
+    const expert = await expertService.getExpertById(id);
+
+    if (!expert) {
+      return res.status(404).json({
+        success: false,
+        message: "Expert not found"
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: expert
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({
+      success: false,
+      message: err.message
+    });
+  }
+};
+
+
+
+// exports.getExpertById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const expert = await Expert.findOne({
+//       where: { id },
+//       include: { model: ExpertSkill, as: "skills" }
+//     });
+
+//     if (!expert) {
+//       return res.status(404).json({
+//         success: false,
+//         message: "Expert not found"
+//       });
+//     }
+
+//     return res.status(200).json({
+//       success: true,
+//       data: expert
+//     });
+
+//   } catch (err) {
+//     console.error(err);
+//     return res.status(500).json({
+//       success: false,
+//       message: err.message
+//     });
+//   }
+// };

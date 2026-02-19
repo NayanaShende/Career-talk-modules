@@ -21,12 +21,30 @@ export default function Recommended() {
 
   const fetchRecommended = async () => {
     try {
-      const res = await axiosInstance.get("/experts/recommended");
+      const res = await axiosInstance.get("/experts");
 
-      console.log("API RESULT:", res.data);
+      const data = res?.data?.data || [];
 
-      // ✅ IMPORTANT FIX
-      setExperts(res?.data?.data || []);
+      // normalize experience field
+      const normalized = data.map((e) => ({
+        ...e,
+        exp:
+          e.experience_years ??
+          e.experience ??
+          e.yearsOfExperience ??
+          e.total_experience ??
+          0,
+      }));
+
+      // sort by rating then experience
+      const sorted = [...normalized].sort((a, b) => {
+        const ratingDiff = (b.rating || 0) - (a.rating || 0);
+        if (ratingDiff !== 0) return ratingDiff;
+        return (b.exp || 0) - (a.exp || 0);
+      });
+
+      // show only top 10 experts
+      setExperts(sorted.slice(0, 10));
     } catch (error) {
       console.log("Error fetching experts:", error.message);
     } finally {
@@ -36,7 +54,6 @@ export default function Recommended() {
 
   return (
     <>
-      {/* Header title */}
       <Stack.Screen
         options={{
           title: "Top Recommended Experts",
@@ -52,7 +69,9 @@ export default function Recommended() {
         ) : (
           <FlatList
             data={experts}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item, index) =>
+              item.id ? item.id.toString() : index.toString()
+            }
             showsVerticalScrollIndicator={false}
             renderItem={({ item }) => (
               <Pressable
@@ -62,10 +81,10 @@ export default function Recommended() {
                 <Text style={styles.name}>{item.name}</Text>
 
                 <Text style={styles.role}>
-                  {item.role || "Expert"} • {item.experience_years || 5} yrs
+                  {item.role || "Expert"} • {item.exp} yrs
                 </Text>
 
-                <Text style={styles.rating}>⭐ {item.rating || 4.5}</Text>
+                <Text style={styles.rating}>⭐ {item.rating || 0}</Text>
               </Pressable>
             )}
           />

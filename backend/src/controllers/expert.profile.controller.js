@@ -26,7 +26,6 @@ exports.createExpertProfile = async (req, res) => {
       experience: req.body.experience || null,
       domain: req.body.domain || null,
       certifications: req.body.certifications || null, // must match frontend
-      linkedIn: req.body.linkedIn || null, // must match frontend
       cvFile: req.file ? req.file.filename : null,
       userId: req.user.id,
     };
@@ -39,7 +38,7 @@ exports.createExpertProfile = async (req, res) => {
     if (profile) {
       profile = await profile.update(profileData);
     } else {
-      profile = await UserProfile.create(profileData);
+      profile = await ExpertProfile.create(profileData);
     }
 
     // ⭐ Mark user as having completed profile
@@ -63,19 +62,28 @@ exports.createExpertProfile = async (req, res) => {
 // ------------------------------
 // GET EXPERT PROFILE
 // ------------------------------
-exports.getExpertProfile = async (req, res) => {
+exports.getExpertProfileById = async (req, res) => {
   try {
-    const profile = await ExpertProfile.findOne({
-      where: { userId: req.user.id },
+    const expert = await Expert.findByPk(req.params.id, {
+      include: [
+        {
+          model: ExpertProfile,
+          as: "profile",
+        }
+      ],
     });
-    if (!profile) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Profile not found" });
+
+    if (!expert) {
+      return res.status(404).json({ message: "Expert not found" });
     }
-    return res.json({ success: true, data: profile });
-  } catch (err) {
-    console.error("❌ ERROR fetching expert profile:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+
+    res.json({
+      success: true,
+      data: expert,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 };

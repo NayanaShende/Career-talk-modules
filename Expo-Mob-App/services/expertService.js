@@ -34,7 +34,10 @@ export const getRecommendedExperts = async () => {
 export const getAllExperts = async () => {
   try {
     const response = await API.get("/experts");
-    return response.data;
+
+    // ✅ return only experts array
+    return response.data.data;
+
   } catch (error) {
     console.log("Error fetching all experts:", error);
     return [];
@@ -46,7 +49,10 @@ export const getAllExperts = async () => {
 export const getExpertById = async (id) => {
   try {
     const response = await API.get(`/experts/${id}`);
-    return response.data;
+
+    // ✅ return only expert object
+    return response.data.data;
+
   } catch (error) {
     console.log("Error fetching expert:", error);
     return null;

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,28 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 
+/* ✅ NEW (API import) */
+import { getAllExperts } from "../../services/expertService";
+
 export default function Dashboard() {
+
+  /* ✅ NEW (state) */
+  const [experts, setExperts] = useState([]);
+
+  /* ✅ NEW (fetch experts on load) */
+  useEffect(() => {
+    fetchExperts();
+  }, []);
+
+  const fetchExperts = async () => {
+    try {
+      const data = await getAllExperts();
+      setExperts(data || []);
+    } catch (err) {
+      console.log("Dashboard fetch error:", err);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       
@@ -38,6 +59,7 @@ export default function Dashboard() {
         {/* BUTTON GRID */}
         <View style={styles.grid}>
 
+          {/* Search */}
           <Pressable
             style={[styles.gridCard, { backgroundColor: "#FF9B00" }]}
             onPress={() => router.push("/home")}
@@ -46,6 +68,7 @@ export default function Dashboard() {
             <Text style={styles.gridText}>Search Experts</Text>
           </Pressable>
 
+          {/* Recommended */}
           <Pressable
             style={[styles.gridCard, { backgroundColor: "#6D28D9" }]}
             onPress={() => router.push("/expert/recommended")}
@@ -54,14 +77,22 @@ export default function Dashboard() {
             <Text style={styles.gridText}>Top Experts</Text>
           </Pressable>
 
+          {/* Profile (✅ dynamic id from DB) */}
           <Pressable
             style={[styles.gridCard, { backgroundColor: "#D34E4E" }]}
-            onPress={() => router.push("/expert/1")}
+            onPress={() => {
+              if (experts.length > 0) {
+                router.push(`/expert/${experts[0].id}`);
+              } else {
+                console.log("No experts found");
+              }
+            }}
           >
             <Text style={styles.gridIcon}>👤</Text>
             <Text style={styles.gridText}>Profile</Text>
           </Pressable>
 
+          {/* Messages */}
           <Pressable
             style={[styles.gridCard, { backgroundColor: "#7C4585" }]}
           >

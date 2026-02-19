@@ -48,6 +48,30 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+
+      /* ======================================================
+         ✅ NEW FIELDS ADDED (NO OLD CODE CHANGED)
+         ====================================================== */
+
+      location: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      language_spoken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      cv: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+
+      certification: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       tableName: "Experts",
@@ -57,6 +81,11 @@ module.exports = (sequelize, DataTypes) => {
 
   // ✅ association
   Expert.associate = (models) => {
+    Expert.hasOne(models.ExpertProfile, {
+      foreignKey: "expertId",
+      as: "profile",
+    });
+
     Expert.hasMany(models.ExpertSkill, {
       foreignKey: "expert_id",
       as: "skills",

@@ -11,17 +11,7 @@ const { sequelize } = require("./models");
 // ✅ CREATE APP FIRST
 var app = express();
 
-// ------------------------------------------------------
-// DATABASE SYNC
-// ------------------------------------------------------
-// sequelize
-//   .sync({ alter: true })
-//   .then(() => console.log("✅ Database synced"))
-//   .catch((err) => console.error("❌ Sync error:", err));
-
-// ------------------------------------------------------
-// CORS
-// ------------------------------------------------------
+;
 app.use(
   cors({
     origin: "*",

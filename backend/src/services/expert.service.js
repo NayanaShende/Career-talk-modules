@@ -1,4 +1,4 @@
-const { Expert, ExpertSkill } = require("../models");
+const { Expert, ExpertSkill, ExpertProfile } = require("../models");
 const { Op } = require("sequelize");
 
 // ✅ Recommended experts
@@ -58,4 +58,31 @@ exports.addSkills = async (expert_id, skills) => {
   }));
 
   return await ExpertSkill.bulkCreate(payload);
+};
+
+
+
+/* ======================================================
+   ✅ NEW FUNCTION ADDED (NOT TOUCHING OLD CODE)
+   Get Expert Profile by ID (with skills + profile)
+   ====================================================== */
+
+exports.getExpertById = async (id) => {
+  try {
+    return await Expert.findByPk(id, {
+      include: [
+        {
+          model: ExpertSkill,
+          as: "skills",
+        },
+        {
+          model: ExpertProfile,
+          as: "profile",
+        }
+      ]
+    });
+  } catch (error) {
+    console.error("Service Error (Get By Id):", error);
+    throw error;
+  }
 };
