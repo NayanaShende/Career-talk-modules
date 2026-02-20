@@ -3,108 +3,116 @@ import {
   View,
   Text,
   StyleSheet,
+  ImageBackground,
   Pressable,
-  Dimensions,
   StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 
-const { height } = Dimensions.get("window");
-
 export default function Welcome() {
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="light-content" />
 
-      {/* CONTENT */}
-      <View style={styles.content}>
-        <Text style={styles.logo}>CareerTalk</Text>
-
-        <Text style={styles.title}>Find Your Career Mentor</Text>
-
-        <Text style={styles.subtitle}>
-          Connect with experts and grow faster 🚀
-        </Text>
-      </View>
-
-      {/* CURVED GRADIENT */}
-      <LinearGradient
-        colors={["#5EA8FF", "#6366F1", "#7C3AED"]}
-        style={styles.gradient}
+      {/* FULL BACKGROUND IMAGE */}
+      <ImageBackground
+        source={require("../assets/mentor.jpg")} // change image here
+        style={styles.image}
+        resizeMode="cover"
       >
-        <Pressable
-          style={styles.button}
-          onPress={() => router.replace("/login")}
+        {/* DARK OVERLAY FOR TEXT VISIBILITY */}
+        <LinearGradient
+          colors={["rgba(0,0,0,8.45)", "rgba(0,0,8,0.15)", "transparent"]}
+          style={styles.overlay}
+        />
+
+        {/* TOP CONTENT */}
+        <View style={styles.textContainer}>
+          <Text style={styles.logo}>CareerTalk</Text>
+
+          <Text style={styles.title}>Find Your Career Mentor</Text>
+
+          <Text style={styles.subtitle}>
+            Your path to growth starts with the right mentor🚀
+          </Text>
+        </View>
+
+        {/* BOTTOM CURVED GRADIENT */}
+        <LinearGradient
+          colors={["#78b1ea", "#3737b4", "#a675bf"]}
+          style={styles.bottomCurve}
         >
-          <Text style={styles.buttonText}>Get Started</Text>
-        </Pressable>
-      </LinearGradient>
+          <Pressable
+            style={styles.button}
+            onPress={() => router.replace("/loginOtp")}
+          >
+            <Text style={styles.buttonText}>Get Started</Text>
+          </Pressable>
+        </LinearGradient>
+      </ImageBackground>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  container: { flex: 1 },
+
+  image: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    justifyContent: "space-between",
   },
 
-  content: {
-    flex: 1,
-    justifyContent: "center",
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+
+  textContainer: {
     alignItems: "center",
+    marginTop: 120,
     paddingHorizontal: 30,
   },
 
   logo: {
-    fontSize: 34,
+    fontSize: 40,
     fontWeight: "800",
-    color: "#0A66C2",
-    marginBottom: 25,
-    letterSpacing: 0.5,
+    color: "#fff",
+    fontFamily: "Inter-Bold",
   },
 
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "700",
-    color: "#0F172A",
+    color: "#fff",
+    marginTop: 10,
     textAlign: "center",
   },
 
   subtitle: {
-    marginTop: 10,
     fontSize: 15,
-    color: "#64748B",
+    color: "#fff",
     textAlign: "center",
-    lineHeight: 22,
+    marginTop: 8,
   },
 
-  /* PERFECT CURVE */
-  gradient: {
-    height: height * 0.38,
-    borderTopLeftRadius: 160,
-    borderTopRightRadius: 0,
+  bottomCurve: {
+    height: 260,
+    borderTopLeftRadius: 200,
     justifyContent: "center",
     alignItems: "center",
   },
 
   button: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#fff",
     paddingVertical: 16,
-    paddingHorizontal: 55,
-    borderRadius: 35,
-
-    shadowColor: "#000",
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 6,
+    paddingHorizontal: 70,
+    borderRadius: 40,
+    elevation: 8,
   },
 
   buttonText: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "700",
-    color: "#4F46E5",
+    color: "#030200",
   },
 });
