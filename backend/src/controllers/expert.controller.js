@@ -117,13 +117,15 @@ exports.getRecommendedExperts = async (req, res) => {
 
 
 // ================= ONLINE TOP EXPERTS (NEW) =================
+
 exports.getOnlineExperts = async (req, res) => {
   try {
-
     const limit = parseInt(req.query.limit) || 10;
 
     const experts = await Expert.findAll({
-      where: { is_online: true },   // only online experts
+      where: {
+        is_online: true   // ✅ ONLY THIS IS NEEDED
+      },
 
       include: { model: ExpertSkill, as: "skills" },
 
@@ -138,7 +140,7 @@ exports.getOnlineExperts = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: experts
+      data: experts,
     });
 
   } catch (err) {
@@ -146,7 +148,7 @@ exports.getOnlineExperts = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message,
     });
   }
 };

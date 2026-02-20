@@ -11,13 +11,10 @@ import {
 } from "react-native";
 import { useEffect, useState } from "react";
 import { router, Redirect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../services/api";
-
-// ✅ FIXED: correct service import
 import { getAllExperts } from "../services/expertService";
 
-
-// ===== HOME SCREEN =====
 function Home() {
   const [experts, setExperts] = useState([]);
   const [search, setSearch] = useState("");
@@ -34,36 +31,24 @@ function Home() {
       let serviceData = [];
       try {
         serviceData = await getAllExperts();
-        console.log("SERVICE RESPONSE:", JSON.stringify(serviceData, null, 2));
-      } catch (e) {
-        console.log("Service failed, fallback to axios");
-      }
+      } catch {}
 
       let resData = null;
       if (!serviceData || serviceData.length === 0) {
         const res = await axiosInstance.get("/experts");
-        console.log("FULL API RESPONSE:", JSON.stringify(res.data, null, 2));
         resData = res.data;
       }
 
       const data = serviceData?.length ? serviceData : resData;
 
       let expertsData = [];
+      if (Array.isArray(data)) expertsData = data;
+      else if (Array.isArray(data?.data)) expertsData = data.data;
+      else if (Array.isArray(data?.experts)) expertsData = data.experts;
 
-      if (Array.isArray(data)) {
-        expertsData = data;
-      } else if (Array.isArray(data?.data)) {
-        expertsData = data.data;
-      } else if (Array.isArray(data?.experts)) {
-        expertsData = data.experts;
-      }
-
-      console.log("EXPERTS COUNT:", expertsData.length);
       setExperts(expertsData);
-
     } catch (error) {
       console.log("FETCH ERROR:", error?.message);
-      console.log("DETAIL:", error?.response?.data);
     } finally {
       setLoading(false);
     }
@@ -78,52 +63,64 @@ function Home() {
       style={styles.card}
       onPress={() => router.push(`/expert/${item.id}`)}
     >
-      <View style={styles.cardRow}>
-        <Image
-          source={{
-            uri:
-              item.image ||
-              item.photo ||
-              `https://ui-avatars.com/api/?name=${item.name}`,
-          }}
-          style={styles.avatar}
-        />
+      <Image
+        source={{
+          uri:
+            item.image ||
+            item.photo ||
+            `https://ui-avatars.com/api/?name=${item.name}`,
+        }}
+        style={styles.avatar}
+      />
 
-        <View style={{ flex: 1 }}>
-          <Text style={styles.name}>{item.name}</Text>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.name}>{item.name}</Text>
 
-          <Text style={styles.role}>
-            {item.role || "Expert"} •{" "}
-            {item.experience || item.experience_years || 0} yrs
-          </Text>
+        <Text style={styles.role}>
+          {item.role || "Expert"} •{" "}
+          {item.experience || item.experience_years || 0} yrs
+        </Text>
 
-          <Text style={styles.rating}>⭐ {item.rating || "4.5"}</Text>
+        <View style={styles.ratingRow}>
+          <Ionicons name="star" size={16} color="#FACC15" />
+          <Text style={styles.rating}>{item.rating || "4.5"}</Text>
         </View>
+      </View>
+
+      <View style={styles.viewBtn}>
+        <Text style={styles.viewTxt}>View</Text>
       </View>
     </Pressable>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.header}>Find Your Expert</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Search by name..."
-        placeholderTextColor="#888"
-        value={search}
-        onChangeText={setSearch}
-      />
+      {/* CURVED BLUE HEADER */}
+      <View style={styles.topHeader}>
+        <Text style={styles.topTitle}>Find Your Expert</Text>
+        <Ionicons name="menu" size={26} color="#fff" />
+      </View>
 
-      {/* 🔥 TOP EXPERTS */}
+      {/* SEARCH */}
+      <View style={styles.searchBox}>
+        <Ionicons name="search" size={18} color="#777" />
+        <TextInput
+          placeholder="Search expert..."
+          value={search}
+          onChangeText={setSearch}
+          style={{ marginLeft: 8, flex: 1 }}
+        />
+      </View>
+
+      {/* NAV BUTTONS */}
       <Pressable
         style={styles.recommendedBtn}
         onPress={() => router.push("/expert/recommended")}
       >
-        <Text style={styles.recommendedText}>🔥 View Top Experts</Text>
+        <Text style={styles.recommendedText}> View Top Experts</Text>
       </Pressable>
 
-      {/* 🟢 ONLINE EXPERTS (NEW) */}
       <Pressable
         style={[styles.recommendedBtn, { backgroundColor: "#16A34A" }]}
         onPress={() => router.push("/expert/online")}
@@ -132,7 +129,7 @@ function Home() {
       </Pressable>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <ActivityIndicator size="large" color="#2563EB" />
       ) : (
         <FlatList
           data={filteredExperts}
@@ -141,64 +138,135 @@ function Home() {
           }
           showsVerticalScrollIndicator={false}
           renderItem={renderExpert}
-          ListEmptyComponent={
-            <Text style={{ textAlign: "center", marginTop: 40 }}>
-              No experts found from database
-            </Text>
-          }
+          contentContainerStyle={{ paddingBottom: 30 }}
         />
       )}
     </SafeAreaView>
   );
 }
 
-
-// ===== ROOT INDEX =====
-
-// ✅ If you WANT welcome first → keep this
 export default function Index() {
   return <Redirect href="/welcome" />;
 }
 
-// ❗ IF you want Home instead, replace above with:
-// export default Home;
-
-
-
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16, backgroundColor: "#F3F4F6" },
-  header: { fontSize: 28, fontWeight: "bold", marginBottom: 10 },
-  input: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: "#FFFFFF",
-    fontSize: 16,
-    color: "#000",
-  },
-  recommendedBtn: {
-    backgroundColor: "#2563EB",
-    padding: 14,
-    borderRadius: 16,
-    alignItems: "center",
-    marginBottom: 12,
-    elevation: 3,
-  },
-  recommendedText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-  card: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 18,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    marginBottom: 15,
-    elevation: 4,
-  },
-  cardRow: { flexDirection: "row", alignItems: "center", flex: 1 },
-  avatar: { width: 60, height: 60, borderRadius: 30, marginRight: 15 },
-  name: { fontSize: 18, fontWeight: "bold" },
-  role: { color: "#6B7280", marginTop: 4 },
-  rating: { marginTop: 6, fontWeight: "600" },
+
+container:{
+flex:1,
+backgroundColor:"#F3F4F6",
+},
+
+/* HEADER */
+topHeader:{
+flexDirection:"row",
+justifyContent:"space-between",
+alignItems:"center",
+backgroundColor:"#3B5BDB",
+padding:18,
+borderBottomLeftRadius:24,
+borderBottomRightRadius:24,
+shadowColor:"#000",
+shadowOffset:{ width:0, height:3 },
+shadowOpacity:0.15,
+shadowRadius:6,
+elevation:6,
+},
+
+topTitle:{
+color:"#fff",
+fontSize:22,
+fontWeight:"bold"
+},
+
+/* SEARCH */
+searchBox:{
+flexDirection:"row",
+alignItems:"center",
+backgroundColor:"#fff",
+marginHorizontal:16,
+marginTop:14,
+marginBottom:10,
+paddingHorizontal:16,
+height:52,
+borderRadius:18,
+elevation:3,
+shadowColor:"#000",
+shadowOffset:{ width:0, height:2 },
+shadowOpacity:0.06,
+shadowRadius:5,
+},
+
+/* BUTTONS */
+recommendedBtn:{
+backgroundColor:"#2563EB",
+padding:14,
+borderRadius:16,
+alignItems:"center",
+marginHorizontal:16,
+marginBottom:10,
+elevation:3,
+},
+
+recommendedText:{
+color:"#fff",
+fontWeight:"bold",
+fontSize:16
+},
+
+/* CARD */
+card:{
+flexDirection:"row",
+alignItems:"center",
+backgroundColor:"#fff",
+marginHorizontal:16,
+marginBottom:14,
+padding:16,
+borderRadius:18,
+elevation:3,
+shadowColor:"#000",
+shadowOffset:{ width:0, height:2 },
+shadowOpacity:0.08,
+shadowRadius:6,
+},
+
+avatar:{
+width:58,
+height:58,
+borderRadius:29,
+marginRight:12
+},
+
+name:{
+fontSize:18,
+fontWeight:"bold"
+},
+
+role:{
+color:"#6B7280",
+marginTop:3
+},
+
+ratingRow:{
+flexDirection:"row",
+alignItems:"center",
+marginTop:6
+},
+
+rating:{
+marginLeft:5,
+fontWeight:"600"
+},
+
+viewBtn:{
+backgroundColor:"#2563EB",
+paddingHorizontal:18,
+paddingVertical:9,
+borderRadius:12,
+},
+
+viewTxt:{
+color:"#fff",
+fontWeight:"600"
+}
+
 });
