@@ -181,6 +181,34 @@ exports.getExpertById = async (req, res) => {
   }
 };
 
+// DELETE expert by ID
+exports.deleteExpert = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deleted = await Expert.destroy({
+      where: { id }
+    });
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Expert not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Expert deleted successfully"
+    });
+  } catch (error) {
+    console.error("Delete Expert Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error while deleting expert"
+    });
+  }
+};
 
 
 // exports.getExpertById = async (req, res) => {

@@ -2,8 +2,8 @@ import axios from "axios";
 
 // ✅ CHANGE ONLY THIS IF YOUR PC IP CHANGES
 const API = axios.create({
-  baseURL: "http:/172.20.10.9:3000/api", // <-- keep YOUR PC IP here
-  timeout: 10000, // prevent hanging requests
+  baseURL: "http://192.168.1.13:3000/api", // ✅ FIXED (two slashes)
+  timeout: 10000,
 });
 
 // ✅ OPTIONAL: helpful logging for debugging
