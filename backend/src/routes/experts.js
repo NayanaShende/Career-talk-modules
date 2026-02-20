@@ -3,15 +3,13 @@ const router = express.Router();
 
 const expertController = require("../controllers/expert.controller");
 
-// GET
+// GET ALL
 router.get("/", expertController.getAllExperts);
 
-// GET /api/experts/recommended
+// GET RECOMMENDED
 router.get("/recommended", expertController.getRecommendedExperts);
 
-router.get("/recommended", expertController.getRecommendedExperts);
-
+// GET ONLINE EXPERTS
 router.get("/online", expertController.getOnlineExperts);
-
 
 module.exports = router;
