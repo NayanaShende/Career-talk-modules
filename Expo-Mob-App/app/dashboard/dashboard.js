@@ -70,8 +70,10 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 80 }}>
-
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 80 }}
+      >
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.avatar}>
@@ -91,7 +93,9 @@ export default function Dashboard() {
           onPress={() => router.push("/expert/search")}
         >
           <Ionicons name="search" size={18} color="#777" />
-          <Text style={{ marginLeft: 8, color: "#888" }}>Search experts...</Text>
+          <Text style={{ marginLeft: 8, color: "#888" }}>
+            Search experts...
+          </Text>
         </Pressable>
 
         {/* CATEGORY */}
@@ -110,7 +114,10 @@ export default function Dashboard() {
             </Text>
             <Text>Ask Expert</Text>
           </View>
-          <Image source={require("../../assets/banner.png")} style={styles.bannerImage} />
+          <Image
+            source={require("../../assets/banner.png")}
+            style={styles.bannerImage}
+          />
         </View>
 
         {/* PROMO */}
@@ -120,13 +127,19 @@ export default function Dashboard() {
             <Text style={styles.bannertitle}>Chat With Expert</Text>
             <Text style={styles.bannertitle}>@INR 5/min</Text>
           </View>
-          <Image source={require("../../assets/new.png")} style={styles.bannerImage} />
+          <Image
+            source={require("../../assets/new.png")}
+            style={styles.bannerImage}
+          />
         </View>
 
         {/* TOP EXPERTS */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Top Experts</Text>
-          <Text style={styles.viewAll} onPress={() => router.push("/expert/recommended")}>
+          <Text
+            style={styles.viewAll}
+            onPress={() => router.push("/expert/recommended")}
+          >
             View All
           </Text>
         </View>
@@ -143,7 +156,8 @@ export default function Dashboard() {
               >
                 <Image
                   source={{
-                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name}`,
+                    uri:
+                      e.image || `https://ui-avatars.com/api/?name=${e.name}`,
                   }}
                   style={styles.topExpertImage}
                 />
@@ -173,7 +187,6 @@ export default function Dashboard() {
             ))}
           </ScrollView>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -201,7 +214,6 @@ const LiveExpert = ({ name, title, image, onPress }) => (
       <Text style={styles.liveTitle}>{title}</Text>
     </View>
   </Pressable>
-  
 );
 
 /* STYLES */
@@ -209,40 +221,111 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F4F5F7" },
 
   header: { flexDirection: "row", alignItems: "center", padding: 15 },
-  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#7C3AED", justifyContent: "center", alignItems: "center" },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#7C3AED",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   headerText: { marginLeft: 10, fontSize: 18, fontWeight: "bold" },
-  walletBtn: { marginLeft: "auto", borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
+  walletBtn: {
+    marginLeft: "auto",
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
   walletText: { fontWeight: "600" },
 
-  searchBox: { backgroundColor: "#fff", margin: 15, borderRadius: 10, padding: 12, flexDirection: "row" },
+  searchBox: {
+    backgroundColor: "#fff",
+    margin: 15,
+    borderRadius: 10,
+    padding: 12,
+    flexDirection: "row",
+  },
 
-  categoryRow: { flexDirection: "row", justifyContent: "space-around", marginTop: 20 },
+  categoryRow: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 20,
+  },
   categoryItem: { alignItems: "center" },
-  categoryIcon: { fontSize: 28, backgroundColor: "#BDE8F5", padding: 16, borderRadius: 40 },
+  categoryIcon: {
+    fontSize: 28,
+    backgroundColor: "#BDE8F5",
+    padding: 16,
+    borderRadius: 40,
+  },
   categoryText: { marginTop: 6 },
 
-  banner: { flexDirection: "row", backgroundColor: "#FFF7CC", margin: 15, padding: 15, borderRadius: 14 },
-  new: { flexDirection: "row", backgroundColor: "#111", margin: 15, padding: 15, borderRadius: 14 },
+  banner: {
+    flexDirection: "row",
+    backgroundColor: "#FFF7CC",
+    margin: 15,
+    padding: 15,
+    borderRadius: 14,
+  },
+  new: {
+    flexDirection: "row",
+    backgroundColor: "#111",
+    margin: 15,
+    padding: 15,
+    borderRadius: 14,
+  },
   bannertitle: { color: "#fff", fontWeight: "bold" },
 
   bannerTitle: { fontWeight: "bold", fontSize: 16 },
   bannerImage: { width: 160, height: 120 },
 
-  sectionHeader: { flexDirection: "row", justifyContent: "space-between", marginHorizontal: 15, marginTop: 20 },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginHorizontal: 15,
+    marginTop: 20,
+  },
   sectionTitle: { fontWeight: "bold", fontSize: 16 },
   viewAll: { color: "#7C3AED", fontWeight: "600" },
 
   topExpertCard: { alignItems: "center", marginLeft: 15 },
-  topExpertImage: { width: 70, height: 70, borderRadius: 35, borderWidth: 3, borderColor: "#6A5AE0" },
+  topExpertImage: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    borderWidth: 3,
+    borderColor: "#6A5AE0",
+  },
   topExpertName: { marginTop: 6, fontSize: 12 },
 
-  liveCard: { width: 130, height: 170, borderRadius: 18, marginLeft: 15, overflow: "hidden" },
+  liveCard: {
+    width: 130,
+    height: 170,
+    borderRadius: 18,
+    marginLeft: 15,
+    overflow: "hidden",
+  },
   liveImage: { width: "100%", height: "100%" },
 
-  liveBadge: { position: "absolute", top: 8, left: 8, backgroundColor: "red", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  liveBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    backgroundColor: "red",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
   liveText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
 
-  liveOverlay: { position: "absolute", bottom: 0, width: "100%", padding: 8, backgroundColor: "rgba(0,0,0,0.5)" },
+  liveOverlay: {
+    position: "absolute",
+    bottom: 0,
+    width: "100%",
+    padding: 8,
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
   liveName: { color: "#fff", fontWeight: "bold" },
   liveTitle: { color: "#ddd", fontSize: 11 },
 });

@@ -19,6 +19,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import API from "../services/api";
 import { Image } from "react-native";
+// import CountryPicker from "react-native-country-picker-modal";
 
 
 
@@ -28,6 +29,9 @@ export default function LoginOtpScreen() {
   const slideAnim = useRef(new Animated.Value(120)).current; // start lower
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.85)).current; // pop effect
+  const [countryCode, setCountryCode] = useState("IN");
+  const [callingCode, setCallingCode] = useState("91");
+  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
 
   const [mobile, setMobile] = useState("");
   const [otp, setOtp] = useState("");
@@ -37,21 +41,23 @@ export default function LoginOtpScreen() {
   const [error, setError] = useState("");
 
   // SEND OTP
+ 
   const handlePhoneChange = (number) => {
     let cleaned = number.replace(/\D/g, "");
 
-    if (cleaned.startsWith("91")) {
-      cleaned = cleaned.slice(2);
-    }
+    // remove country code if typed
+    if (cleaned.startsWith("91")) cleaned = cleaned.slice(2);
 
+    // limit to 10 digits ONLY
     cleaned = cleaned.slice(0, 10);
 
     setMobile(cleaned);
 
+    // validation messages
     if (cleaned.length === 0) {
       setError("Mobile number is required");
     } else if (cleaned.length < 10) {
-      setError("Mobile number must be 10 digits");
+      setError("Enter a valid 10 digit number");
     } else {
       setError("");
     }
@@ -66,28 +72,23 @@ export default function LoginOtpScreen() {
   };
 
   const sendOtp = async () => {
-  Keyboard.dismiss();
+    Keyboard.dismiss();
 
-const number = mobile;
+    if (mobile.length !== 10) {
+      setError("Enter a valid 10 digit number");
+      return;
+    }
 
-
-  if (number.length !== 10) {
-    setError("Mobile number must be 10 digits");
-    return;
-  }
-
-  
-
-    setError("");
     setLoading(true);
+    setError("");
 
     try {
-      const res = await API.post("/auth/send-otp", { mobile: number });
+      const res = await API.post("/auth/send-otp", {
+        mobile: `+${callingCode}${mobile}`,
+      });
 
-      setMobile(number);
       setOtpSent(true);
 
-      // animate OTP popup
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -100,19 +101,12 @@ const number = mobile;
           useNativeDriver: true,
         }),
       ]).start();
-
-      // show OTP (testing only)
-      if (res.data?.otp) {
-        setServerOtp(res.data.otp);
-        setOtp(res.data.otp);
-      }
-    } catch {
+    } catch (e) {
       setError("Failed to send OTP");
     }
 
     setLoading(false);
   };
-
   // VERIFY OTP
   const verifyOtp = async () => {
     if (otp.length !== 6) {
@@ -123,9 +117,12 @@ const number = mobile;
     setLoading(true);
 
     try {
-      const res = await API.post("/auth/verify-otp", { mobile, otp });
+      const res = await API.post("/auth/verify-otp", {
+        mobile,
+        otp,
+      });
 
-      if (res.data?.success || res.status === 200) {
+      if (res.status === 200) {
         router.replace("/home/roleSelection");
       } else {
         setError("Invalid OTP");
@@ -136,6 +133,7 @@ const number = mobile;
 
     setLoading(false);
   };
+
 
 return (
   <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f6fb" }}>
@@ -160,21 +158,29 @@ return (
           <View style={styles.card}>
             <Text style={styles.welcome}>Welcome Back</Text>
             <Text style={styles.subtitle}>Login to your account</Text>
-
             {/* PHONE INPUT */}
-            <PhoneInput
-              ref={phoneInput}
-              initialCountry="in"
-              value={mobile}
-              onChangePhoneNumber={handlePhoneChange}
-              textProps={{
-                placeholder: "Enter mobile number",
-                keyboardType: "number-pad",
-              }}
-              style={styles.phoneInput}
-              textStyle={styles.phoneText}
-            />
+            <View style={styles.phoneContainer}>
+              {/* <CountryPicker
+                countryCode={countryCode}
+                withFlag
+                withCallingCode
+                withFilter
+                withCallingCodeButton
+                onSelect={(country) => {
+                  setCountryCode(country.cca2);
+                  setCallingCode(country.callingCode[0]);
+                }}
+              /> */}
 
+              <TextInput
+                style={styles.mobileInput}
+                keyboardType="number-pad"
+                placeholder="Enter mobile number"
+                value={mobile}
+                onChangeText={handlePhoneChange}
+                maxLength={10}
+              />
+            </View>
             {error !== "" && <Text style={styles.errorText}>{error}</Text>}
 
             {!otpSent && (
@@ -366,4 +372,36 @@ const styles = StyleSheet.create({
     color: "red",
     marginTop: 6,
   },
+  phoneContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    height: 55,
+    backgroundColor: "#fff",
+  },
+
+  mobileInput: {
+    flex: 1,
+    fontSize: 16,
+    marginLeft: 8,
+  },
+
+  flag: {
+    width: 24,
+    height: 16,
+    borderRadius: 2,
+  },
+
+  code: {
+    fontSize: 16,
+    marginLeft: 8,
+    marginRight: 8,
+    fontWeight: "600",
+    color: "#111",
+  },
+
+  
 });
