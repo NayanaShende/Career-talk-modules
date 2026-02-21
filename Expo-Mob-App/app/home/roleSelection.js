@@ -4,15 +4,13 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
+  ImageBackground,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-
-import userIcon from "../../assets/user.png";
-import expertIcon from "../../assets/expert.png";
 
 export default function RoleSelectionScreen() {
   const [loading, setLoading] = useState(false);
@@ -23,10 +21,8 @@ export default function RoleSelectionScreen() {
 
       if (role === "expert") {
         router.push("/home/expertProfile");
-      } else if (role === "jobseeker") {
-        router.push("/home/jobSeekerProfile");
       } else {
-        Alert.alert("Unknown role");
+        router.push("/home/jobSeekerProfile");
       }
     } catch (err) {
       Alert.alert("Error selecting role");
@@ -37,45 +33,74 @@ export default function RoleSelectionScreen() {
 
   return (
     <LinearGradient
-          colors={["#0c69ff", "#fffef7", "#5b9cff"]}
-          style={{ flex: 1 }}
-        >
-      {/* Background Wave */}
-      
-
+      colors={["#2563eb", "#4f8cff", "#a5c8ff"]}
+      style={{ flex: 1 }}
+    >
       <SafeAreaView style={styles.container}>
-        <View style={styles.card}>
-          <Text style={styles.title}>Select Your Role</Text>
-          <Text style={styles.subtitle}>
-            Choose how you want to use the app
-          </Text>
+        <Text style={styles.header}>Choose Your Role</Text>
+        <Text style={styles.subHeader}>
+          Select how you want to use CareerTalk
+        </Text>
 
-          <View style={styles.options}>
-            {/* Jobseeker */}
-            <TouchableOpacity
-              style={styles.option}
-              onPress={() => handleRoleSelect("jobseeker")}
-              disabled={loading}
+        {/* JOBSEEKER CARD */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.card}
+          onPress={() => handleRoleSelect("jobseeker")}
+        >
+          <ImageBackground
+            source={{
+              uri: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
+            }}
+            style={styles.image}
+            imageStyle={{ borderRadius: 22 }}
+          >
+            <LinearGradient
+              colors={["rgba(0,0,0,0.25)", "rgba(0,0,0,0.7)"]}
+              style={styles.overlay}
             >
-              <View style={styles.circle}>
-                <Image source={userIcon} style={styles.icon} />
-              </View>
-              <Text style={styles.optionText}>Jobseeker</Text>
-            </TouchableOpacity>
+              <Text style={styles.roleTitle}>Jobseeker</Text>
+              <Text style={styles.roleDesc}>
+                Find mentors, get guidance, and grow your career faster.
+              </Text>
 
-            {/* Expert */}
-            <TouchableOpacity
-              style={styles.option}
-              onPress={() => handleRoleSelect("expert")}
-              disabled={loading}
-            >
-              <View style={styles.circle}>
-                <Image source={expertIcon} style={styles.icon} />
+              <View style={styles.buttonBlue}>
+                <Text style={styles.btnText}>Select Role</Text>
               </View>
-              <Text style={styles.optionText}>Expert</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+            </LinearGradient>
+          </ImageBackground>
+        </TouchableOpacity>
+
+        {/* EXPERT CARD */}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          style={styles.card}
+          onPress={() => handleRoleSelect("expert")}
+        >
+          <ImageBackground
+            source={{
+              uri: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=800&q=60",
+            }}
+            style={styles.image}
+            imageStyle={{ borderRadius: 22 }}
+          >
+            <LinearGradient
+              colors={["rgba(0,0,0,0.25)", "rgba(0,0,0,0.7)"]}
+              style={styles.overlay}
+            >
+              <Text style={styles.roleTitle}>Expert</Text>
+              <Text style={styles.roleDesc}>
+                Share knowledge, mentor others, and build your reputation.
+              </Text>
+
+              <View style={styles.buttonGreen}>
+                <Text style={styles.btnText}>Select Role</Text>
+              </View>
+            </LinearGradient>
+          </ImageBackground>
+        </TouchableOpacity>
+
+        {loading && <ActivityIndicator size="large" color="#fff" />}
       </SafeAreaView>
     </LinearGradient>
   );
@@ -84,72 +109,73 @@ export default function RoleSelectionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingHorizontal: 18,
     justifyContent: "center",
-    alignItems: "center",
   },
 
-  bgImage: {
-    position: "absolute",
-    width: "120%",
-    height: "100%",
-  },
-
-  card: {
-    width: "90%",
-    backgroundColor: "#ffffffee",
-    borderRadius: 25,
-    padding: 25,
-    alignItems: "center",
-
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-
-  title: {
-    fontSize: 26,
-    fontWeight: "bold",
-    color: "#1e2a78",
-  },
-
-  subtitle: {
-    fontSize: 14,
-    color: "#6c757d",
-    marginBottom: 25,
-    marginTop: 5,
+  header: {
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#fff",
     textAlign: "center",
   },
 
-  options: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
+  subHeader: {
+    fontSize: 15,
+    color: "#eaf1ff",
+    textAlign: "center",
+    marginBottom: 30,
+    marginTop: 6,
   },
 
-  option: {
+  card: {
+    height:200,
+    marginBottom: 22,
+    borderRadius: 22,
+    overflow: "hidden",
+    elevation: 8,
+  },
+
+  image: {
+    height: 200,
+    justifyContent: "flex-end",
+  },
+
+  overlay: {
+    padding: 18,
+  },
+
+  roleTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "700",
+  },
+
+  roleDesc: {
+    color: "#e5e7eb",
+    marginTop: 4,
+    marginBottom: 12,
+    fontSize: 13,
+  },
+
+  buttonBlue: {
+    backgroundColor: "#3b82f6",
+    paddingVertical: 8,
+    borderRadius: 20,
     alignItems: "center",
-    flex: 1,
+    width: 120,
   },
 
-  circle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#eaf2ff",
-    justifyContent: "center",
+  buttonGreen: {
+    backgroundColor: "#22c55e",
+    paddingVertical: 8,
+    borderRadius: 20,
     alignItems: "center",
-    marginBottom: 10,
+    width: 120,
   },
 
-  icon: {
-    width: 55,
-    height: 55,
-  },
-
-  optionText: {
-    fontSize: 16,
+  btnText: {
+    color: "#fff",
     fontWeight: "600",
-    color: "#2f5cff",
   },
 });

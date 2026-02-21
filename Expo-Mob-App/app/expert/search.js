@@ -10,7 +10,9 @@ import {
 } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../services/api";
+
 
 export default function Home() {
   const router = useRouter();
@@ -40,15 +42,24 @@ export default function Home() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.heading}>Find Your Expert</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="Search by name..."
-        placeholderTextColor="#888"
-        value={search}
-        onChangeText={setSearch}
-      />
+      {/* 🔥 NEW CURVED HEADER */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Find Your Experts</Text>
+        <Ionicons name="menu" size={26} color="#fff" />
+      </View>
+
+      {/* 🔥 SEARCH WITH ICON */}
+      <View style={styles.searchBox}>
+        <Ionicons name="search" size={18} color="#777" />
+        <TextInput
+          style={{ marginLeft: 8, flex: 1 }}
+          placeholder="Search expert..."
+          placeholderTextColor="#888"
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#3B82F6" />
@@ -59,6 +70,7 @@ export default function Home() {
             item?.id ? item.id.toString() : index.toString()
           }
           showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 30 }}
           renderItem={({ item }) => (
             <Pressable
               style={styles.card}
@@ -68,6 +80,9 @@ export default function Home() {
                 <Text style={styles.avatarText}>
                   {item?.name?.charAt(0).toUpperCase()}
                 </Text>
+
+                {/* ONLINE DOT */}
+                <View style={styles.onlineDot} />
               </View>
 
               <View style={{ flex: 1 }}>
@@ -77,7 +92,15 @@ export default function Home() {
                   Expert • {item?.experience || 5} yrs
                 </Text>
 
-                <Text style={styles.rating}>⭐ {item?.rating || 4.5}</Text>
+                <View style={styles.ratingRow}>
+                  <Ionicons name="star" size={16} color="#FACC15" />
+                  <Text style={styles.rating}>{item?.rating || 4.5}</Text>
+                </View>
+              </View>
+
+              {/* 🔥 VIEW BUTTON */}
+              <View style={styles.viewBtn}>
+                <Text style={styles.viewText}>View</Text>
               </View>
             </Pressable>
           )}
@@ -90,55 +113,112 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
-    padding: 16,
+    backgroundColor: "#EEF2F7",
   },
-  heading: {
-    fontSize: 32,
+
+  /* HEADER */
+  header: {
+    backgroundColor: "#3B5BDB",
+    paddingTop: 20,
+    paddingBottom: 26,
+    paddingHorizontal: 18,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    elevation: 6,
+  },
+  headerTitle: {
+    color: "#fff",
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 14,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 20,
+
+  /* SEARCH */
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#fff",
-    fontSize: 16,
+    marginHorizontal: 16,
+    marginTop: -18,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+    height: 54,
+    borderRadius: 22,
+    elevation: 4,
   },
+
+  /* CARD */
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#E5E7EB",
-    padding: 18,
-    borderRadius: 22,
-    marginBottom: 15,
+    backgroundColor: "#fff",
+    marginHorizontal: 16,
+    marginBottom: 14,
+    padding: 16,
+    borderRadius: 20,
+    elevation: 3,
   },
+
   avatar: {
-    width: 55,
-    height: 55,
-    borderRadius: 27,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: "#D1D5DB",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 15,
+    marginRight: 14,
   },
+
   avatarText: {
     fontSize: 20,
     fontWeight: "bold",
     color: "#555",
   },
+
+  onlineDot: {
+    position: "absolute",
+    bottom: 3,
+    right: 3,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#22C55E",
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+
   name: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "bold",
   },
+
   role: {
     color: "#6B7280",
-    marginTop: 4,
+    marginTop: 3,
   },
-  rating: {
+
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 6,
+  },
+
+  rating: {
+    marginLeft: 6,
+    fontWeight: "600",
+  },
+
+  viewBtn: {
+    backgroundColor: "#2F6BFF",
+    paddingHorizontal: 18,
+    paddingVertical: 9,
+    borderRadius: 12,
+  },
+
+  viewText: {
+    color: "#fff",
     fontWeight: "600",
   },
 });

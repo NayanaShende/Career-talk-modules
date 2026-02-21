@@ -117,13 +117,15 @@ exports.getRecommendedExperts = async (req, res) => {
 
 
 // ================= ONLINE TOP EXPERTS (NEW) =================
+
 exports.getOnlineExperts = async (req, res) => {
   try {
-
     const limit = parseInt(req.query.limit) || 10;
 
     const experts = await Expert.findAll({
-      where: { is_online: true },   // only online experts
+      where: {
+        is_online: true   // ✅ ONLY THIS IS NEEDED
+      },
 
       include: { model: ExpertSkill, as: "skills" },
 
@@ -138,7 +140,7 @@ exports.getOnlineExperts = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      data: experts
+      data: experts,
     });
 
   } catch (err) {
@@ -146,7 +148,7 @@ exports.getOnlineExperts = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: err.message
+      message: err.message,
     });
   }
 };
@@ -211,32 +213,3 @@ exports.deleteExpert = async (req, res) => {
 };
 
 
-// exports.getExpertById = async (req, res) => {
-//   try {
-//     const { id } = req.params;
-
-//     const expert = await Expert.findOne({
-//       where: { id },
-//       include: { model: ExpertSkill, as: "skills" }
-//     });
-
-//     if (!expert) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Expert not found"
-//       });
-//     }
-
-//     return res.status(200).json({
-//       success: true,
-//       data: expert
-//     });
-
-//   } catch (err) {
-//     console.error(err);
-//     return res.status(500).json({
-//       success: false,
-//       message: err.message
-//     });
-//   }
-// };

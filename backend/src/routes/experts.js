@@ -1,26 +1,34 @@
 const express = require("express");
 const router = express.Router();
+const controller = require("../controllers/expert.controller");
 
-const expertController = require("../controllers/expert.controller");
 
-// GET
-router.get("/", expertController.getAllExperts);
+// ================= SPECIFIC ROUTES FIRST =================
 
-// GET /api/experts/recommended
-router.get("/recommended", expertController.getRecommendedExperts);
+// online experts
+router.get("/online", controller.getOnlineExperts);
 
-// ✅ ADD THIS LINE (IMPORTANT)
-router.get("/:id", expertController.getExpertById);
+// recommended experts
+router.get("/recommended", controller.getRecommendedExperts);
 
-router.post("/", expertController.createExpert);
+// all experts
+router.get("/", controller.getAllExperts);
 
-router.put("/:id", expertController.updateExpert);
+// create
+router.post("/", controller.createExpert);
 
-router.post("/:expert/skills", expertController.addSkills);
-router.get("/recommended", expertController.getRecommendedExperts);
+// add skills
+router.post("/:expertId/skills", controller.addSkills);
 
-router.get("/online", expertController.getOnlineExperts);
+// update
+router.put("/:id", controller.updateExpert);
 
-router.delete("/:id", expertController.deleteExpert);
+// delete
+router.delete("/:id", controller.deleteExpert);
+
+
+// ================= KEEP THIS LAST ALWAYS =================
+router.get("/:id", controller.getExpertById);
+
 
 module.exports = router;
