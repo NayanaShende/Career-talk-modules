@@ -8,11 +8,15 @@ import {
   Pressable,
   Image,
   ActivityIndicator,
+  TouchableOpacity,
+  FlatList,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 import { getAllExperts } from "../../../services/expertService";
+
+const SKILLS = ["All", "React", "Python", "DevOps", "Angular", "Java Spring Boot", "UI/UX Design", "Data Analysis"];
 
 export default function Dashboard() {
   const [experts, setExperts] = useState([]);
@@ -23,6 +27,11 @@ export default function Dashboard() {
   const [topExperts, setTopExperts] = useState([]);
   const [loadingTop, setLoadingTop] = useState(true);
 
+  // ✅ NEW: Skill filter state
+  const [activeSkill, setActiveSkill] = useState("All");
+  const [filteredExperts, setFilteredExperts] = useState([]);
+  const [loadingFiltered, setLoadingFiltered] = useState(false);
+
   useEffect(() => {
     fetchExperts();
     fetchOnlineExperts();
@@ -31,6 +40,11 @@ export default function Dashboard() {
     const interval = setInterval(fetchOnlineExperts, 300000);
     return () => clearInterval(interval);
   }, []);
+
+  // ✅ NEW: Fetch filtered experts when skill changes
+  useEffect(() => {
+    fetchFilteredExperts(activeSkill);
+  }, [activeSkill]);
 
   const fetchExperts = async () => {
     try {
@@ -67,6 +81,21 @@ export default function Dashboard() {
     }
   };
 
+  // ✅ NEW: Fetch experts by skill
+  const fetchFilteredExperts = async (skill) => {
+    try {
+      setLoadingFiltered(true);
+      const url = skill === "All" ? "/experts" : `/experts?skill=${skill}`;
+      const res = await axiosInstance.get(url);
+      const list = res?.data?.data || [];
+      setFilteredExperts(list);
+    } catch {
+      setFilteredExperts([]);
+    } finally {
+      setLoadingFiltered(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -76,9 +105,9 @@ export default function Dashboard() {
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.avatar}>
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>S</Text>
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>C</Text>
           </View>
-          <Text style={styles.headerText}>Hi Sakshi</Text>
+          <Text style={styles.headerText}>Career-Talk</Text>
           <Pressable style={styles.walletBtn}>
             <Text style={styles.walletText}>Add Cash +</Text>
           </Pressable>
@@ -128,6 +157,64 @@ export default function Dashboard() {
             style={styles.bannerImage}
           />
         </View>
+
+        {/* ✅ NEW: SKILL FILTER SECTION */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Browse by Skill</Text>
+        </View>
+
+        {/* Skill Filter Pills */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ paddingLeft: 15, marginBottom: 12 }}>
+          {SKILLS.map((skill) => (
+            <TouchableOpacity
+              key={skill}
+              onPress={() => setActiveSkill(skill)}
+              style={[
+                styles.skillPill,
+                activeSkill === skill && styles.skillPillActive,
+              ]}>
+              <Text
+                style={[
+                  styles.skillPillText,
+                  activeSkill === skill && styles.skillPillTextActive,
+                ]}>
+                {skill}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        {/* Filtered Expert Cards */}
+        {loadingFiltered ? (
+          <ActivityIndicator style={{ marginTop: 10 }} color="#7C3AED" />
+        ) : filteredExperts.length === 0 ? (
+          <Text style={styles.noExpertText}>No experts found for "{activeSkill}"</Text>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingLeft: 15 }}>
+            {filteredExperts.map((e) => (
+              <Pressable
+                key={e.id}
+                style={styles.filteredCard}
+                onPress={() => router.push(`/expert/${e.id}`)}>
+                <Image
+                  source={{ uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}&background=7C3AED&color=fff` }}
+                  style={styles.filteredImage}
+                />
+                <View style={styles.filteredInfo}>
+                  <Text style={styles.filteredName} numberOfLines={1}>{e.name || ""}</Text>
+                  <Text style={styles.filteredHeadline} numberOfLines={1}>{e.headline || ""}</Text>
+                  <View style={styles.filteredMeta}>
+                    <Text style={styles.filteredSkillTag}>{e.skill || activeSkill}</Text>
+                    <Text style={styles.filteredRating}>⭐ {e.rating || "N/A"}</Text>
+                  </View>
+                </View>
+              </Pressable>
+            ))}
+          </ScrollView>
+        )}
 
         {/* TOP EXPERTS */}
         <View style={styles.sectionHeader}>
@@ -320,4 +407,83 @@ const styles = StyleSheet.create({
   },
   liveName: { color: "#fff", fontWeight: "bold" },
   liveTitle: { color: "#ddd", fontSize: 11 },
+
+  // ✅ NEW: Skill Filter Styles
+  skillPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+    borderWidth: 1,
+    borderColor: "#ddd",
+    marginRight: 8,
+  },
+  skillPillActive: {
+    backgroundColor: "#7C3AED",
+    borderColor: "#7C3AED",
+  },
+  skillPillText: {
+    fontSize: 13,
+    color: "#555",
+    fontWeight: "500",
+  },
+  skillPillTextActive: {
+    color: "#fff",
+    fontWeight: "700",
+  },
+  filteredCard: {
+    width: 160,
+    backgroundColor: "#fff",
+    borderRadius: 14,
+    marginRight: 12,
+    overflow: "hidden",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  filteredImage: {
+    width: "100%",
+    height: 100,
+  },
+  filteredInfo: {
+    padding: 10,
+  },
+  filteredName: {
+    fontWeight: "bold",
+    fontSize: 13,
+    color: "#111",
+  },
+  filteredHeadline: {
+    fontSize: 11,
+    color: "#666",
+    marginTop: 2,
+  },
+  filteredMeta: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 6,
+  },
+  filteredSkillTag: {
+    fontSize: 10,
+    backgroundColor: "#EDE9FF",
+    color: "#7C3AED",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    fontWeight: "600",
+  },
+  filteredRating: {
+    fontSize: 11,
+    color: "#444",
+    fontWeight: "600",
+  },
+  noExpertText: {
+    textAlign: "center",
+    color: "#999",
+    marginTop: 10,
+    marginBottom: 10,
+    fontSize: 13,
+  },
 });

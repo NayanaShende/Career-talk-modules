@@ -5,7 +5,15 @@ const expertService = require("../services/expert.service");
 // ================= GET ALL =================
 exports.getAllExperts = async (req, res) => {
   try {
-    const experts = await expertService.getAllExperts();
+    const { skill } = req.query;
+
+    // ✅ If skill query param exists, filter by skill
+    let experts;
+    if (skill && skill !== "All") {
+      experts = await expertService.getExpertsBySkill(skill);
+    } else {
+      experts = await expertService.getAllExperts();
+    }
 
     return res.status(200).json({
       success: true,
@@ -106,6 +114,28 @@ exports.getOnlineExperts = async (req, res) => {
     });
   } catch (err) {
     console.error("getOnlineExperts error:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ================= ✅ GET EXPERTS BY SKILL =================
+exports.getExpertsBySkill = async (req, res) => {
+  try {
+    const { skill } = req.query;
+
+    if (!skill || skill === "All") {
+      const experts = await expertService.getAllExperts();
+      return res.status(200).json({ success: true, data: experts });
+    }
+
+    const experts = await expertService.getExpertsBySkill(skill);
+
+    return res.status(200).json({
+      success: true,
+      data: experts,
+    });
+  } catch (err) {
+    console.error("getExpertsBySkill error:", err);
     return res.status(500).json({ success: false, message: err.message });
   }
 };

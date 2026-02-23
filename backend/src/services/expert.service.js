@@ -39,6 +39,11 @@ const searchExpertsByHeadline = async (skill) => {
   return await expertRepo.searchExpertsByHeadline(skill);
 };
 
+// ✅ NEW: Get experts filtered by skill column
+const getExpertsBySkill = async (skill) => {
+  return await expertRepo.findExpertsBySkill(skill);
+};
+
 const createExpertProfile = async (userId, profileData, file) => {
   const data = {
     fullName: profileData.fullName || null,
@@ -79,6 +84,7 @@ module.exports = {
   getOnlineExperts,
   searchExperts,
   searchExpertsByHeadline,
+  getExpertsBySkill, // ✅ NEW
   createExpertProfile,
   getExpertProfile,
 };

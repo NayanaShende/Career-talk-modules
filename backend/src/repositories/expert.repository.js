@@ -68,6 +68,28 @@ const searchExpertsByHeadline = async (skill) => {
   });
 };
 
+// ✅ Find experts by skill column
+const findExpertsBySkill = async (skill) => {
+  try {
+    console.log("🔍 Searching skill:", skill);
+    const result = await Expert.findAll({
+      where: {
+        skill: { [Op.iLike]: `%${skill}%` },
+      },
+      include: { model: ExpertSkill, as: "skills" },
+      order: [
+        ["rating", "DESC"],
+        ["experience", "DESC"],
+      ],
+    });
+    console.log("✅ Found:", result.length, "experts");
+    return result;
+  } catch (err) {
+    console.error("❌ findExpertsBySkill error:", err.message);
+    throw err;
+  }
+};
+
 const findExpertProfileByUserId = async (userId) => {
   return await ExpertProfile.findOne({ where: { userId } });
 };
@@ -90,6 +112,7 @@ module.exports = {
   bulkCreateSkills,
   searchExpertsBySkill,
   searchExpertsByHeadline,
+  findExpertsBySkill,
   findExpertProfileByUserId,
   createExpertProfile,
   updateExpertProfile,

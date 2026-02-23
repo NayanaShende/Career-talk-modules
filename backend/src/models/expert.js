@@ -49,10 +49,16 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
-      // ✅ ✅ NEW FIELD (ONLINE STATUS)
+      // ✅ ONLINE STATUS
       is_online: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
+      },
+
+      // ✅ NEW: Skill column added to model
+      skill: {
+        type: DataTypes.STRING,
+        allowNull: true,
       },
     },
     {
