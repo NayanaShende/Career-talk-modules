@@ -16,7 +16,16 @@ import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 import { getAllExperts } from "../../../services/expertService";
 
-const SKILLS = ["All", "React", "Python", "DevOps", "Angular", "Java Spring Boot", "UI/UX Design", "Data Analysis"];
+const SKILLS = [
+  "All",
+  "React",
+  "Python",
+  "DevOps",
+  "Angular",
+  "Java Spring Boot",
+  "UI/UX Design",
+  "Data Analysis",
+];
 
 export default function Dashboard() {
   const [experts, setExperts] = useState([]);
@@ -101,7 +110,6 @@ export default function Dashboard() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 80 }}>
-
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.avatar}>
@@ -122,14 +130,6 @@ export default function Dashboard() {
             Search experts...
           </Text>
         </Pressable>
-
-        {/* CATEGORY */}
-        <View style={styles.categoryRow}>
-          <Category title="Python" icon="🐍" />
-          <Category title="AWS" icon="🚀" />
-          <Category title="Power BI" icon="📶" />
-          <Category title="React.js" icon="🔯" />
-        </View>
 
         {/* BANNER */}
         <View style={styles.banner}>
@@ -191,24 +191,41 @@ export default function Dashboard() {
         {loadingFiltered ? (
           <ActivityIndicator style={{ marginTop: 10 }} color="#7C3AED" />
         ) : filteredExperts.length === 0 ? (
-          <Text style={styles.noExpertText}>No experts found for "{activeSkill}"</Text>
+          <Text style={styles.noExpertText}>
+            No experts found for "{activeSkill}"
+          </Text>
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingLeft: 15 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ paddingLeft: 15 }}>
             {filteredExperts.map((e) => (
               <Pressable
                 key={e.id}
                 style={styles.filteredCard}
                 onPress={() => router.push(`/expert/${e.id}`)}>
                 <Image
-                  source={{ uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}&background=7C3AED&color=fff` }}
+                  source={{
+                    uri:
+                      e.image ||
+                      `https://ui-avatars.com/api/?name=${e.name || "User"}&background=7C3AED&color=fff`,
+                  }}
                   style={styles.filteredImage}
                 />
                 <View style={styles.filteredInfo}>
-                  <Text style={styles.filteredName} numberOfLines={1}>{e.name || ""}</Text>
-                  <Text style={styles.filteredHeadline} numberOfLines={1}>{e.headline || ""}</Text>
+                  <Text style={styles.filteredName} numberOfLines={1}>
+                    {e.name || ""}
+                  </Text>
+                  <Text style={styles.filteredHeadline} numberOfLines={1}>
+                    {e.headline || ""}
+                  </Text>
                   <View style={styles.filteredMeta}>
-                    <Text style={styles.filteredSkillTag}>{e.skill || activeSkill}</Text>
-                    <Text style={styles.filteredRating}>⭐ {e.rating || "N/A"}</Text>
+                    <Text style={styles.filteredSkillTag}>
+                      {e.skill || activeSkill}
+                    </Text>
+                    <Text style={styles.filteredRating}>
+                      ⭐ {e.rating || "N/A"}
+                    </Text>
                   </View>
                 </View>
               </Pressable>
@@ -237,7 +254,9 @@ export default function Dashboard() {
                 onPress={() => router.push(`/expert/${e.id}`)}>
                 <Image
                   source={{
-                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}`,
+                    uri:
+                      e.image ||
+                      `https://ui-avatars.com/api/?name=${e.name || "User"}`,
                   }}
                   style={styles.topExpertImage}
                 />
@@ -261,13 +280,15 @@ export default function Dashboard() {
                 key={e.id}
                 name={e.name || ""}
                 title={e.role || ""}
-                image={e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}`}
+                image={
+                  e.image ||
+                  `https://ui-avatars.com/api/?name=${e.name || "User"}`
+                }
                 onPress={() => router.push(`/expert/${e.id}`)}
               />
             ))}
           </ScrollView>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );
