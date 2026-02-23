@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   SafeAreaView,
-  TextInput,
   ScrollView,
   Pressable,
   Image,
@@ -12,8 +11,8 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import axiosInstance from "../../services/api";
-import { getAllExperts } from "../../services/expertService";
+import axiosInstance from "../../../services/api";
+import { getAllExperts } from "../../../services/expertService";
 
 export default function Dashboard() {
   const [experts, setExperts] = useState([]);
@@ -72,16 +71,14 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 80 }}
-      >
+        contentContainerStyle={{ paddingBottom: 80 }}>
+
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.avatar}>
             <Text style={{ color: "#fff", fontWeight: "bold" }}>S</Text>
           </View>
-
           <Text style={styles.headerText}>Hi Sakshi</Text>
-
           <Pressable style={styles.walletBtn}>
             <Text style={styles.walletText}>Add Cash +</Text>
           </Pressable>
@@ -90,8 +87,7 @@ export default function Dashboard() {
         {/* SEARCH */}
         <Pressable
           style={styles.searchBox}
-          onPress={() => router.push("/expert/search")}
-        >
+          onPress={() => router.push("/expert/search")}>
           <Ionicons name="search" size={18} color="#777" />
           <Text style={{ marginLeft: 8, color: "#888" }}>
             Search experts...
@@ -115,7 +111,7 @@ export default function Dashboard() {
             <Text>Ask Expert</Text>
           </View>
           <Image
-            source={require("../../assets/banner.png")}
+            source={require("../../../assets/banner.png")}
             style={styles.bannerImage}
           />
         </View>
@@ -128,7 +124,7 @@ export default function Dashboard() {
             <Text style={styles.bannertitle}>@INR 5/min</Text>
           </View>
           <Image
-            source={require("../../assets/new.png")}
+            source={require("../../../assets/new.png")}
             style={styles.bannerImage}
           />
         </View>
@@ -138,8 +134,7 @@ export default function Dashboard() {
           <Text style={styles.sectionTitle}>Top Experts</Text>
           <Text
             style={styles.viewAll}
-            onPress={() => router.push("/expert/recommended")}
-          >
+            onPress={() => router.push("/expert/recommended")}>
             View All
           </Text>
         </View>
@@ -152,16 +147,14 @@ export default function Dashboard() {
               <Pressable
                 key={e.id}
                 style={styles.topExpertCard}
-                onPress={() => router.push(`/expert/${e.id}`)}
-              >
+                onPress={() => router.push(`/expert/${e.id}`)}>
                 <Image
                   source={{
-                    uri:
-                      e.image || `https://ui-avatars.com/api/?name=${e.name}`,
+                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}`,
                   }}
                   style={styles.topExpertImage}
                 />
-                <Text style={styles.topExpertName}>{e.name}</Text>
+                <Text style={styles.topExpertName}>{e.name || ""}</Text>
               </Pressable>
             ))}
           </ScrollView>
@@ -179,14 +172,15 @@ export default function Dashboard() {
             {onlineExperts.map((e) => (
               <LiveExpert
                 key={e.id}
-                name={e.name}
-                title={e.role}
-                image={e.image || `https://ui-avatars.com/api/?name=${e.name}`}
+                name={e.name || ""}
+                title={e.role || ""}
+                image={e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}`}
                 onPress={() => router.push(`/expert/${e.id}`)}
               />
             ))}
           </ScrollView>
         )}
+
       </ScrollView>
     </SafeAreaView>
   );
@@ -204,11 +198,9 @@ const Category = ({ title, icon }) => (
 const LiveExpert = ({ name, title, image, onPress }) => (
   <Pressable style={styles.liveCard} onPress={onPress}>
     <Image source={{ uri: image }} style={styles.liveImage} />
-
     <View style={styles.liveBadge}>
       <Text style={styles.liveText}>LIVE</Text>
     </View>
-
     <View style={styles.liveOverlay}>
       <Text style={styles.liveName}>{name}</Text>
       <Text style={styles.liveTitle}>{title}</Text>

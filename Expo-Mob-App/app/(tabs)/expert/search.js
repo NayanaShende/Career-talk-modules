@@ -11,8 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import axiosInstance from "../../services/api";
-
+import axiosInstance from "../../../services/api";
 
 export default function Home() {
   const router = useRouter();
@@ -74,7 +73,7 @@ export default function Home() {
           renderItem={({ item }) => (
             <Pressable
               style={styles.card}
-              onPress={() => router.push(`/expert/${item.id}`)}
+              onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
             >
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
