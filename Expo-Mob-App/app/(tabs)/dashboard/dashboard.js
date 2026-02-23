@@ -9,7 +9,6 @@ import {
   Image,
   ActivityIndicator,
   TouchableOpacity,
-  FlatList,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,14 +28,10 @@ const SKILLS = [
 
 export default function Dashboard() {
   const [experts, setExperts] = useState([]);
-
   const [onlineExperts, setOnlineExperts] = useState([]);
   const [loadingOnline, setLoadingOnline] = useState(true);
-
   const [topExperts, setTopExperts] = useState([]);
   const [loadingTop, setLoadingTop] = useState(true);
-
-  // ✅ NEW: Skill filter state
   const [activeSkill, setActiveSkill] = useState("All");
   const [filteredExperts, setFilteredExperts] = useState([]);
   const [loadingFiltered, setLoadingFiltered] = useState(false);
@@ -45,12 +40,10 @@ export default function Dashboard() {
     fetchExperts();
     fetchOnlineExperts();
     fetchTopExperts();
-
     const interval = setInterval(fetchOnlineExperts, 300000);
     return () => clearInterval(interval);
   }, []);
 
-  // ✅ NEW: Fetch filtered experts when skill changes
   useEffect(() => {
     fetchFilteredExperts(activeSkill);
   }, [activeSkill]);
@@ -90,7 +83,7 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ NEW: Fetch experts by skill
+  // ✅ Fetch experts filtered by skill from backend
   const fetchFilteredExperts = async (skill) => {
     try {
       setLoadingFiltered(true);
@@ -109,13 +102,14 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 80 }}>
+        contentContainerStyle={{ paddingBottom: 100 }}>
+
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.avatar}>
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>C</Text>
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>S</Text>
           </View>
-          <Text style={styles.headerText}>Career-Talk</Text>
+          <Text style={styles.headerText}>Hi Sakshi</Text>
           <Pressable style={styles.walletBtn}>
             <Text style={styles.walletText}>Add Cash +</Text>
           </Pressable>
@@ -158,7 +152,7 @@ export default function Dashboard() {
           />
         </View>
 
-        {/* ✅ NEW: SKILL FILTER SECTION */}
+        {/* SKILL FILTER SECTION */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
         </View>
@@ -206,9 +200,7 @@ export default function Dashboard() {
                 onPress={() => router.push(`/expert/${e.id}`)}>
                 <Image
                   source={{
-                    uri:
-                      e.image ||
-                      `https://ui-avatars.com/api/?name=${e.name || "User"}&background=7C3AED&color=fff`,
+                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}&background=7C3AED&color=fff`,
                   }}
                   style={styles.filteredImage}
                 />
@@ -254,9 +246,7 @@ export default function Dashboard() {
                 onPress={() => router.push(`/expert/${e.id}`)}>
                 <Image
                   source={{
-                    uri:
-                      e.image ||
-                      `https://ui-avatars.com/api/?name=${e.name || "User"}`,
+                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}`,
                   }}
                   style={styles.topExpertImage}
                 />
@@ -280,16 +270,23 @@ export default function Dashboard() {
                 key={e.id}
                 name={e.name || ""}
                 title={e.role || ""}
-                image={
-                  e.image ||
-                  `https://ui-avatars.com/api/?name=${e.name || "User"}`
-                }
+                image={e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}`}
                 onPress={() => router.push(`/expert/${e.id}`)}
               />
             ))}
           </ScrollView>
         )}
+
       </ScrollView>
+
+      {/* BOTTOM NAV */}
+      <View style={styles.bottomNav}>
+        <NavItem icon="🏠" label="Home" active route="/dashboard/dashboard" />
+        <NavItem icon="🔎" label="Search" route="/expert/search" />
+        <NavItem icon="💬" label="Chat" route="/chat" />
+        <NavItem icon="👤" label="Profile" route="/home/profile" />
+      </View>
+
     </SafeAreaView>
   );
 }
@@ -316,10 +313,16 @@ const LiveExpert = ({ name, title, image, onPress }) => (
   </Pressable>
 );
 
-/* STYLES */
+/* NAV ITEM */
+const NavItem = ({ icon, label, route, active }) => (
+  <Pressable style={styles.navItem} onPress={() => router.push(route)}>
+    <Text style={{ fontSize: 20 }}>{icon}</Text>
+    <Text style={{ color: active ? "#7C3AED" : "#666", fontSize: 12 }}>{label}</Text>
+  </Pressable>
+);
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F4F5F7" },
-
   header: { flexDirection: "row", alignItems: "center", padding: 15 },
   avatar: {
     width: 40,
@@ -338,7 +341,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   walletText: { fontWeight: "600" },
-
   searchBox: {
     backgroundColor: "#fff",
     margin: 15,
@@ -346,7 +348,6 @@ const styles = StyleSheet.create({
     padding: 12,
     flexDirection: "row",
   },
-
   categoryRow: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -360,7 +361,6 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   categoryText: { marginTop: 6 },
-
   banner: {
     flexDirection: "row",
     backgroundColor: "#FFF7CC",
@@ -376,10 +376,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   bannertitle: { color: "#fff", fontWeight: "bold" },
-
   bannerTitle: { fontWeight: "bold", fontSize: 16 },
   bannerImage: { width: 160, height: 120 },
-
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -388,7 +386,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontWeight: "bold", fontSize: 16 },
   viewAll: { color: "#7C3AED", fontWeight: "600" },
-
   topExpertCard: { alignItems: "center", marginLeft: 15 },
   topExpertImage: {
     width: 70,
@@ -398,7 +395,6 @@ const styles = StyleSheet.create({
     borderColor: "#6A5AE0",
   },
   topExpertName: { marginTop: 6, fontSize: 12 },
-
   liveCard: {
     width: 130,
     height: 170,
@@ -407,7 +403,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   liveImage: { width: "100%", height: "100%" },
-
   liveBadge: {
     position: "absolute",
     top: 8,
@@ -418,7 +413,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   liveText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
-
   liveOverlay: {
     position: "absolute",
     bottom: 0,
@@ -428,8 +422,6 @@ const styles = StyleSheet.create({
   },
   liveName: { color: "#fff", fontWeight: "bold" },
   liveTitle: { color: "#ddd", fontSize: 11 },
-
-  // ✅ NEW: Skill Filter Styles
   skillPill: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -463,23 +455,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
   },
-  filteredImage: {
-    width: "100%",
-    height: 100,
-  },
-  filteredInfo: {
-    padding: 10,
-  },
-  filteredName: {
-    fontWeight: "bold",
-    fontSize: 13,
-    color: "#111",
-  },
-  filteredHeadline: {
-    fontSize: 11,
-    color: "#666",
-    marginTop: 2,
-  },
+  filteredImage: { width: "100%", height: 100 },
+  filteredInfo: { padding: 10 },
+  filteredName: { fontWeight: "bold", fontSize: 13, color: "#111" },
+  filteredHeadline: { fontSize: 11, color: "#666", marginTop: 2 },
   filteredMeta: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -495,11 +474,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     fontWeight: "600",
   },
-  filteredRating: {
-    fontSize: 11,
-    color: "#444",
-    fontWeight: "600",
-  },
+  filteredRating: { fontSize: 11, color: "#444", fontWeight: "600" },
   noExpertText: {
     textAlign: "center",
     color: "#999",
@@ -507,4 +482,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 13,
   },
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderColor: "#eee",
+  },
+  navItem: { alignItems: "center" },
 });

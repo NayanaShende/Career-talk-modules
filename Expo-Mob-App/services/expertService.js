@@ -37,6 +37,8 @@ export const getAllExperts = async () => {
   try {
     const response = await API.get("/experts");
 
+    // ✅ return only experts array
+    return response.data.data;
     // ✅ normalize response
     return response?.data ?? { success: false, data: [] };
 
@@ -56,6 +58,8 @@ export const getExpertById = async (id) => {
   try {
     const response = await API.get(`/experts/${id}`);
 
+    // ✅ return only expert object
+    return response.data.data;
     // ✅ normalize response
     return response?.data ?? { success: false, data: null };
 

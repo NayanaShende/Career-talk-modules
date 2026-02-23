@@ -13,7 +13,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-      // ✅ MATCHED WITH DATABASE
       experience: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -60,6 +59,26 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      // ✅ NEW ADDED FIELDS
+      location: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      language_spoken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      cv: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+
+      certification: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       tableName: "Experts",
@@ -67,8 +86,12 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  // ✅ association
   Expert.associate = (models) => {
+    Expert.hasOne(models.ExpertProfile, {
+      foreignKey: "expertId",
+      as: "profile",
+    });
+
     Expert.hasMany(models.ExpertSkill, {
       foreignKey: "expert_id",
       as: "skills",

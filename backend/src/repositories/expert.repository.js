@@ -19,6 +19,13 @@ const updateExpertById = async (id, data) => {
 
 const findExpertById = async (id) => {
   return await Expert.findByPk(id);
+  return await Expert.findOne({
+    where: { id },
+    include: {
+      model: ExpertSkill,
+      as: "skills",
+    },
+  });
 };
 
 const findRecommendedExperts = async (limit) => {
@@ -113,6 +120,9 @@ module.exports = {
   searchExpertsBySkill,
   searchExpertsByHeadline,
   findExpertsBySkill,
+  findExpertProfileByUserId,
+  createExpertProfile,
+  updateExpertProfile,
   findExpertProfileByUserId,
   createExpertProfile,
   updateExpertProfile,
