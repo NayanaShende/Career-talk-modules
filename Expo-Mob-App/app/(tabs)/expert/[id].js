@@ -14,7 +14,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { getExpertById } from "../../services/expertService";
+import { getExpertById } from "../../../services/expertService";
 
 const { width } = Dimensions.get("window");
 

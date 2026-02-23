@@ -14,9 +14,7 @@ import {
 import * as DocumentPicker from "expo-document-picker";
 import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
-
-
+import { router } from "expo-router"; // ✅ Fixed: replaced useNavigation with router
 
 export default function JobseekerProfileScreen() {
   const [formData, setFormData] = useState({
@@ -29,7 +27,8 @@ export default function JobseekerProfileScreen() {
     customDomain: "",
     cvFile: null,
   });
-   const navigation = useNavigation();
+
+  const [emailError, setEmailError] = useState("");
 
   const handleChange = (field, value) => {
     setFormData({ ...formData, [field]: value });
@@ -41,24 +40,24 @@ export default function JobseekerProfileScreen() {
       setFormData({ ...formData, cvFile: result.assets[0] });
     }
   };
-  const submitProfile = () => {
-    if (!isValidEmail(formData.email)) {
-      Alert.alert("Invalid Email", "Please enter a valid email address");
-      return;
-    }
-
-    Alert.alert("Success", "Profile Submitted");
-        navigation.navigate("dashboard/dashboard");
-
-  };
 
   const isValidEmail = (email) => {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
   };
-  const [emailError, setEmailError] = useState("");
 
-
+  const submitProfile = () => {
+    if (!isValidEmail(formData.email)) {
+      Alert.alert("Invalid Email", "Please enter a valid email address");
+      return;
+    }
+    Alert.alert("Success", "Profile Submitted", [
+      {
+        text: "OK",
+        onPress: () => router.replace("/(tabs)/dashboard/dashboard"), // ✅ Fixed: correct route
+      },
+    ]);
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }}>
@@ -72,7 +71,7 @@ export default function JobseekerProfileScreen() {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.card}>
-              {/* Header */}
+              
               <View style={styles.header}>
                 <View style={styles.avatar}>
                   <Text style={{ fontSize: 28 }}>👤</Text>
@@ -85,28 +84,25 @@ export default function JobseekerProfileScreen() {
                 </View>
               </View>
 
-              {/* Full Name */}
               <Text style={styles.label}>Full Name</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter name"
+                placeholderTextColor="#777"
                 onChangeText={(v) => handleChange("fullName", v)}
               />
 
-              {/* Email */}
               <Text style={styles.label}>Email</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter email"
+                placeholderTextColor="#777"
                 keyboardType="email-address"
                 autoCapitalize="none"
                 onChangeText={(v) => {
                   handleChange("email", v);
-
                   if (!isValidEmail(v)) {
-                    setEmailError(
-                      "Enter valid email (example: xyz@gmail.com)",
-                    );
+                    setEmailError("Enter valid email");
                   } else {
                     setEmailError("");
                   }
@@ -114,29 +110,28 @@ export default function JobseekerProfileScreen() {
               />
 
               {emailError ? (
-                <Text style={{ color: "red", fontSize: 12, marginTop: 4 }}>
+                <Text style={{ color: "red", fontSize: 12 }}>
                   {emailError}
                 </Text>
               ) : null}
 
-              {/* Mobile */}
               <Text style={styles.label}>Mobile</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Phone number"
+                placeholderTextColor="#777"
                 keyboardType="phone-pad"
                 onChangeText={(v) => handleChange("mobile", v)}
               />
 
-              {/* Qualification */}
               <Text style={styles.label}>Qualification</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Highest qualification"
+                placeholderTextColor="#777"
                 onChangeText={(v) => handleChange("qualification", v)}
               />
 
-              {/* Experience */}
               <Text style={styles.label}>Experience</Text>
               <View style={styles.pickerWrapper}>
                 <Picker
@@ -147,33 +142,18 @@ export default function JobseekerProfileScreen() {
                   <Picker.Item label="Fresher" value="Fresher" />
                   <Picker.Item label="1-2 Years" value="1-2 Years" />
                   <Picker.Item label="3-5 Years" value="3-5 Years" />
-                  <Picker.Item label="5+ Years" value="5+ Years" />
                 </Picker>
               </View>
 
-              {/* Domain */}
-              <Text style={styles.label}>Domain / Job Role</Text>
+              <Text style={styles.label}>Domain</Text>
               <View style={styles.pickerWrapper}>
                 <Picker
                   selectedValue={formData.domain}
                   onValueChange={(v) => handleChange("domain", v)}
                 >
                   <Picker.Item label="Select Domain" value="" />
-                  <Picker.Item
-                    label="React Developer"
-                    value="React Developer"
-                  />
+                  <Picker.Item label="React Developer" value="React Developer" />
                   <Picker.Item label="Java Developer" value="Java Developer" />
-                  <Picker.Item
-                    label="Python Developer"
-                    value="Python Developer"
-                  />
-                  <Picker.Item label="Data Analyst" value="Data Analyst" />
-                  <Picker.Item label="UI/UX Designer" value="UI/UX Designer" />
-                  <Picker.Item
-                    label="Full Stack Developer"
-                    value="Full Stack Developer"
-                  />
                   <Picker.Item label="Other" value="Other" />
                 </Picker>
               </View>
@@ -181,25 +161,22 @@ export default function JobseekerProfileScreen() {
               {formData.domain === "Other" && (
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your domain"
+                  placeholder="Enter custom domain"
+                  placeholderTextColor="#777"
                   onChangeText={(v) => handleChange("customDomain", v)}
                 />
               )}
 
-              {/* Upload CV */}
               <TouchableOpacity style={styles.uploadBtn} onPress={pickFile}>
                 <Text style={styles.uploadText}>
                   {formData.cvFile ? formData.cvFile.name : "Upload CV"}
                 </Text>
               </TouchableOpacity>
 
-              {/* Submit */}
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={submitProfile}
-              >
-                <Text style={styles.submitText}>Save Jobseeker Profile</Text>
+              <TouchableOpacity style={styles.submitBtn} onPress={submitProfile}>
+                <Text style={styles.submitText}>Save Profile</Text>
               </TouchableOpacity>
+
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -220,6 +197,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     elevation: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
   },
 
   header: {
@@ -261,6 +242,7 @@ const styles = StyleSheet.create({
     borderColor: "#dbe2ef",
     borderRadius: 10,
     padding: 12,
+    color: "#000",
   },
 
   pickerWrapper: {
@@ -269,6 +251,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     overflow: "hidden",
     backgroundColor: "#f8f9fc",
+    marginTop: 5,
+  },
+
+  picker: {
+    height: 50,
+    width: "100%",
   },
 
   uploadBtn: {

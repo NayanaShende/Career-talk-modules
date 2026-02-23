@@ -10,8 +10,7 @@ import {
 } from "react-native";
 import { useEffect, useState } from "react";
 import { Stack, router } from "expo-router";
-import { getOnlineExperts } from "../../services/expertService";
-
+import { getOnlineExperts } from "../../../services/expertService";  // ✅ Fixed path
 export default function OnlineExperts() {
   const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(true);

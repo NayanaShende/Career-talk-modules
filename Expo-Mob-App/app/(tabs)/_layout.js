@@ -14,8 +14,9 @@ export default function TabLayout() {
         },
       }}
     >
+      {/* DASHBOARD */}
       <Tabs.Screen
-        name="home"
+        name="dashboard/dashboard"
         options={{
           title: "Home",
           tabBarIcon: ({ color, size }) => (
@@ -24,8 +25,9 @@ export default function TabLayout() {
         }}
       />
 
+      {/* SEARCH */}
       <Tabs.Screen
-        name="search"
+        name="expert/search"
         options={{
           title: "Search",
           tabBarIcon: ({ color, size }) => (
@@ -34,6 +36,7 @@ export default function TabLayout() {
         }}
       />
 
+      {/* CHAT */}
       <Tabs.Screen
         name="chat"
         options={{
@@ -44,6 +47,7 @@ export default function TabLayout() {
         }}
       />
 
+      {/* PROFILE */}
       <Tabs.Screen
         name="profile"
         options={{
@@ -53,6 +57,13 @@ export default function TabLayout() {
           ),
         }}
       />
+
+      {/* HIDE THESE FROM TAB BAR */}
+      <Tabs.Screen name="expert/recommended" options={{ href: null }} />
+      <Tabs.Screen name="expert/online" options={{ href: null }} />
+      <Tabs.Screen name="expert/[id]" options={{ href: null }} />
+      <Tabs.Screen name="home" options={{ href: null }} />
+      <Tabs.Screen name="search" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -18,13 +18,7 @@ const updateExpertById = async (id, data) => {
 };
 
 const findExpertById = async (id) => {
-  return await Expert.findOne({
-    where: { id },
-    include: {
-      model: ExpertSkill,
-      as: "skills",
-    },
-  });
+  return await Expert.findByPk(id);
 };
 
 const findRecommendedExperts = async (limit) => {
@@ -74,6 +68,28 @@ const searchExpertsByHeadline = async (skill) => {
   });
 };
 
+// ✅ Find experts by skill column
+const findExpertsBySkill = async (skill) => {
+  try {
+    console.log("🔍 Searching skill:", skill);
+    const result = await Expert.findAll({
+      where: {
+        skill: { [Op.iLike]: `%${skill}%` },
+      },
+      include: { model: ExpertSkill, as: "skills" },
+      order: [
+        ["rating", "DESC"],
+        ["experience", "DESC"],
+      ],
+    });
+    console.log("✅ Found:", result.length, "experts");
+    return result;
+  } catch (err) {
+    console.error("❌ findExpertsBySkill error:", err.message);
+    throw err;
+  }
+};
+
 const findExpertProfileByUserId = async (userId) => {
   return await ExpertProfile.findOne({ where: { userId } });
 };
@@ -86,6 +102,13 @@ const updateExpertProfile = async (profile, data) => {
   return await profile.update(data);
 };
 
+exports.deleteExpert = async (id) => {
+  const query = `DELETE FROM experts WHERE id = $1 RETURNING *`;
+  const result = await db.query(query, [id]);
+  return result.rows[0];
+};
+  
+
 module.exports = {
   findAllExperts,
   createExpert,
@@ -96,6 +119,7 @@ module.exports = {
   bulkCreateSkills,
   searchExpertsBySkill,
   searchExpertsByHeadline,
+  findExpertsBySkill,
   findExpertProfileByUserId,
   createExpertProfile,
   updateExpertProfile,

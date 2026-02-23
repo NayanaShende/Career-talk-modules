@@ -5,7 +5,15 @@ const expertService = require("../services/expert.service");
 // ================= GET ALL =================
 exports.getAllExperts = async (req, res) => {
   try {
-    const experts = await expertService.getAllExperts();
+    const { skill } = req.query;
+
+    // ✅ If skill query param exists, filter by skill
+    let experts;
+    if (skill && skill !== "All") {
+      experts = await expertService.getExpertsBySkill(skill);
+    } else {
+      experts = await expertService.getAllExperts();
+    }
 
     return res.status(200).json({
       success: true,
@@ -137,33 +145,26 @@ exports.getExpertById = async (req, res) => {
     });
   }
 
-//   // DELETE expert by ID
-// exports.deleteExpert = async (req, res) => {
-//   try {
-//     const { id } = req.params;
+  }
 
-//     const deleted = await Expert.destroy({
-//       where: { id }
-//     });
+// ================= ✅ GET EXPERTS BY SKILL =================
+exports.getExpertsBySkill = async (req, res) => {
+  try {
+    const { skill } = req.query;
 
-//     if (!deleted) {
-//       return res.status(404).json({
-//         success: false,
-//         message: "Expert not found"
-//       });
-//     }
+    if (!skill || skill === "All") {
+      const experts = await expertService.getAllExperts();
+      return res.status(200).json({ success: true, data: experts });
+    }
 
-//     res.json({
-//       success: true,
-//       message: "Expert deleted successfully"
-//     });
-//   } catch (error) {
-//     console.error("Delete Expert Error:", error);
-//     res.status(500).json({
-//       success: false,
-//       message: "Server error while deleting expert"
-//     });
-//   }
-// };
+    const experts = await expertService.getExpertsBySkill(skill);
 
+    return res.status(200).json({
+      success: true,
+      data: experts,
+    });
+  } catch (err) {
+    console.error("getExpertsBySkill error:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
 };

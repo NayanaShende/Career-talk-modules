@@ -12,9 +12,10 @@ import {
 } from "react-native";
 import { useEffect, useState, useRef } from "react";
 import { router, Stack } from "expo-router";
-import axiosInstance from "../../services/api";
+import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+
 
 export default function Recommended() {
   const [experts, setExperts] = useState([]);
@@ -127,7 +128,7 @@ export default function Recommended() {
                     style={styles.card}
                     onPressIn={animateIn}
                     onPressOut={animateOut}
-                    onPress={() => router.push(`/expert/${item.id}`)}
+                    onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
                   >
 
                     {/* AVATAR + ONLINE DOT */}
