@@ -3,11 +3,21 @@ const { User } = require("../models");
 exports.saveProfile = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
-    const { fullName, email, dob, qualification, experience, domain } =
-      req.body;
+    const {
+      fullName,
+      email,
+      dob,
+      qualification,
+      experience,
+      domain,
+      role, // ✅ DEFINE ROLE HERE
+    } = req.body;
 
     // ✅ BASIC VALIDATION
     if (
@@ -33,22 +43,24 @@ exports.saveProfile = async (req, res) => {
       });
     }
 
-    await req.user.update({
+    // ✅ Prepare update object
+    const updateData = {
       fullName,
       email,
       dob,
       qualification,
       domain,
       experience,
-      role, // ✅ ADD THIS
+      role: role || req.user.role, // keep old role if not provided
       hasProfile: true,
-    });
+    };
 
     // ✅ Save CV file if uploaded
     if (req.file) {
       updateData.cvFile = req.file.filename;
     }
 
+    // ✅ Update user
     await req.user.update(updateData);
 
     return res.json({
@@ -65,16 +77,26 @@ exports.saveProfile = async (req, res) => {
   }
 };
 
+
+
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id);
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
     return res.json({
       success: true,
-      user,
+      user: req.user,
     });
   } catch (err) {
     console.error("GET PROFILE ERROR:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };

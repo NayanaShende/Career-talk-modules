@@ -120,7 +120,7 @@ const onChangeDate = (event, selectedDate) => {
 
       // ✅ API CALL
       const res = await axios.post(
-        "http://192.168.1.12:3000/api/users/save-profile", // replace with PC IP
+        "http://192.168.1.10:3000/api/users/save-profile", // replace with PC IP
         form,
         {
           headers: {
@@ -148,7 +148,7 @@ const onChangeDate = (event, selectedDate) => {
       const token = await AsyncStorage.getItem("token");
 
       await axios.post(
-        "http://192.168.1.12:3000/api/auth/set-role",
+        "http://192.168.1.10:3000/api/auth/set-role",
         { role: selectedRole },
         {
           headers: {

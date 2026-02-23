@@ -5,7 +5,7 @@ const userController = require("../controllers/user.controller");
 const protect = require("../middleware/protect");
 const upload = require("../middleware/upload");
 
-// PROFILE
+// Save profile
 router.post(
   "/save-profile",
   protect,
@@ -13,7 +13,7 @@ router.post(
   userController.saveProfile,
 );
 
-// Get logged in user profile
+// Get logged-in user profile
 router.get("/me", protect, userController.getProfile);
 
 module.exports = router;
