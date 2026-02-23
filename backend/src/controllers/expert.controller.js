@@ -152,3 +152,16 @@ exports.getOnlineExperts = async (req, res) => {
     });
   }
 };
+exports.searchExperts = async (req, res) => {
+  const { skill } = req.query;
+
+  const experts = await Expert.findAll({
+    where: {
+      headline: {
+        [Op.iLike]: `%${skill}%`,
+      },
+    },
+  });
+
+  res.json(experts);
+};

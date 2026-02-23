@@ -1,45 +1,26 @@
 const express = require("express");
 const router = express.Router();
-const { Expert } = require("../models");
-const { Op } = require("sequelize");
+const expertController = require("../controllers/expert.controller");
 
+// GET ALL
+router.get("/", expertController.getAllExperts);
 
-// ===============================
-// SEARCH experts
-// GET /api/experts/search?skill=Node
-// ===============================
-router.get("/search", async (req, res) => {
-  try {
-    const { skill } = req.query;
+// SEARCH
+router.get("/search", expertController.searchExperts);
 
-    if (!skill) {
-      return res.status(400).json({
-        success: false,
-        message: "Skill is required"
-      });
-    }
+// RECOMMENDED
+router.get("/recommended", expertController.getRecommendedExperts);
 
-    const experts = await Expert.findAll({
-      where: {
-        headline: {
-          [Op.iLike]: `%${skill}%`
-        }
-      }
-    });
+// ONLINE
+router.get("/online", expertController.getOnlineExperts);
 
-    res.json({
-      success: true,
-      data: experts
-    });
+// CREATE PROFILE
+router.post("/", expertController.createExpert);
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
-  }
-});
+// UPDATE PROFILE
+router.put("/:id", expertController.updateExpert);
 
+// ADD SKILLS
+router.post("/:expertId/skills", expertController.addSkills);
 
 module.exports = router;

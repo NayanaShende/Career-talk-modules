@@ -18,17 +18,21 @@ exports.sendOtp = async (req, res) => {
   try {
     const { mobile } = req.body;
 
-    if (!mobile)
-      return res
-        .status(400)
-        .json({ success: false, message: "Mobile required" });
+    if (!mobile) {
+      return res.status(400).json({
+        success: false,
+        message: "Mobile required",
+      });
+    }
 
     const normalizedMobile = normalizeMobile(mobile);
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiryAt = new Date(Date.now() + 10 * 60 * 1000);
 
-    let user = await User.findOne({ where: { mobile: normalizedMobile } });
+    let user = await User.findOne({
+      where: { mobile: normalizedMobile },
+    });
 
     if (!user) {
       user = await User.create({
@@ -36,6 +40,8 @@ exports.sendOtp = async (req, res) => {
         otp,
         otpExpiryAt,
         isVerified: false,
+        role: null, // role will be set in profile
+        hasProfile: false,
       });
     } else {
       await user.update({
@@ -50,12 +56,14 @@ exports.sendOtp = async (req, res) => {
     return res.json({
       success: true,
       message: "OTP sent successfully",
-      // TEMP for testing — remove later
-      otp,
+      otp, // remove in production
     });
   } catch (err) {
     console.error("SEND OTP ERROR:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -66,8 +74,12 @@ exports.verifyOtp = async (req, res) => {
   try {
     let { mobile, otp } = req.body;
 
-    if (!mobile || !otp)
-      return res.status(400).json({ success: false, message: "Missing data" });
+    if (!mobile || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing data",
+      });
+    }
 
     const normalizedMobile = normalizeMobile(mobile);
     const cleanOtp = String(otp).trim();
@@ -76,16 +88,14 @@ exports.verifyOtp = async (req, res) => {
       where: { mobile: normalizedMobile },
     });
 
-    console.log("VERIFY REQUEST:", normalizedMobile, cleanOtp);
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
-    if (!user)
-      return res
-        .status(400)
-        .json({ success: false, message: "User not found" });
-
-    console.log("DB OTP:", user.otp);
-
-    // ---- FIX: safe OTP comparison ----
+    // OTP match
     if (!user.otp || String(user.otp).trim() !== cleanOtp) {
       return res.status(400).json({
         success: false,
@@ -93,34 +103,34 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    // ---- FIX: safe expiry check ----
-    if (!user.otpExpiryAt || Date.now() > new Date(user.otpExpiryAt).getTime()) {
+    // Expiry check
+    if (user.otpExpiryAt && new Date() > new Date(user.otpExpiryAt)) {
       return res.status(400).json({
         success: false,
         message: "OTP expired",
       });
     }
 
-    // OTP valid
-    user.otp = null;
-    user.otpExpiryAt = null;
-    user.isVerified = true;
-    await user.save();
+    // Clear OTP & verify
+    await user.update({
+      otp: null,
+      otpExpiryAt: null,
+      isVerified: true,
+    });
 
     const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
-      expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+      expiresIn: "7d",
     });
 
     const freshUser = await User.findByPk(user.id);
 
+    // ✅ Simple redirect logic
     let redirectTo = "";
 
-    if (freshUser.hasProfile === true) {
-      redirectTo = "/dashboard";
+    if (!freshUser.hasProfile) {
+      redirectTo = "/profile";
     } else {
-      if (!freshUser.role) redirectTo = "/select-role";
-      else if (freshUser.role === "jobseeker") redirectTo = "/jobseeker";
-      else if (freshUser.role === "expert") redirectTo = "/expert";
+      redirectTo = "/dashboard";
     }
 
     return res.json({
@@ -137,23 +147,46 @@ exports.verifyOtp = async (req, res) => {
     });
   } catch (err) {
     console.error("Verify OTP error:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
 // ---------------------------------------
-// SET ROLE
+// SET ROLE (Optional - if called from profile)
 // ---------------------------------------
 exports.setRole = async (req, res) => {
   try {
-    if (!req.user) return res.status(404).json({ message: "User not found" });
+    if (!req.user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     const { role } = req.body;
-    req.user.role = role;
-    await req.user.save();
 
-    res.json({ success: true, message: "Role updated", user: req.user });
+    if (!role) {
+      return res.status(400).json({
+        success: false,
+        message: "Role is required",
+      });
+    }
+
+    await req.user.update({ role: role.toLowerCase() });
+
+    return res.json({
+      success: true,
+      message: "Role updated successfully",
+      user: req.user,
+    });
   } catch (err) {
-    res.status(500).json({ message: "Server error" });
+    console.error("Set role error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
