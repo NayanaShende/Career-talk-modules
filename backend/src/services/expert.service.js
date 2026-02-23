@@ -1,88 +1,89 @@
-const { Expert, ExpertSkill, ExpertProfile } = require("../models");
-const { Op } = require("sequelize");
+// src/services/expert.service.js
 
-// ✅ Recommended experts
-exports.getRecommendedExperts = async () => {
-  try {
-    return await Expert.findAll({
-      limit: 5,
-      order: [["experience_years", "DESC"]],
-    });
-  } catch (error) {
-    console.error("Service Error (Recommended):", error);
-    throw error;
-  }
+const expertRepo = require("../repositories/expert.repository");
+
+const getAllExperts = async () => {
+  return await expertRepo.findAllExperts();
 };
 
-// ✅ Search experts by skill (ONLY ONE FUNCTION)
-exports.searchExperts = async (skill) => {
-  try {
-
-    // No skill → return all
-    if (!skill) {
-      return await Expert.findAll();
-    }
-
-    return await Expert.findAll({
-      include: {
-        model: ExpertSkill,
-        as: "skills",
-        where: {
-          skill_name: {
-            [Op.iLike]: `%${skill}%`
-          }
-        },
-        required: false
-      }
-    });
-
-  } catch (error) {
-    console.error("Service Error (Search):", error);
-    throw error;
-  }
+const createExpert = async (data) => {
+  return await expertRepo.createExpert(data);
 };
 
-exports.createExpert = async (data) => {
-  return await Expert.create(data);
+const updateExpert = async (id, data) => {
+  await expertRepo.updateExpertById(id, data);
+  return await expertRepo.findExpertById(id);
 };
 
-exports.updateProfile = async (id, data) => {
-  await Expert.update(data, { where: { id } });
-  return await Expert.findByPk(id);
-};
-
-exports.addSkills = async (expert_id, skills) => {
-  const payload = skills.map((s) => ({
-    expert_id,
-    skill_name: s
+const addSkills = async (expertId, skills) => {
+  const skillRows = skills.map((skill) => ({
+    expert_id: expertId,
+    skill_name: skill,
   }));
-
-  return await ExpertSkill.bulkCreate(payload);
+  return await expertRepo.bulkCreateSkills(skillRows);
 };
 
+const getRecommendedExperts = async (limit = 10) => {
+  return await expertRepo.findRecommendedExperts(limit);
+};
 
+const getOnlineExperts = async (limit = 10) => {
+  return await expertRepo.findOnlineExperts(limit);
+};
 
-/* ======================================================
-   ✅ NEW FUNCTION ADDED (NOT TOUCHING OLD CODE)
-   Get Expert Profile by ID (with skills + profile)
-   ====================================================== */
+const searchExperts = async (skill) => {
+  return await expertRepo.searchExpertsBySkill(skill);
+};
 
-exports.getExpertById = async (id) => {
-  try {
-    return await Expert.findByPk(id, {
-      include: [
-        {
-          model: ExpertSkill,
-          as: "skills",
-        },
-        {
-          model: ExpertProfile,
-          as: "profile",
-        }
-      ]
-    });
-  } catch (error) {
-    console.error("Service Error (Get By Id):", error);
-    throw error;
+const searchExpertsByHeadline = async (skill) => {
+  return await expertRepo.searchExpertsByHeadline(skill);
+};
+
+const createExpertProfile = async (userId, profileData, file) => {
+  const data = {
+    fullName: profileData.fullName || null,
+    email: profileData.email || null,
+    dob: profileData.dob || null,
+    qualification: profileData.qualification || null,
+    experience: profileData.experience || null,
+    domain: profileData.domain || null,
+    certifications: profileData.certifications || null,
+    linkedIn: profileData.linkedIn || null,
+    cvFile: file ? file.filename : null,
+    userId,
+  };
+
+  let profile = await expertRepo.findExpertProfileByUserId(userId);
+
+  if (profile) {
+    profile = await expertRepo.updateExpertProfile(profile, data);
+  } else {
+    profile = await expertRepo.createExpertProfile(data);
   }
+
+  return profile;
+};
+
+const getExpertProfile = async (userId) => {
+  const profile = await expertRepo.findExpertProfileByUserId(userId);
+  if (!profile) throw new Error("Profile not found");
+  return profile;
+};
+
+const getExpertById = async (id) => {
+  return await expertRepo.findExpertById(id);
+};
+
+module.exports = {
+  getAllExperts,
+  createExpert,
+  updateExpert,
+  addSkills,
+  getRecommendedExperts,
+  getOnlineExperts,
+  searchExperts,
+  searchExpertsByHeadline,
+  createExpertProfile,
+  getExpertProfile,
+  getExpertById,
 };

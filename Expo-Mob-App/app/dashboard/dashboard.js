@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [loadingOnline, setLoadingOnline] = useState(true);
   const [topExperts, setTopExperts] = useState([]);
   const [loadingTop, setLoadingTop] = useState(true);
+  const [selectedSkill, setSelectedSkill] = useState(null);
 
   useEffect(() => {
     fetchExperts();
@@ -32,6 +33,9 @@ export default function Dashboard() {
   const fetchExperts = async () => {
     try {
       const data = await getAllExperts();
+      // 🔍 DEBUG: Check your actual data structure in console
+      console.log("✅ getAllExperts count:", data?.length);
+      console.log("✅ First expert sample:", JSON.stringify(data?.[0], null, 2));
       setExperts(data || []);
     } catch (err) {
       console.log("Dashboard fetch error:", err);
@@ -55,6 +59,8 @@ export default function Dashboard() {
       setLoadingTop(true);
       const res = await axiosInstance.get("/experts");
       const list = res?.data?.data || [];
+      // 🔍 DEBUG: Check skills structure from /experts API
+      console.log("✅ /experts first item:", JSON.stringify(list?.[0], null, 2));
       list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       setTopExperts(list.slice(0, 10));
     } catch {
@@ -64,17 +70,78 @@ export default function Dashboard() {
     }
   };
 
+  const handleSkillFilter = (skill) => {
+    if (selectedSkill === skill) {
+      setSelectedSkill(null);
+    } else {
+      setSelectedSkill(skill);
+    }
+  };
+
+  // ✅ ROBUST skill matcher — handles ALL common API response formats:
+  // • [{ name: "Python" }]         ← object with name
+  // • ["Python", "AWS"]            ← plain string array
+  // • [{ skill_name: "Python" }]   ← object with skill_name
+  // • [{ title: "Python" }]        ← object with title
+  // • "Python, AWS, React"         ← comma-separated string
+  // • expert.skill / expert.category / expert.expertise  ← root-level fields
+  const expertMatchesSkill = (expert, skill) => {
+    const skillLower = skill.toLowerCase();
+
+    if (Array.isArray(expert.skills)) {
+      return expert.skills.some((s) => {
+        if (typeof s === "string") return s.toLowerCase() === skillLower;
+        if (typeof s === "object" && s !== null) {
+          return (
+            s.name?.toLowerCase() === skillLower ||
+            s.skill_name?.toLowerCase() === skillLower ||
+            s.title?.toLowerCase() === skillLower ||
+            s.label?.toLowerCase() === skillLower
+          );
+        }
+        return false;
+      });
+    }
+
+    // Skills as comma-separated string
+    if (typeof expert.skills === "string") {
+      return expert.skills.toLowerCase().includes(skillLower);
+    }
+
+    // Root-level fallback fields
+    return (
+      expert.skill?.toLowerCase() === skillLower ||
+      expert.category?.toLowerCase() === skillLower ||
+      expert.expertise?.toLowerCase()?.includes(skillLower) ||
+      expert.specialization?.toLowerCase()?.includes(skillLower)
+    );
+  };
+
+  // ✅ Use both expert lists — merge & deduplicate by id for widest coverage
+  const allExperts = React.useMemo(() => {
+    const combined = [...topExperts, ...experts];
+    const seen = new Set();
+    return combined.filter((e) => {
+      if (seen.has(e.id)) return false;
+      seen.add(e.id);
+      return true;
+    });
+  }, [topExperts, experts]);
+
+  const filteredExperts = selectedSkill
+    ? allExperts.filter((expert) => expertMatchesSkill(expert, selectedSkill))
+    : topExperts;
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}>
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* HEADER */}
         <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>S</Text>
-          </View>
-          <Text style={styles.headerText}>Hi Sakshi</Text>
+          <View style={styles.avatar} />
+          <Text style={styles.headerText}>Career-Talk</Text>
           <Pressable style={styles.walletBtn}>
             <Text style={styles.walletText}>Add Cash +</Text>
           </Pressable>
@@ -83,20 +150,46 @@ export default function Dashboard() {
         {/* SEARCH */}
         <Pressable
           style={styles.searchBox}
-          onPress={() => router.push("/expert/search")}>
+          onPress={() => router.push("/expert/search")}
+        >
           <Ionicons name="search" size={18} color="#777" />
           <Text style={{ marginLeft: 8, color: "#888" }}>
             Search experts...
           </Text>
         </Pressable>
 
-        {/* CATEGORY */}
-        <View style={styles.categoryRow}>
-          <Category title="Python" icon="🐍" />
-          <Category title="AWS" icon="🚀" />
-          <Category title="Power BI" icon="📶" />
-          <Category title="React.js" icon="🔯" />
-        </View>
+        {/* CATEGORY FILTER */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryRow}
+          style={{ flexGrow: 0 }}
+        >
+          <Category
+            title="Python"
+            icon="🐍"
+            active={selectedSkill === "Python"}
+            onPress={() => handleSkillFilter("Python")}
+          />
+          <Category
+            title="AWS"
+            icon="🚀"
+            active={selectedSkill === "AWS"}
+            onPress={() => handleSkillFilter("AWS")}
+          />
+          <Category
+            title="Power BI"
+            icon="📶"
+            active={selectedSkill === "Power BI"}
+            onPress={() => handleSkillFilter("Power BI")}
+          />
+          <Category
+            title="React.js"
+            icon="🔯"
+            active={selectedSkill === "React.js"}
+            onPress={() => handleSkillFilter("React.js")}
+          />
+        </ScrollView>
 
         {/* BANNER */}
         <View style={styles.banner}>
@@ -125,29 +218,44 @@ export default function Dashboard() {
           />
         </View>
 
-        {/* TOP EXPERTS */}
+        {/* TOP / FILTERED EXPERTS */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Top Experts</Text>
+          <Text style={styles.sectionTitle}>
+            {selectedSkill ? `${selectedSkill} Experts` : "Top Experts"}
+          </Text>
           <Text
             style={styles.viewAll}
-            onPress={() => router.push("/expert/recommended")}>
+            onPress={() => {
+              setSelectedSkill(null);
+              router.push("/expert/recommended");
+            }}
+          >
             View All
           </Text>
         </View>
 
         {loadingTop ? (
           <ActivityIndicator style={{ marginTop: 20 }} />
+        ) : filteredExperts.length === 0 && selectedSkill ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>
+              No {selectedSkill} experts available right now.
+            </Text>
+            <Text style={styles.debugText}>
+              (Loaded {allExperts.length} experts — check console logs for skills format)
+            </Text>
+          </View>
         ) : (
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            {topExperts.map((e) => (
+            {filteredExperts.map((e) => (
               <Pressable
                 key={e.id}
                 style={styles.topExpertCard}
-                onPress={() => router.push(`/expert/${e.id}`)}>
+                onPress={() => router.push(`/expert/${e.id}`)}
+              >
                 <Image
                   source={{
-                    uri:
-                      e.image || `https://ui-avatars.com/api/?name=${e.name}`,
+                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name}`,
                   }}
                   style={styles.topExpertImage}
                 />
@@ -179,7 +287,7 @@ export default function Dashboard() {
         )}
       </ScrollView>
 
-      {/* 🔥 BOTTOM TABS ADDED */}
+      {/* BOTTOM NAV */}
       <View style={styles.bottomNav}>
         <NavItem icon="🏠" label="Home" active route="/dashboard/dashboard" />
         <NavItem icon="🔎" label="Search" route="/expert/search" />
@@ -191,11 +299,15 @@ export default function Dashboard() {
 }
 
 /* CATEGORY */
-const Category = ({ title, icon }) => (
-  <View style={styles.categoryItem}>
-    <Text style={styles.categoryIcon}>{icon}</Text>
-    <Text style={styles.categoryText}>{title}</Text>
-  </View>
+const Category = ({ title, icon, onPress, active }) => (
+  <Pressable style={styles.categoryItem} onPress={onPress}>
+    <View style={[styles.categoryIconWrapper, active && styles.categoryIconActive]}>
+      <Text style={styles.categoryIcon}>{icon}</Text>
+    </View>
+    <Text style={[styles.categoryText, active && { color: "#7C3AED", fontWeight: "700" }]}>
+      {title}
+    </Text>
+  </Pressable>
 );
 
 /* LIVE EXPERT CARD */
@@ -216,24 +328,14 @@ const LiveExpert = ({ name, title, image, onPress }) => (
 const NavItem = ({ icon, label, route, active }) => (
   <Pressable style={styles.navItem} onPress={() => router.push(route)}>
     <Text style={{ fontSize: 20 }}>{icon}</Text>
-    <Text style={{ color: active ? "#7C3AED" : "#666", fontSize: 12 }}>
-      {label}
-    </Text>
+    <Text style={{ color: active ? "#7C3AED" : "#666", fontSize: 12 }}>{label}</Text>
   </Pressable>
 );
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F4F5F7" },
-
   header: { flexDirection: "row", alignItems: "center", padding: 15 },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#7C3AED",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#7C3AED" },
   headerText: { marginLeft: 10, fontSize: 18, fontWeight: "bold" },
   walletBtn: {
     marginLeft: "auto",
@@ -243,7 +345,6 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   walletText: { fontWeight: "600" },
-
   searchBox: {
     backgroundColor: "#fff",
     margin: 15,
@@ -251,21 +352,19 @@ const styles = StyleSheet.create({
     padding: 12,
     flexDirection: "row",
   },
-
-  categoryRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
-  },
-  categoryItem: { alignItems: "center" },
-  categoryIcon: {
-    fontSize: 28,
+  categoryRow: { paddingHorizontal: 10, marginTop: 10, alignItems: "center" },
+  categoryItem: { alignItems: "center", marginHorizontal: 10 },
+  categoryIconWrapper: {
     backgroundColor: "#BDE8F5",
-    padding: 16,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    justifyContent: "center",
+    alignItems: "center",
   },
+  categoryIconActive: { backgroundColor: "#7C3AED" },
+  categoryIcon: { fontSize: 24 },
   categoryText: { marginTop: 6 },
-
   banner: {
     flexDirection: "row",
     backgroundColor: "#FFF7CC",
@@ -282,8 +381,7 @@ const styles = StyleSheet.create({
   },
   bannertitle: { color: "#fff", fontWeight: "bold" },
   bannerTitle: { fontWeight: "bold", fontSize: 16 },
-  bannerImage: { width: 160, height: 120 },
-
+  bannerImage: { width: 120, height: 100, resizeMode: "contain" },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -292,7 +390,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontWeight: "bold", fontSize: 16 },
   viewAll: { color: "#7C3AED", fontWeight: "600" },
-
   topExpertCard: { alignItems: "center", marginLeft: 15 },
   topExpertImage: {
     width: 70,
@@ -302,7 +399,9 @@ const styles = StyleSheet.create({
     borderColor: "#6A5AE0",
   },
   topExpertName: { marginTop: 6, fontSize: 12 },
-
+  emptyState: { alignItems: "center", paddingVertical: 30, paddingHorizontal: 20 },
+  emptyText: { color: "#888", fontSize: 14, textAlign: "center" },
+  debugText: { color: "#ccc", fontSize: 11, marginTop: 6, textAlign: "center" },
   liveCard: {
     width: 130,
     height: 170,
@@ -330,11 +429,10 @@ const styles = StyleSheet.create({
   },
   liveName: { color: "#fff", fontWeight: "bold" },
   liveTitle: { color: "#ddd", fontSize: 11 },
-
-  /* 🔥 NEW TAB STYLES */
   bottomNav: {
     flexDirection: "row",
     justifyContent: "space-around",
+    alignItems: "center",
     backgroundColor: "#fff",
     paddingVertical: 10,
     borderTopWidth: 1,

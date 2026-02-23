@@ -1,25 +1,20 @@
-const { User } = require("../models");
+// src/services/user.service.js
 
-// Generate OTP
+const userRepo = require("../repositories/user.repository");
+
 const generateOtp = async (mobile) => {
-  // Generate 6-digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-
-  // OTP valid for 5 minutes
   const otpExpiryAt = new Date(Date.now() + 5 * 60 * 1000);
 
-  // Check if user exists
-  let user = await User.findOne({ where: { mobile } });
+  let user = await userRepo.findUserByMobile(mobile);
 
   if (user) {
-    // Update existing user OTP
     user.otp = otp;
     user.otpExpiryAt = otpExpiryAt;
     user.isVerified = false;
-    await user.save();
+    await userRepo.saveUser(user);
   } else {
-    // Create new user with OTP
-    user = await User.create({
+    user = await userRepo.createUser({
       mobile,
       otp,
       otpExpiryAt,
@@ -27,39 +22,60 @@ const generateOtp = async (mobile) => {
     });
   }
 
-  console.log("Generated OTP for", mobile, ":", otp); // For debug only
+  console.log("Generated OTP for", mobile, ":", otp);
 
   return otp;
 };
 
-// Verify OTP
 const verifyOtp = async (mobile, otp) => {
-  const user = await User.findOne({ where: { mobile } });
+  const user = await userRepo.findUserByMobile(mobile);
 
   if (!user) throw new Error("User not found");
 
-if (String(user.otp) !== String(otp)) {
-    throw new Error("Invalid OTP");
-}
+  if (String(user.otp) !== String(otp)) throw new Error("Invalid OTP");
 
   if (new Date() > new Date(user.otpExpiryAt)) throw new Error("OTP expired");
 
-  // OTP valid, mark user verified
   user.otp = null;
   user.otpExpiryAt = null;
   user.isVerified = true;
-  await user.save();
+  await userRepo.saveUser(user);
 
   return user;
 };
 
-// Get user by mobile
 const getUserByMobile = async (mobile) => {
-  return await User.findOne({ where: { mobile } });
+  return await userRepo.findUserByMobile(mobile);
+};
+
+const createUserProfile = async (userId, profileData, file) => {
+  const data = {
+    ...profileData,
+    cvFile: file ? file.filename : null,
+    userId,
+  };
+
+  let profile = await userRepo.findProfileByUserId(userId);
+
+  if (profile) {
+    profile = await userRepo.updateProfile(profile, data);
+  } else {
+    profile = await userRepo.createProfile(data);
+  }
+
+  return profile;
+};
+
+const getUserProfile = async (userId) => {
+  const profile = await userRepo.findProfileByUserId(userId);
+  if (!profile) throw new Error("Profile not found");
+  return profile;
 };
 
 module.exports = {
   generateOtp,
   verifyOtp,
   getUserByMobile,
+  createUserProfile,
+  getUserProfile,
 };

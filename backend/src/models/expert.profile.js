@@ -5,63 +5,48 @@ module.exports = (sequelize, DataTypes) => {
       autoIncrement: true,
       primaryKey: true,
     },
-
     fullName: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-
     email: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-
     dob: {
       type: DataTypes.DATEONLY,
       allowNull: true,
     },
-
     qualification: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-
     experience: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-
     domain: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-
     certifications: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-
     linkedIn: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-
     cvFile: {
       type: DataTypes.STRING,
       allowNull: true,
     },
-
-    expertId: {
+    userId: {
       type: DataTypes.INTEGER,
       allowNull: false,
-      unique: true,
+      unique: true, // <--- ADD THIS
     },
   });
 
-ExpertProfile.associate = (models) => {
-  ExpertProfile.belongsTo(models.Expert, {
-    foreignKey: "expertId",
-  });
-};
   return ExpertProfile;
 };

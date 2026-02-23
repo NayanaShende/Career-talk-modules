@@ -184,7 +184,7 @@ export default function ExpertProfile() {
             <DetailItem
               icon="translate"
               label="Languages"
-              value={expert.languages}
+              value={expert.language_spoken}
             />
             <DetailItem
               icon="certificate-outline"

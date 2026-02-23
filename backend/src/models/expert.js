@@ -13,7 +13,6 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
 
-      // ✅ MATCHED WITH DATABASE
       experience: {
         type: DataTypes.INTEGER,
         allowNull: true,
@@ -49,10 +48,12 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
-      /* ======================================================
-         ✅ NEW FIELDS ADDED (NO OLD CODE CHANGED)
-         ====================================================== */
+      is_online: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
 
+      // ✅ NEW ADDED FIELDS
       location: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -68,17 +69,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
 
-           certification: {
+      certification: {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-
-      // ✅ ✅ NEW FIELD (ONLINE STATUS)
-      is_online: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
-
     },
     {
       tableName: "Experts",
@@ -86,7 +80,6 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  // ✅ association
   Expert.associate = (models) => {
     Expert.hasOne(models.ExpertProfile, {
       foreignKey: "expertId",

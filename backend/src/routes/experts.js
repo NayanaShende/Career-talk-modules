@@ -1,34 +1,21 @@
 const express = require("express");
 const router = express.Router();
-const controller = require("../controllers/expert.controller");
 
+const expertController = require("../controllers/expert.controller");
 
-// ================= SPECIFIC ROUTES FIRST =================
+// GET ALL
+router.get("/", expertController.getAllExperts);
 
-// online experts
-router.get("/online", controller.getOnlineExperts);
+// CREATE
+router.post("/", expertController.createExpert);
 
-// recommended experts
-router.get("/recommended", controller.getRecommendedExperts);
+// GET RECOMMENDED
+router.get("/recommended", expertController.getRecommendedExperts);
 
-// all experts
-router.get("/", controller.getAllExperts);
+// GET ONLINE
+router.get("/online", expertController.getOnlineExperts);
 
-// create
-router.post("/", controller.createExpert);
-
-// add skills
-router.post("/:expertId/skills", controller.addSkills);
-
-// update
-router.put("/:id", controller.updateExpert);
-
-// delete
-router.delete("/:id", controller.deleteExpert);
-
-
-// ================= KEEP THIS LAST ALWAYS =================
-router.get("/:id", controller.getExpertById);
-
+// GET BY ID (keep last)
+router.get("/:id", expertController.getExpertById);
 
 module.exports = router;

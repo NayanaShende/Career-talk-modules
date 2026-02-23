@@ -1,19 +1,16 @@
 const express = require("express");
 const router = express.Router();
-
 const expertController = require("../controllers/expert.profile.controller");
 const protect = require("../middleware/protect");
 const upload = require("../middleware/upload");
 
-// CREATE / UPDATE PROFILE
 router.post(
-  "/:id/profile",
+  "/create",
   protect,
   upload.single("cv"),
-  expertController.createExpertProfile
+  expertController.createExpertProfile,
 );
 
-// GET PROFILE BY EXPERT ID
-router.get("/:id/profile", expertController.getExpertProfileById);
+router.get("/", protect, expertController.getExpertProfile);
 
 module.exports = router;
