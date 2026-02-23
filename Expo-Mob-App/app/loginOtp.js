@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -18,12 +18,10 @@ import CountryPicker from "react-native-country-picker-modal";
 import { router } from "expo-router";
 import API from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-// import { LinearGradient } from "expo-linear-gradient";
 
 export default function LoginOtpScreen() {
   const slideAnim = useRef(new Animated.Value(120)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-
   const otpRefs = useRef([]);
 
   const [countryCode, setCountryCode] = useState("IN");
@@ -35,7 +33,28 @@ export default function LoginOtpScreen() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Handle mobile input
+  // ✅ TIMER STATES
+  const [timer, setTimer] = useState(60);
+  const [isTimerActive, setIsTimerActive] = useState(false);
+
+  // ✅ TIMER EFFECT
+  useEffect(() => {
+    let interval;
+
+    if (isTimerActive && timer > 0) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    }
+
+    if (timer === 0) {
+      setIsTimerActive(false);
+    }
+
+    return () => clearInterval(interval);
+  }, [isTimerActive, timer]);
+
+  // Handle phone input
   const handlePhoneChange = (number) => {
     let cleaned = number.replace(/\D/g, "").slice(0, 10);
     setMobile(cleaned);
@@ -47,7 +66,7 @@ export default function LoginOtpScreen() {
     }
   };
 
-  // SEND OTP
+  // ✅ SEND OTP
   const sendOtp = async () => {
     if (mobile.length !== 10) {
       setError("Enter valid 10 digit number");
@@ -63,6 +82,8 @@ export default function LoginOtpScreen() {
       });
 
       setOtpSent(true);
+      setTimer(60);
+      setIsTimerActive(true);
 
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -83,7 +104,7 @@ export default function LoginOtpScreen() {
     setLoading(false);
   };
 
-  // OTP change handler
+  // OTP input change
   const handleOtpChange = (text, index) => {
     if (!/^\d*$/.test(text)) return;
 
@@ -96,10 +117,25 @@ export default function LoginOtpScreen() {
     }
   };
 
-  // Handle backspace
   const handleKeyPress = (e, index) => {
     if (e.nativeEvent.key === "Backspace" && otp[index] === "" && index > 0) {
       otpRefs.current[index - 1].focus();
+    }
+  };
+
+  // ✅ RESEND OTP
+  const resendOtp = async () => {
+    try {
+      await API.post("/auth/send-otp", {
+        mobile: `+${callingCode}${mobile}`,
+      });
+
+      setTimer(60);
+      setIsTimerActive(true);
+      setOtp(["", "", "", "", "", ""]);
+      setError("");
+    } catch {
+      setError("Failed to resend OTP");
     }
   };
 
@@ -120,19 +156,12 @@ export default function LoginOtpScreen() {
         otp: finalOtp,
       });
 
-      console.log("VERIFY RESPONSE:", res.data);
-
-      // ✅ SAVE TOKEN
       if (res.data.token) {
         await AsyncStorage.setItem("token", res.data.token);
-        console.log("TOKEN SAVED ✅");
-      } else {
-        console.log("TOKEN NOT FOUND ❌");
       }
 
       router.replace("/home/userProfile");
     } catch (err) {
-      console.log("VERIFY ERROR:", err.response?.data || err.message);
       setError("OTP verification failed");
     }
 
@@ -156,14 +185,13 @@ export default function LoginOtpScreen() {
                 style={styles.image}
               />
             </View>
-            
 
             {/* CARD */}
             <View style={styles.card}>
               <Text style={styles.welcome}>Welcome Back</Text>
               <Text style={styles.subtitle}>Login to your account</Text>
 
-              {/* PHONE INPUT WITH FLAG */}
+              {/* PHONE INPUT */}
               <View style={styles.phoneContainer}>
                 <CountryPicker
                   countryCode={countryCode}
@@ -201,7 +229,6 @@ export default function LoginOtpScreen() {
                 </TouchableOpacity>
               )}
 
-              {/* OTP SECTION */}
               {otpSent && (
                 <Animated.View
                   style={[
@@ -228,6 +255,15 @@ export default function LoginOtpScreen() {
                       />
                     ))}
                   </View>
+
+                  {/* TIMER / RESEND */}
+                  {isTimerActive ? (
+                    <Text style={styles.timerText}>Resend OTP in {timer}s</Text>
+                  ) : (
+                    <TouchableOpacity onPress={resendOtp}>
+                      <Text style={styles.resendText}>Resend OTP</Text>
+                    </TouchableOpacity>
+                  )}
 
                   <TouchableOpacity
                     style={styles.loginButton}
@@ -298,11 +334,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginTop: 25,
     height: 56,
-    width: "100%", // ⭐ makes button full width
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
+    width: "100%",
     elevation: 4,
   },
 
@@ -310,16 +342,16 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 17,
-    letterSpacing: 0.5,
   },
+
   otpBox: {
     marginTop: 20,
-    width: "100%", // ⭐ important
+    width: "100%",
   },
+
   otpRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    width: "100%",
     marginVertical: 10,
   },
 
@@ -330,10 +362,27 @@ const styles = StyleSheet.create({
     backgroundColor: "#f1f3f6",
     textAlign: "center",
     fontSize: 20,
-    marginHorizontal: 4,
   },
 
-  otpTitle: { fontWeight: "600" },
+  otpTitle: {
+    fontWeight: "600",
+  },
 
-  errorText: { color: "red", marginTop: 6 },
+  timerText: {
+    textAlign: "center",
+    marginTop: 10,
+    color: "gray",
+  },
+
+  resendText: {
+    textAlign: "center",
+    marginTop: 10,
+    color: "#1C4D8D",
+    fontWeight: "600",
+  },
+
+  errorText: {
+    color: "red",
+    marginTop: 6,
+  },
 });
