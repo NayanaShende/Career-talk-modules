@@ -1,4 +1,6 @@
-const { User } = require("../models");
+// src/services/user.service.js
+
+const userRepo = require("../repositories/user.repository");
 
 const normalizeMobile = (mobile) =>
   String(mobile).replace(/\D/g, "").slice(-10);
@@ -16,7 +18,7 @@ const generateOtp = async (mobile) => {
     user.otp = otp;
     user.otpExpiryAt = otpExpiryAt;
     user.isVerified = false;
-    await user.save();
+    await userRepo.saveUser(user);
   } else {
     user = await User.create({
       mobile,
@@ -31,7 +33,6 @@ const generateOtp = async (mobile) => {
   return otp;
 };
 
-// Verify OTP
 const verifyOtp = async (mobile, otp) => {
   mobile = normalizeMobile(mobile);
 
@@ -50,7 +51,7 @@ const verifyOtp = async (mobile, otp) => {
   user.otp = null;
   user.otpExpiryAt = null;
   user.isVerified = true;
-  await user.save();
+  await userRepo.saveUser(user);
 
   return user;
 };
@@ -65,4 +66,6 @@ module.exports = {
   generateOtp,
   verifyOtp,
   getUserByMobile,
+  createUserProfile,
+  getUserProfile,
 };

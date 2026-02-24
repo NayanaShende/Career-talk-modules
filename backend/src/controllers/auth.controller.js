@@ -1,15 +1,6 @@
 // src/controllers/auth.controller.js
 
-const jwt = require("jsonwebtoken");
-const { User } = require("../models");
-
-// ------------------------------
-// HELPER FUNCTION TO NORMALIZE MOBILE
-// ------------------------------
-const normalizeMobile = (mobile) =>
-  String(mobile || "")
-    .replace(/\D/g, "")
-    .slice(-10);
+const authService = require("../services/auth.service");
 
 // ---------------------------------------
 // SEND OTP
@@ -51,7 +42,7 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
-    console.log("🔥 OTP SAVED FOR", normalizedMobile, ":", otp);
+    const { otp } = await authService.sendOtp(mobile);
 
     return res.json({
       success: true,
@@ -72,7 +63,7 @@ exports.sendOtp = async (req, res) => {
 // ---------------------------------------
 exports.verifyOtp = async (req, res) => {
   try {
-    let { mobile, otp } = req.body;
+    const { mobile, otp } = req.body;
 
     if (!mobile || !otp) {
       return res.status(400).json({

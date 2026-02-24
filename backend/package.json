@@ -6,7 +6,6 @@
   "scripts": {
     "start": "node ./bin/www",
     "dev": "node src/app.js"
-    
   },
   "dependencies": {
     "cors": "^2.8.6",
@@ -20,6 +19,7 @@
     "mysql2": "^3.16.2",
     "pg": "^8.17.2",
     "pg-hstore": "^2.3.4",
+    "react-native-dropdown-picker": "^5.4.6",
     "sequelize": "^6.37.7",
     "uuid": "^13.0.0"
   },
