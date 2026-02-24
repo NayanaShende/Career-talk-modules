@@ -22,6 +22,7 @@ const findExpertById = async (id) => {
     where: { id },
     include: { model: ExpertSkill, as: "skills" },
   });
+  return await Expert.findByPk(id);
 };
 
 const findRecommendedExperts = async (limit) => {
@@ -82,6 +83,7 @@ const searchExpertsBySkill = async (skill) => {
   });
 };
 
+// ✅ Find experts by skill column
 const findExpertsBySkill = async (skill) => {
   try {
     console.log("🔍 Searching skill:", skill);
@@ -112,6 +114,13 @@ const createExpertProfile = async (data) => {
 const updateExpertProfile = async (profile, data) => {
   return await profile.update(data);
 };
+
+exports.deleteExpert = async (id) => {
+  const query = `DELETE FROM experts WHERE id = $1 RETURNING *`;
+  const result = await db.query(query, [id]);
+  return result.rows[0];
+};
+  
 
 module.exports = {
   findAllExperts,
