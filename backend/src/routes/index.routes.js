@@ -1,16 +1,12 @@
-var express = require("express");
-var router = express.Router();
+const express = require("express");
+const router = express.Router();
 
-// IMPORT SUB-ROUTERS
-const authRouter = require("./auth.routes");
-const usersRouter = require("./user.routes");
-const profileRouter = require("./user.profile.route");
-const expertRouter = require("./expert.profile.route");
+const userRoutes = require("./user.routes");
+const authRoutes = require("./auth.routes"); // ✅ ADD
+const expertRoutes = require("./expert.routes");
 
-// REGISTER ROUTES
-router.use("/auth", authRouter); // <--- important
-router.use("/user", usersRouter);
-router.use("/profile", profileRouter);
-router.use("/expert", expertRouter);
+router.use("/users", userRoutes);
+router.use("/auth", authRoutes); // ✅ ADD
+router.use("/experts", expertRoutes);
 
 module.exports = router;

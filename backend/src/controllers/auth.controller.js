@@ -1,6 +1,9 @@
 // src/controllers/auth.controller.js
 
 const authService = require("../services/auth.service");
+const { User } = require("../models");   // ✅ ADDED
+const jwt = require("jsonwebtoken");     // ✅ ADDED
+const { normalizeMobile } = require("../utils/normalizeMobile"); // ✅ ADDED (adjust path if needed)
 
 // ---------------------------------------
 // SEND OTP
@@ -10,20 +13,52 @@ exports.sendOtp = async (req, res) => {
     const { mobile } = req.body;
 
     if (!mobile) {
-      return res.status(400).json({ success: false, message: "Mobile required" });
+      return res.status(400).json({
+        success: false,
+        message: "Mobile required",
+      });
     }
 
-    const { otp } = await authService.sendOtp(mobile);
+    const normalizedMobile = normalizeMobile(mobile);
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpExpiryAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    let user = await User.findOne({
+      where: { mobile: normalizedMobile },
+    });
+
+    if (!user) {
+      user = await User.create({
+        mobile: normalizedMobile,
+        otp,
+        otpExpiryAt,
+        isVerified: false,
+        role: null,
+        hasProfile: false,
+      });
+    } else {
+      await user.update({
+        otp,
+        otpExpiryAt,
+        isVerified: false,
+      });
+    }
+
+    // ✅ FIXED VARIABLE NAME (no redeclare error)
+    const { otp: sentOtp } = await authService.sendOtp(mobile);
 
     return res.json({
       success: true,
       message: "OTP sent successfully",
-      // TEMP for testing — remove later
-      otp,
+      otp: sentOtp, // remove in production
     });
   } catch (err) {
     console.error("SEND OTP ERROR:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -35,12 +70,59 @@ exports.verifyOtp = async (req, res) => {
     const { mobile, otp } = req.body;
 
     if (!mobile || !otp) {
-      return res.status(400).json({ success: false, message: "Missing data" });
+      return res.status(400).json({
+        success: false,
+        message: "Missing data",
+      });
     }
 
-    console.log("VERIFY REQUEST:", mobile, otp);
+    const normalizedMobile = normalizeMobile(mobile);
+    const cleanOtp = String(otp).trim();
 
-    const { token, redirectTo, freshUser } = await authService.verifyOtp(mobile, otp);
+    const user = await User.findOne({
+      where: { mobile: normalizedMobile },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    if (!user.otp || String(user.otp).trim() !== cleanOtp) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid OTP",
+      });
+    }
+
+    if (user.otpExpiryAt && new Date() > new Date(user.otpExpiryAt)) {
+      return res.status(400).json({
+        success: false,
+        message: "OTP expired",
+      });
+    }
+
+    await user.update({
+      otp: null,
+      otpExpiryAt: null,
+      isVerified: true,
+    });
+
+    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "7d",
+    });
+
+    const freshUser = await User.findByPk(user.id);
+
+    let redirectTo = "";
+
+    if (!freshUser.hasProfile) {
+      redirectTo = "/profile";
+    } else {
+      redirectTo = "/dashboard";
+    }
 
     return res.json({
       success: true,
@@ -56,13 +138,10 @@ exports.verifyOtp = async (req, res) => {
     });
   } catch (err) {
     console.error("Verify OTP error:", err);
-
-    const clientErrors = ["User not found", "Invalid OTP", "OTP expired"];
-    if (clientErrors.includes(err.message)) {
-      return res.status(400).json({ success: false, message: err.message });
-    }
-
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -72,15 +151,33 @@ exports.verifyOtp = async (req, res) => {
 exports.setRole = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(404).json({ message: "User not found" });
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
     }
 
     const { role } = req.body;
-    const user = await authService.setRole(req.user, role);
 
-    return res.json({ success: true, message: "Role updated", user });
+    if (!role) {
+      return res.status(400).json({
+        success: false,
+        message: "Role is required",
+      });
+    }
+
+    await req.user.update({ role: role.toLowerCase() });
+
+    return res.json({
+      success: true,
+      message: "Role updated successfully",
+      user: req.user,
+    });
   } catch (err) {
     console.error("Set role error:", err);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };

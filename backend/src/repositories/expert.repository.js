@@ -18,13 +18,9 @@ const updateExpertById = async (id, data) => {
 };
 
 const findExpertById = async (id) => {
-  return await Expert.findByPk(id);
   return await Expert.findOne({
     where: { id },
-    include: {
-      model: ExpertSkill,
-      as: "skills",
-    },
+    include: { model: ExpertSkill, as: "skills" },
   });
 };
 
@@ -52,37 +48,45 @@ const bulkCreateSkills = async (skillRows) => {
   return await ExpertSkill.bulkCreate(skillRows);
 };
 
+// ✅ SIMPLE FIX: filter by skill column only (exact match, case-insensitive)
+const searchExpertsByHeadline = async (skill) => {
+  try {
+    console.log("🔍 Filtering by skill column:", skill);
+
+    const result = await Expert.findAll({
+      where: {
+        skill: { [Op.iLike]: `%${skill}%` }, // ✅ only skill column
+      },
+      include: { model: ExpertSkill, as: "skills" },
+      order: [
+        ["rating", "DESC"],
+        ["experience", "DESC"],
+      ],
+    });
+
+    console.log("✅ Found:", result.length, "experts for skill:", skill);
+    return result;
+  } catch (err) {
+    console.error("❌ searchExpertsByHeadline error:", err.message);
+    throw err;
+  }
+};
+
 const searchExpertsBySkill = async (skill) => {
   if (!skill) return await Expert.findAll();
-
-  return await Expert.findAll({
-    include: {
-      model: ExpertSkill,
-      as: "skills",
-      where: {
-        skill_name: { [Op.iLike]: `%${skill}%` },
-      },
-      required: false,
-    },
-  });
-};
-
-const searchExpertsByHeadline = async (skill) => {
   return await Expert.findAll({
     where: {
-      headline: { [Op.iLike]: `%${skill}%` },
+      skill: { [Op.iLike]: `%${skill}%` },
     },
+    include: { model: ExpertSkill, as: "skills" },
   });
 };
 
-// ✅ Find experts by skill column
 const findExpertsBySkill = async (skill) => {
   try {
     console.log("🔍 Searching skill:", skill);
     const result = await Expert.findAll({
-      where: {
-        skill: { [Op.iLike]: `%${skill}%` },
-      },
+      where: { skill: { [Op.iLike]: `%${skill}%` } },
       include: { model: ExpertSkill, as: "skills" },
       order: [
         ["rating", "DESC"],
@@ -120,9 +124,6 @@ module.exports = {
   searchExpertsBySkill,
   searchExpertsByHeadline,
   findExpertsBySkill,
-  findExpertProfileByUserId,
-  createExpertProfile,
-  updateExpertProfile,
   findExpertProfileByUserId,
   createExpertProfile,
   updateExpertProfile,

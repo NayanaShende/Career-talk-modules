@@ -1,27 +1,40 @@
 module.exports = (sequelize, DataTypes) => {
-  const User = sequelize.define(
-    "User",
-    {
-      mobile: { type: DataTypes.STRING, allowNull: false, unique: true },
-      role: { type: DataTypes.STRING, allowNull: true, defaultValue: null },
-hasProfile: {
-  type: DataTypes.BOOLEAN,
-  defaultValue: false   // NEW USERS MUST BE false
-},
-      otp: { type: DataTypes.STRING, allowNull: true },
-      otpExpiryAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        field: "otpExpiryAt",
-      }, // field ensures correct DB mapping
-
-      isVerified: { type: DataTypes.BOOLEAN, defaultValue: false },
+  const User = sequelize.define("User", {
+    mobile: {
+      type: DataTypes.STRING,
+      unique: true,
+      allowNull: false,
     },
-    {
-      tableName: "Users",
-      underscored: false, // keep camelCase in DB
-    },
-  );
 
-  return User;
+    otp: DataTypes.STRING,
+    
+    otpExpiryAt: {
+      type: DataTypes.DATE,
+    },
+
+    isVerified: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    role: DataTypes.STRING,
+
+    hasProfile: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+    },
+
+    // PROFILE DATA
+    fullName: DataTypes.STRING,
+    email: DataTypes.STRING,
+
+    dob: DataTypes.DATEONLY, // ✅ birth date calendar
+
+    qualification: DataTypes.STRING,
+    experience: DataTypes.STRING,
+    domain: DataTypes.STRING,
+    cvFile: DataTypes.STRING,
+  });
+
+  return User; // ✅ FIXED
 };

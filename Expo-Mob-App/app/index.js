@@ -146,7 +146,7 @@ function Home() {
 }
 
 export default function Index() {
-  return <Redirect href="/welcome" />;
+  return <Redirect href="/loginOtp" />;
 }
 
 const styles = StyleSheet.create({

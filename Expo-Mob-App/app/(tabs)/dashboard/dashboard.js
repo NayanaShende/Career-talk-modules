@@ -107,9 +107,9 @@ export default function Dashboard() {
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.avatar}>
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>S</Text>
+            <Text style={{ color: "#fff", fontWeight: "bold" }}>C</Text>
           </View>
-          <Text style={styles.headerText}>Hi Sakshi</Text>
+          <Text style={styles.headerText}>Career-Talk</Text>
           <Pressable style={styles.walletBtn}>
             <Text style={styles.walletText}>Add Cash +</Text>
           </Pressable>
@@ -278,14 +278,6 @@ export default function Dashboard() {
         )}
 
       </ScrollView>
-
-      {/* BOTTOM NAV */}
-      <View style={styles.bottomNav}>
-        <NavItem icon="🏠" label="Home" active route="/dashboard/dashboard" />
-        <NavItem icon="🔎" label="Search" route="/expert/search" />
-        <NavItem icon="💬" label="Chat" route="/chat" />
-        <NavItem icon="👤" label="Profile" route="/home/profile" />
-      </View>
 
     </SafeAreaView>
   );
