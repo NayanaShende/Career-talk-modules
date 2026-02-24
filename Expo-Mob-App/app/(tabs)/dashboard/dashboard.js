@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -13,7 +14,6 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
-import { getAllExperts } from "../../../services/expertService";
 
 const SKILLS = [
   "All",
@@ -27,9 +27,9 @@ const SKILLS = [
 ];
 
 export default function Dashboard() {
-  const [experts, setExperts] = useState([]);
   const [onlineExperts, setOnlineExperts] = useState([]);
   const [loadingOnline, setLoadingOnline] = useState(true);
+
   const [topExperts, setTopExperts] = useState([]);
   const [loadingTop, setLoadingTop] = useState(true);
   const [activeSkill, setActiveSkill] = useState("All");
@@ -37,9 +37,9 @@ export default function Dashboard() {
   const [loadingFiltered, setLoadingFiltered] = useState(false);
 
   useEffect(() => {
-    fetchExperts();
     fetchOnlineExperts();
     fetchTopExperts();
+
     const interval = setInterval(fetchOnlineExperts, 300000);
     return () => clearInterval(interval);
   }, []);
@@ -47,15 +47,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetchFilteredExperts(activeSkill);
   }, [activeSkill]);
-
-  const fetchExperts = async () => {
-    try {
-      const data = await getAllExperts();
-      setExperts(data || []);
-    } catch (err) {
-      console.log("Dashboard fetch error:", err);
-    }
-  };
 
   const fetchOnlineExperts = async () => {
     try {
@@ -83,7 +74,6 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ Fetch experts filtered by skill from backend
   const fetchFilteredExperts = async (skill) => {
     try {
       setLoadingFiltered(true);
@@ -185,9 +175,7 @@ export default function Dashboard() {
         {loadingFiltered ? (
           <ActivityIndicator style={{ marginTop: 10 }} color="#7C3AED" />
         ) : filteredExperts.length === 0 ? (
-          <Text style={styles.noExpertText}>
-            No experts found for "{activeSkill}"
-          </Text>
+          <Text style={styles.noExpertText}>No experts found for {activeSkill}</Text>
         ) : (
           <ScrollView
             horizontal
@@ -278,7 +266,6 @@ export default function Dashboard() {
         )}
 
       </ScrollView>
-
     </SafeAreaView>
   );
 }
@@ -305,16 +292,10 @@ const LiveExpert = ({ name, title, image, onPress }) => (
   </Pressable>
 );
 
-/* NAV ITEM */
-const NavItem = ({ icon, label, route, active }) => (
-  <Pressable style={styles.navItem} onPress={() => router.push(route)}>
-    <Text style={{ fontSize: 20 }}>{icon}</Text>
-    <Text style={{ color: active ? "#7C3AED" : "#666", fontSize: 12 }}>{label}</Text>
-  </Pressable>
-);
-
+/* STYLES */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F4F5F7" },
+
   header: { flexDirection: "row", alignItems: "center", padding: 15 },
   avatar: {
     width: 40,
@@ -333,6 +314,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   walletText: { fontWeight: "600" },
+
   searchBox: {
     backgroundColor: "#fff",
     margin: 15,
@@ -353,6 +335,7 @@ const styles = StyleSheet.create({
     borderRadius: 40,
   },
   categoryText: { marginTop: 6 },
+
   banner: {
     flexDirection: "row",
     backgroundColor: "#FFF7CC",
@@ -368,6 +351,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
   },
   bannertitle: { color: "#fff", fontWeight: "bold" },
+
   bannerTitle: { fontWeight: "bold", fontSize: 16 },
   bannerImage: { width: 160, height: 120 },
   sectionHeader: {
@@ -378,6 +362,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontWeight: "bold", fontSize: 16 },
   viewAll: { color: "#7C3AED", fontWeight: "600" },
+
   topExpertCard: { alignItems: "center", marginLeft: 15 },
   topExpertImage: {
     width: 70,
@@ -395,6 +380,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   liveImage: { width: "100%", height: "100%" },
+
   liveBadge: {
     position: "absolute",
     top: 8,
@@ -405,6 +391,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   liveText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
+
   liveOverlay: {
     position: "absolute",
     bottom: 0,
@@ -474,14 +461,4 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 13,
   },
-  bottomNav: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderColor: "#eee",
-  },
-  navItem: { alignItems: "center" },
-});
+}); 

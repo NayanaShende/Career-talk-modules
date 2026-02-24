@@ -2,18 +2,13 @@
 
 const userService = require("../services/user.service");
 
-// ----------------------------------
-// CREATE OR UPDATE USER PROFILE
-// ----------------------------------
-exports.createProfile = async (req, res) => {
-  try {
-    console.log("🔥 Received Body:", req.body);
-    console.log("🔥 Received File:", req.file);
-    console.log("🔥 Auth User:", req.user);
+export default function ProfileScreen() {
+  const [role, setRole] = useState("Jobseeker");
 
     if (!req.user) {
       return res.status(401).json({ success: false, message: "User not authenticated" });
     }
+  };
 
     const profile = await userService.createUserProfile(
       req.user.id,
@@ -24,20 +19,15 @@ exports.createProfile = async (req, res) => {
     // Mark user as having completed profile
     await req.user.update({ hasProfile: true });
 
-    return res.status(200).json({
-      success: true,
-      message: "Profile saved successfully",
-      data: profile,
-    });
-  } catch (err) {
-    console.error("❌ ERROR creating/updating user profile:", err);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: err.message,
-    });
-  }
-};
+      await axios.post(
+        "http://192.168.1.17:3000/api/auth/set-role",
+        { role: selectedRole },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
 
 // ----------------------------------
 // GET USER PROFILE

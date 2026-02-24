@@ -1,8 +1,8 @@
-// src/routes/expert.routes.js
-
 const express = require("express");
 const router = express.Router();
-const expertController = require("../controllers/expert.controller");
+const expertController = require("../controllers/expert.profile.controller");
+const protect = require("../middleware/protect");
+const upload = require("../middleware/upload");
 
 // GET ALL
 // GET ALL (with optional ?skill= filter)
@@ -31,5 +31,14 @@ router.post("/:expertId/skills", expertController.addSkills);
 // SEARCH experts by headline/skill
 // GET /api/experts/search?skill=Node
 router.get("/search", expertController.searchExpertsByHeadline);
+
+router.post(
+  "/create",
+  protect,
+  upload.single("cv"),
+  expertController.createExpertProfile,
+);
+
+router.get("/", protect, expertController.getExpertProfile);
 
 module.exports = router;

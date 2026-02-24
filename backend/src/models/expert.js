@@ -48,16 +48,13 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
+      // ✅ ONLINE STATUS
       is_online: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
 
-      skill: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
+      // ✅ NEW ADDED FIELDS
       location: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -75,6 +72,12 @@ module.exports = (sequelize, DataTypes) => {
 
       certification: {
         type: DataTypes.TEXT,
+        allowNull: true,
+      },
+      
+      // ✅ NEW: Skill column added to model
+      skill: {
+        type: DataTypes.STRING,
         allowNull: true,
       },
     },

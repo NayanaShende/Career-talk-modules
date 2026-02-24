@@ -18,4 +18,11 @@ router.get("/online", expertController.getOnlineExperts);
 // GET BY ID (keep last)
 router.get("/:id", expertController.getExpertById);
 
+// ✅ ADD SKILLS
+router.post("/:expertId/skills", expertController.addSkills);
+
+// ✅ UPDATE
+router.put("/:id", expertController.updateExpert);
+
+
 module.exports = router;

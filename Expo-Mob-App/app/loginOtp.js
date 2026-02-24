@@ -14,7 +14,7 @@ import {
   Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import CountryPicker from "react-native-country-picker-modal";
+// import CountryPicker from "react-native-country-picker-modal";
 import { router } from "expo-router";
 import API from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -24,7 +24,7 @@ export default function LoginOtpScreen() {
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const otpRefs = useRef([]);
 
-  const [countryCode, setCountryCode] = useState("IN");
+  // const [countryCode, setCountryCode] = useState("IN");
   const [callingCode, setCallingCode] = useState("91");
 
   const [mobile, setMobile] = useState("");
@@ -193,7 +193,7 @@ export default function LoginOtpScreen() {
 
               {/* PHONE INPUT */}
               <View style={styles.phoneContainer}>
-                <CountryPicker
+                {/* <CountryPicker
                   countryCode={countryCode}
                   withFlag
                   withCallingCode
@@ -202,7 +202,7 @@ export default function LoginOtpScreen() {
                     setCountryCode(country.cca2);
                     setCallingCode(country.callingCode[0]);
                   }}
-                />
+                /> */}
                 <Text style={styles.code}>+{callingCode}</Text>
 
                 <TextInput

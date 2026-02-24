@@ -1,3 +1,4 @@
+
 // src/controllers/expert.controller.js
 
 const expertService = require("../services/expert.service");
@@ -5,7 +6,7 @@ const expertService = require("../services/expert.service");
 // ================= GET ALL (with optional skill filter) =================
 exports.getAllExperts = async (req, res) => {
   try {
-    const { skill } = req.query; // reads ?skill=React from frontend
+    const { skill } = req.query;
 
     let experts;
 
@@ -124,17 +125,27 @@ exports.getExpertById = async (req, res) => {
     console.error("getExpertById error:", err);
     return res.status(500).json({ success: false, message: err.message });
   }
-};
-exports.searchExperts = async (req, res) => {
-  const { skill } = req.query;
 
-  const experts = await Expert.findAll({
-    where: {
-      headline: {
-        [Op.iLike]: `%${skill}%`,
-      },
-    },
-  });
+  }
 
-  res.json(experts);
+// ================= ✅ GET EXPERTS BY SKILL =================
+exports.getExpertsBySkill = async (req, res) => {
+  try {
+    const { skill } = req.query;
+
+    if (!skill || skill === "All") {
+      const experts = await expertService.getAllExperts();
+      return res.status(200).json({ success: true, data: experts });
+    }
+
+    const experts = await expertService.getExpertsBySkill(skill);
+
+    return res.status(200).json({
+      success: true,
+      data: experts,
+    });
+  } catch (err) {
+    console.error("getExpertsBySkill error:", err);
+    return res.status(500).json({ success: false, message: err.message });
+  }
 };

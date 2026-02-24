@@ -6,11 +6,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -40,11 +40,6 @@ export default function ProfileScreen() {
   const handleChange = (field, value) =>
     setFormData({ ...formData, [field]: value });
 
-  const isValidEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
-
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || date;
     setShow(false);
@@ -59,6 +54,21 @@ export default function ProfileScreen() {
 
     handleChange("dob", formatted);
   };
+
+  // const onChangeDate = (event, selectedDate) => {
+  //   const currentDate = selectedDate || date;
+  //   setShow(false);
+  //   setDate(currentDate);
+
+  //   const formatted =
+  //     currentDate.getFullYear() +
+  //     "-" +
+  //     String(currentDate.getMonth() + 1).padStart(2, "0") +
+  //     "-" +
+  //     String(currentDate.getDate()).padStart(2, "0");
+
+  //   handleChange("dob", formatted);
+  // };
 
   const pickCV = async () => {
     const result = await DocumentPicker.getDocumentAsync({});
@@ -126,7 +136,7 @@ export default function ProfileScreen() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-        },
+        }
       );
 
       Alert.alert("Success", "Profile saved successfully!", [
@@ -140,7 +150,7 @@ export default function ProfileScreen() {
 
       Alert.alert(
         "Error",
-        error.response?.data?.message || "Could not save profile",
+        error.response?.data?.message || "Could not save profile"
       );
     }
   };
@@ -320,6 +330,7 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, justifyContent: "center", padding: 20 },
