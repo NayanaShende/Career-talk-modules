@@ -5,10 +5,11 @@ const router = express.Router();
 const expertController = require("../controllers/expert.controller");
 
 // GET ALL
+// GET ALL (with optional ?skill= filter)
 router.get("/", expertController.getAllExperts);
 
-// SEARCH
-router.get("/search", expertController.searchExperts);
+// SEARCH by skill/headline
+router.get("/search", expertController.searchExpertsByHeadline);
 
 // RECOMMENDED
 router.get("/recommended", expertController.getRecommendedExperts);
@@ -16,10 +17,13 @@ router.get("/recommended", expertController.getRecommendedExperts);
 // ONLINE
 router.get("/online", expertController.getOnlineExperts);
 
-// CREATE PROFILE
+// GET BY ID (keep last)
+router.get("/:id", expertController.getExpertById);
+
+// CREATE
 router.post("/", expertController.createExpert);
 
-// UPDATE PROFILE
+// UPDATE
 router.put("/:id", expertController.updateExpert);
 
 // ADD SKILLS

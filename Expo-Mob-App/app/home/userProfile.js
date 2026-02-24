@@ -13,15 +13,13 @@ import {
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { useNavigation } from "@react-navigation/native";
+import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProfileScreen() {
-  const navigation = useNavigation();
-
   const [role, setRole] = useState("Jobseeker");
 
   const [formData, setFormData] = useState({
@@ -47,20 +45,21 @@ export default function ProfileScreen() {
     return regex.test(email);
   };
 
-const onChangeDate = (event, selectedDate) => {
-  const currentDate = selectedDate || date;
-  setShow(false);
-  setDate(currentDate);
+  const onChangeDate = (event, selectedDate) => {
+    const currentDate = selectedDate || date;
+    setShow(false);
+    setDate(currentDate);
 
-  const formatted =
-    currentDate.getFullYear() +
-    "-" +
-    String(currentDate.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(currentDate.getDate()).padStart(2, "0");
+    const formatted =
+      currentDate.getFullYear() +
+      "-" +
+      String(currentDate.getMonth() + 1).padStart(2, "0") +
+      "-" +
+      String(currentDate.getDate()).padStart(2, "0");
 
-  handleChange("dob", formatted);
+    handleChange("dob", formatted);
   };
+
   const pickCV = async () => {
     const result = await DocumentPicker.getDocumentAsync({});
     if (!result.canceled) {
@@ -118,7 +117,7 @@ const onChangeDate = (event, selectedDate) => {
         });
       }
 
-      // ✅ API CALL
+      // ✅ API CALL - Updated IP to 192.168.1.17
       const res = await axios.post(
         "http://192.168.1.10:3000/api/users/save-profile", // replace with PC IP
         form,
@@ -130,9 +129,12 @@ const onChangeDate = (event, selectedDate) => {
         },
       );
 
-      Alert.alert("Success", "Profile saved successfully!");
-
-      navigation.navigate("dashboard/dashboard");
+      Alert.alert("Success", "Profile saved successfully!", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
+        },
+      ]);
     } catch (error) {
       console.log("PROFILE ERROR:", error.response?.data || error.message);
 
@@ -168,8 +170,7 @@ const onChangeDate = (event, selectedDate) => {
       <LinearGradient colors={["#f5f7fb", "#eef2ff"]} style={{ flex: 1 }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1 }}
-        >
+          style={{ flex: 1 }}>
           <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.card}>
               <Text style={styles.title}>Create Profile</Text>
@@ -184,14 +185,12 @@ const onChangeDate = (event, selectedDate) => {
                       styles.roleBtn,
                       role === item && styles.roleSelected,
                     ]}
-                    onPress={() => setRole(item)}
-                  >
+                    onPress={() => setRole(item)}>
                     <Text
                       style={[
                         styles.roleText,
                         role === item && { color: "#fff" },
-                      ]}
-                    >
+                      ]}>
                       {item}
                     </Text>
                   </TouchableOpacity>
@@ -219,8 +218,7 @@ const onChangeDate = (event, selectedDate) => {
               <Text style={styles.label}>Birth Date</Text>
               <TouchableOpacity
                 style={styles.input}
-                onPress={() => setShow(true)}
-              >
+                onPress={() => setShow(true)}>
                 <Text style={{ color: formData.dob ? "#000" : "#999" }}>
                   {formData.dob || "Select Birth Date"}
                 </Text>
@@ -242,8 +240,7 @@ const onChangeDate = (event, selectedDate) => {
                   <View style={styles.pickerWrapper}>
                     <Picker
                       selectedValue={formData.qualification}
-                      onValueChange={(v) => handleChange("qualification", v)}
-                    >
+                      onValueChange={(v) => handleChange("qualification", v)}>
                       <Picker.Item label="Select Qualification" value="" />
                       <Picker.Item label="Graduate" value="Graduate" />
                       <Picker.Item label="Post Graduate" value="PG" />
@@ -269,8 +266,7 @@ const onChangeDate = (event, selectedDate) => {
                   <View style={styles.pickerWrapper}>
                     <Picker
                       selectedValue={formData.domain}
-                      onValueChange={(v) => handleChange("domain", v)}
-                    >
+                      onValueChange={(v) => handleChange("domain", v)}>
                       <Picker.Item label="Select Domain" value="" />
                       <Picker.Item label="React Developer" value="React" />
                       <Picker.Item label="Java Developer" value="Java" />
@@ -294,8 +290,7 @@ const onChangeDate = (event, selectedDate) => {
               <View style={styles.pickerWrapper}>
                 <Picker
                   selectedValue={formData.experience}
-                  onValueChange={(v) => handleChange("experience", v)}
-                >
+                  onValueChange={(v) => handleChange("experience", v)}>
                   <Picker.Item label="Select Experience" value="" />
                   <Picker.Item label="Fresher" value="Fresher" />
                   <Picker.Item label="1-2 Years" value="1-2" />
@@ -315,8 +310,7 @@ const onChangeDate = (event, selectedDate) => {
               {/* SUBMIT */}
               <TouchableOpacity
                 style={styles.submitBtn}
-                onPress={submitProfile}
-              >
+                onPress={submitProfile}>
                 <Text style={styles.submitText}>Save & Continue</Text>
               </TouchableOpacity>
             </View>
@@ -336,7 +330,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
-  label: { marginBottom: 6, fontWeight: "600" },
+  label: { marginBottom: 6, fontWeight: "600", marginTop: 12 },
   input: {
     borderWidth: 1,
     borderColor: "#e5e7eb",

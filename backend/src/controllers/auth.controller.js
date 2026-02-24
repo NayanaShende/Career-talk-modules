@@ -1,6 +1,9 @@
 // src/controllers/auth.controller.js
 
 const authService = require("../services/auth.service");
+const { User } = require("../models");   // ✅ ADDED
+const jwt = require("jsonwebtoken");     // ✅ ADDED
+const { normalizeMobile } = require("../utils/normalizeMobile"); // ✅ ADDED (adjust path if needed)
 
 // ---------------------------------------
 // SEND OTP
@@ -31,7 +34,7 @@ exports.sendOtp = async (req, res) => {
         otp,
         otpExpiryAt,
         isVerified: false,
-        role: null, // role will be set in profile
+        role: null,
         hasProfile: false,
       });
     } else {
@@ -42,12 +45,13 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
-    const { otp } = await authService.sendOtp(mobile);
+    // ✅ FIXED VARIABLE NAME (no redeclare error)
+    const { otp: sentOtp } = await authService.sendOtp(mobile);
 
     return res.json({
       success: true,
       message: "OTP sent successfully",
-      otp, // remove in production
+      otp: sentOtp, // remove in production
     });
   } catch (err) {
     console.error("SEND OTP ERROR:", err);
@@ -86,7 +90,6 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    // OTP match
     if (!user.otp || String(user.otp).trim() !== cleanOtp) {
       return res.status(400).json({
         success: false,
@@ -94,7 +97,6 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    // Expiry check
     if (user.otpExpiryAt && new Date() > new Date(user.otpExpiryAt)) {
       return res.status(400).json({
         success: false,
@@ -102,7 +104,6 @@ exports.verifyOtp = async (req, res) => {
       });
     }
 
-    // Clear OTP & verify
     await user.update({
       otp: null,
       isVerified: true,
@@ -114,7 +115,6 @@ exports.verifyOtp = async (req, res) => {
 
     const freshUser = await User.findByPk(user.id);
 
-    // ✅ Simple redirect logic
     let redirectTo = "";
 
     if (!freshUser.hasProfile) {
@@ -145,7 +145,7 @@ exports.verifyOtp = async (req, res) => {
 };
 
 // ---------------------------------------
-// SET ROLE (Optional - if called from profile)
+// SET ROLE
 // ---------------------------------------
 exports.setRole = async (req, res) => {
   try {

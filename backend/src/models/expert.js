@@ -48,18 +48,16 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
-      // ✅ ONLINE STATUS
       is_online: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
 
-      // ✅ NEW: Skill column added to model
       skill: {
         type: DataTypes.STRING,
         allowNull: true,
       },
-      // ✅ NEW ADDED FIELDS
+
       location: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -86,16 +84,25 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
+  // ✅ SAFE ASSOCIATIONS (NO CRASH)
   Expert.associate = (models) => {
-    Expert.hasOne(models.ExpertProfile, {
-      foreignKey: "expertId",
-      as: "profile",
-    });
 
-    Expert.hasMany(models.ExpertSkill, {
-      foreignKey: "expert_id",
-      as: "skills",
-    });
+    // hasOne Profile
+    if (models.ExpertProfile) {
+      Expert.hasOne(models.ExpertProfile, {
+        foreignKey: "expertId",
+        as: "profile",
+      });
+    }
+
+    // hasMany Skills
+    if (models.ExpertSkill) {
+      Expert.hasMany(models.ExpertSkill, {
+        foreignKey: "expert_id",
+        as: "skills",
+      });
+    }
+
   };
 
   return Expert;

@@ -55,7 +55,7 @@ exports.saveProfile = async (req, res) => {
       hasProfile: true,
     };
 
-    // ✅ Save CV file if uploaded
+    // ✅ FIX 3: Save CV file if uploaded (moved before update)
     if (req.file) {
       updateData.cvFile = req.file.filename;
     }
