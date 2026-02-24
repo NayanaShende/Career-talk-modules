@@ -6,14 +6,14 @@ import {
   TouchableOpacity,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router } from "expo-router"; // ✅ FIXED
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
 import axios from "axios";
@@ -39,11 +39,6 @@ export default function ProfileScreen() {
 
   const handleChange = (field, value) =>
     setFormData({ ...formData, [field]: value });
-
-  const isValidEmail = (email) => {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-  };
 
   const onChangeDate = (event, selectedDate) => {
     const currentDate = selectedDate || date;
@@ -117,51 +112,29 @@ export default function ProfileScreen() {
         });
       }
 
-      // ✅ API CALL - Updated IP to 192.168.1.17
-      const res = await axios.post(
-        "http://192.168.1.17:3000/api/users/save-profile",
+      // ✅ API CALL
+      await axios.post(
+        "http://192.168.1.10:3000/api/users/save-profile",
         form,
         {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-        },
+        }
       );
 
-      Alert.alert("Success", "Profile saved successfully!", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
-        },
-      ]);
+      Alert.alert("Success", "Profile saved successfully!");
+
+      // ✅ ✅ CRITICAL FIX
+      router.replace("/(tabs)/dashboard/dashboard");
     } catch (error) {
       console.log("PROFILE ERROR:", error.response?.data || error.message);
 
       Alert.alert(
         "Error",
-        error.response?.data?.message || "Could not save profile",
+        error.response?.data?.message || "Could not save profile"
       );
-    }
-  };
-
-  const saveRole = async (selectedRole) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-
-      await axios.post(
-        "http://192.168.1.17:3000/api/auth/set-role",
-        { role: selectedRole },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      console.log("Role saved");
-    } catch (err) {
-      console.log(err.response?.data || err.message);
     }
   };
 
@@ -170,7 +143,8 @@ export default function ProfileScreen() {
       <LinearGradient colors={["#f5f7fb", "#eef2ff"]} style={{ flex: 1 }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1 }}>
+          style={{ flex: 1 }}
+        >
           <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.card}>
               <Text style={styles.title}>Create Profile</Text>
@@ -185,12 +159,14 @@ export default function ProfileScreen() {
                       styles.roleBtn,
                       role === item && styles.roleSelected,
                     ]}
-                    onPress={() => setRole(item)}>
+                    onPress={() => setRole(item)}
+                  >
                     <Text
                       style={[
                         styles.roleText,
                         role === item && { color: "#fff" },
-                      ]}>
+                      ]}
+                    >
                       {item}
                     </Text>
                   </TouchableOpacity>
@@ -218,7 +194,8 @@ export default function ProfileScreen() {
               <Text style={styles.label}>Birth Date</Text>
               <TouchableOpacity
                 style={styles.input}
-                onPress={() => setShow(true)}>
+                onPress={() => setShow(true)}
+              >
                 <Text style={{ color: formData.dob ? "#000" : "#999" }}>
                   {formData.dob || "Select Birth Date"}
                 </Text>
@@ -235,54 +212,32 @@ export default function ProfileScreen() {
 
               {/* QUALIFICATION */}
               <Text style={styles.label}>Qualification</Text>
-              <View style={styles.row}>
-                <View style={styles.flex}>
-                  <View style={styles.pickerWrapper}>
-                    <Picker
-                      selectedValue={formData.qualification}
-                      onValueChange={(v) => handleChange("qualification", v)}>
-                      <Picker.Item label="Select Qualification" value="" />
-                      <Picker.Item label="Graduate" value="Graduate" />
-                      <Picker.Item label="Post Graduate" value="PG" />
-                      <Picker.Item label="Diploma" value="Diploma" />
-                      <Picker.Item label="Other" value="Other" />
-                    </Picker>
-                  </View>
-                </View>
-
-                {formData.qualification === "Other" && (
-                  <TextInput
-                    style={[styles.input, styles.otherBox]}
-                    placeholder="Other"
-                    onChangeText={(v) => handleChange("customQualification", v)}
-                  />
-                )}
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={formData.qualification}
+                  onValueChange={(v) => handleChange("qualification", v)}
+                >
+                  <Picker.Item label="Select Qualification" value="" />
+                  <Picker.Item label="Graduate" value="Graduate" />
+                  <Picker.Item label="Post Graduate" value="PG" />
+                  <Picker.Item label="Diploma" value="Diploma" />
+                  <Picker.Item label="Other" value="Other" />
+                </Picker>
               </View>
 
               {/* DOMAIN */}
               <Text style={styles.label}>Domain</Text>
-              <View style={styles.row}>
-                <View style={styles.flex}>
-                  <View style={styles.pickerWrapper}>
-                    <Picker
-                      selectedValue={formData.domain}
-                      onValueChange={(v) => handleChange("domain", v)}>
-                      <Picker.Item label="Select Domain" value="" />
-                      <Picker.Item label="React Developer" value="React" />
-                      <Picker.Item label="Java Developer" value="Java" />
-                      <Picker.Item label="Python Developer" value="Python" />
-                      <Picker.Item label="Other" value="Other" />
-                    </Picker>
-                  </View>
-                </View>
-
-                {formData.domain === "Other" && (
-                  <TextInput
-                    style={[styles.input, styles.otherBox]}
-                    placeholder="Other"
-                    onChangeText={(v) => handleChange("customDomain", v)}
-                  />
-                )}
+              <View style={styles.pickerWrapper}>
+                <Picker
+                  selectedValue={formData.domain}
+                  onValueChange={(v) => handleChange("domain", v)}
+                >
+                  <Picker.Item label="Select Domain" value="" />
+                  <Picker.Item label="React Developer" value="React" />
+                  <Picker.Item label="Java Developer" value="Java" />
+                  <Picker.Item label="Python Developer" value="Python" />
+                  <Picker.Item label="Other" value="Other" />
+                </Picker>
               </View>
 
               {/* EXPERIENCE */}
@@ -290,7 +245,8 @@ export default function ProfileScreen() {
               <View style={styles.pickerWrapper}>
                 <Picker
                   selectedValue={formData.experience}
-                  onValueChange={(v) => handleChange("experience", v)}>
+                  onValueChange={(v) => handleChange("experience", v)}
+                >
                   <Picker.Item label="Select Experience" value="" />
                   <Picker.Item label="Fresher" value="Fresher" />
                   <Picker.Item label="1-2 Years" value="1-2" />
@@ -310,7 +266,8 @@ export default function ProfileScreen() {
               {/* SUBMIT */}
               <TouchableOpacity
                 style={styles.submitBtn}
-                onPress={submitProfile}>
+                onPress={submitProfile}
+              >
                 <Text style={styles.submitText}>Save & Continue</Text>
               </TouchableOpacity>
             </View>
@@ -321,6 +278,7 @@ export default function ProfileScreen() {
   );
 }
 
+
 const styles = StyleSheet.create({
   container: { flexGrow: 1, justifyContent: "center", padding: 20 },
   card: {
@@ -330,7 +288,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   title: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
-  label: { marginBottom: 6, fontWeight: "600", marginTop: 12 },
+  label: { marginBottom: 6, fontWeight: "600" },
   input: {
     borderWidth: 1,
     borderColor: "#e5e7eb",

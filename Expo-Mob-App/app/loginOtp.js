@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,80 +10,55 @@ import {
   Keyboard,
   ScrollView,
   TextInput,
-  ActivityIndicator,
   Animated,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import PhoneInput from "react-native-phone-input";
-import { LinearGradient } from "expo-linear-gradient";
+// import CountryPicker from "react-native-country-picker-modal";
 import { router } from "expo-router";
 import API from "../services/api";
-import { Image } from "react-native";
-// import CountryPicker from "react-native-country-picker-modal";
-
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+// import { LinearGradient } from "expo-linear-gradient";
 
 export default function LoginOtpScreen() {
-  const phoneInput = useRef(null);
-
-  const slideAnim = useRef(new Animated.Value(120)).current; // start lower
+  const slideAnim = useRef(new Animated.Value(120)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.85)).current; // pop effect
-  const [countryCode, setCountryCode] = useState("IN");
+
+  const otpRefs = useRef([]);
+
+  // const [countryCode, setCountryCode] = useState("IN");
   const [callingCode, setCallingCode] = useState("91");
-  const [countryPickerVisible, setCountryPickerVisible] = useState(false);
 
   const [mobile, setMobile] = useState("");
-  const [otp, setOtp] = useState("");
-  const [serverOtp, setServerOtp] = useState("");
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [otpSent, setOtpSent] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  // SEND OTP
- 
+  // Handle mobile input
   const handlePhoneChange = (number) => {
-    let cleaned = number.replace(/\D/g, "");
-
-    // remove country code if typed
-    if (cleaned.startsWith("91")) cleaned = cleaned.slice(2);
-
-    // limit to 10 digits ONLY
-    cleaned = cleaned.slice(0, 10);
-
+    let cleaned = number.replace(/\D/g, "").slice(0, 10);
     setMobile(cleaned);
 
-    // validation messages
-    if (cleaned.length === 0) {
-      setError("Mobile number is required");
-    } else if (cleaned.length < 10) {
-      setError("Enter a valid 10 digit number");
+    if (cleaned.length < 10) {
+      setError("Enter valid 10 digit number");
     } else {
       setError("");
     }
   };
 
-
-  const validateMobile = (number) => {
-    if (!number) return "Mobile number is required";
-    if (!/^\d+$/.test(number)) return "Only digits allowed";
-    if (number.length !== 10) return "Mobile number must be 10 digits";
-    return "";
-  };
-
+  // SEND OTP
   const sendOtp = async () => {
-    Keyboard.dismiss();
-
     if (mobile.length !== 10) {
-      setError("Enter a valid 10 digit number");
+      setError("Enter valid 10 digit number");
       return;
     }
 
+    Keyboard.dismiss();
     setLoading(true);
-    setError("");
 
     try {
-      const res = await API.post("/auth/send-otp", {
+      await API.post("/auth/send-otp", {
         mobile: `+${callingCode}${mobile}`,
       });
 
@@ -101,15 +76,38 @@ export default function LoginOtpScreen() {
           useNativeDriver: true,
         }),
       ]).start();
-    } catch (e) {
+    } catch {
       setError("Failed to send OTP");
     }
 
     setLoading(false);
   };
+
+  // OTP change handler
+  const handleOtpChange = (text, index) => {
+    if (!/^\d*$/.test(text)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = text;
+    setOtp(newOtp);
+
+    if (text && index < 5) {
+      otpRefs.current[index + 1].focus();
+    }
+  };
+
+  // Handle backspace
+  const handleKeyPress = (e, index) => {
+    if (e.nativeEvent.key === "Backspace" && otp[index] === "" && index > 0) {
+      otpRefs.current[index - 1].focus();
+    }
+  };
+
   // VERIFY OTP
   const verifyOtp = async () => {
-    if (otp.length !== 6) {
+    const finalOtp = otp.join("");
+
+    if (finalOtp.length !== 6) {
       setError("Enter 6 digit OTP");
       return;
     }
@@ -118,151 +116,138 @@ export default function LoginOtpScreen() {
 
     try {
       const res = await API.post("/auth/verify-otp", {
-        mobile,
-        otp,
+        mobile: `+${callingCode}${mobile}`,
+        otp: finalOtp,
       });
 
-      if (res.status === 200) {
-        router.replace("/home/roleSelection");
+      console.log("VERIFY RESPONSE:", res.data);
+
+      // ✅ SAVE TOKEN
+      if (res.data.token) {
+        await AsyncStorage.setItem("token", res.data.token);
+        console.log("TOKEN SAVED ✅");
       } else {
-        setError("Invalid OTP");
+        console.log("TOKEN NOT FOUND ❌");
       }
-    } catch {
+
+      router.replace("/home/userProfile");
+    } catch (err) {
+      console.log("VERIFY ERROR:", err.response?.data || err.message);
       setError("OTP verification failed");
     }
 
     setLoading(false);
   };
 
-
-return (
-  <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f6fb" }}>
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
-          {/* TOP IMAGE */}
-          <View style={styles.imageContainer}>
-            {/* Add your image here */}
-            <Image
-              source={{
-                uri: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
-              }}
-              style={styles.image}
-            />
-          </View>
-
-          {/* WHITE CARD */}
-          <View style={styles.card}>
-            <Text style={styles.welcome}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Login to your account</Text>
-            {/* PHONE INPUT */}
-            <View style={styles.phoneContainer}>
-              {/* <CountryPicker
-                countryCode={countryCode}
-                withFlag
-                withCallingCode
-                withFilter
-                withCallingCodeButton
-                onSelect={(country) => {
-                  setCountryCode(country.cca2);
-                  setCallingCode(country.callingCode[0]);
+  return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#f4f6fb" }}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+            {/* IMAGE */}
+            <View style={styles.imageContainer}>
+              <Image
+                source={{
+                  uri: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f",
                 }}
-              /> */}
-
-              <TextInput
-                style={styles.mobileInput}
-                keyboardType="number-pad"
-                placeholder="Enter mobile number"
-                value={mobile}
-                onChangeText={handlePhoneChange}
-                maxLength={10}
+                style={styles.image}
               />
             </View>
-            {error !== "" && <Text style={styles.errorText}>{error}</Text>}
+            
 
-            {!otpSent && (
-              <TouchableOpacity
-                onPress={sendOtp}
-                style={styles.loginButton}
-                disabled={loading}
-              >
-                <Text style={styles.loginText}>
-                  {loading ? "Sending..." : "Login"}
-                </Text>
-              </TouchableOpacity>
-            )}
+            {/* CARD */}
+            <View style={styles.card}>
+              <Text style={styles.welcome}>Welcome Back</Text>
+              <Text style={styles.subtitle}>Login to your account</Text>
 
-            {/* OTP SECTION */}
-            {otpSent && (
-              <Animated.View
-                style={[
-                  styles.otpBox,
-                  {
-                    opacity: opacityAnim,
-                    transform: [{ translateY: slideAnim }],
-                  },
-                ]}
-              >
-                <Text style={styles.otpTitle}>Enter OTP</Text>
+              {/* PHONE INPUT WITH FLAG */}
+              <View style={styles.phoneContainer}>
+                {/* <CountryPicker
+                  countryCode={countryCode}
+                  withFlag
+                  withCallingCode
+                  withFilter
+                  onSelect={(country) => {
+                    setCountryCode(country.cca2);
+                    setCallingCode(country.callingCode[0]);
+                  }}
+                /> */}
+                <Text style={styles.code}>+{callingCode}</Text>
 
-                <View style={styles.otpRow}>
-                  {Array(6)
-                    .fill(0)
-                    .map((_, i) => (
+                <TextInput
+                  style={styles.mobileInput}
+                  keyboardType="number-pad"
+                  placeholder="Enter mobile number"
+                  value={mobile}
+                  onChangeText={handlePhoneChange}
+                  maxLength={10}
+                />
+              </View>
+
+              {error !== "" && <Text style={styles.errorText}>{error}</Text>}
+
+              {!otpSent && (
+                <TouchableOpacity
+                  onPress={sendOtp}
+                  style={styles.loginButton}
+                  disabled={loading}
+                >
+                  <Text style={styles.loginText}>
+                    {loading ? "Sending..." : "Login"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* OTP SECTION */}
+              {otpSent && (
+                <Animated.View
+                  style={[
+                    styles.otpBox,
+                    {
+                      opacity: opacityAnim,
+                      transform: [{ translateY: slideAnim }],
+                    },
+                  ]}
+                >
+                  <Text style={styles.otpTitle}>Enter OTP</Text>
+
+                  <View style={styles.otpRow}>
+                    {otp.map((digit, i) => (
                       <TextInput
                         key={i}
+                        ref={(ref) => (otpRefs.current[i] = ref)}
                         style={styles.otpDigit}
                         keyboardType="number-pad"
                         maxLength={1}
-                        value={otp[i] || ""}
-                        onChangeText={(text) => {
-                          let newOtp = otp.split("");
-                          newOtp[i] = text;
-                          setOtp(newOtp.join(""));
-                        }}
+                        value={digit}
+                        onChangeText={(text) => handleOtpChange(text, i)}
+                        onKeyPress={(e) => handleKeyPress(e, i)}
                       />
                     ))}
-                </View>
+                  </View>
 
-                <TouchableOpacity
-                  style={styles.loginButton}
-                  activeOpacity={0.8}
-                  onPress={verifyOtp}
-                >
-                  <Text style={styles.loginText}>Verify OTP</Text>
-                </TouchableOpacity>
-              </Animated.View>
-            )}
-
-            <TouchableOpacity style={{ marginTop: 15 }}>
-              <Text style={styles.forgot}>Forgot your password?</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={{ marginTop: 8 }}>
-              <Text style={styles.signup}>Don’t have an account? Sign up</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
-  </SafeAreaView>
-);
+                  <TouchableOpacity
+                    style={styles.loginButton}
+                    onPress={verifyOtp}
+                  >
+                    <Text style={styles.loginText}>Verify OTP</Text>
+                  </TouchableOpacity>
+                </Animated.View>
+              )}
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-  imageContainer: {
-    height: 300, // show more image
-    width: "100%",
-  },
-
-  image: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
+  imageContainer: { height: 280, width: "100%" },
+  image: { width: "100%", height: "100%" },
 
   card: {
     flex: 1,
@@ -271,84 +256,66 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 35,
     borderTopRightRadius: 35,
     padding: 25,
-    paddingTop: 35,
-    elevation: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
   },
 
   welcome: {
-    fontSize: 38,
+    fontSize: 36,
     fontWeight: "bold",
     color: "#1e2a78",
-    marginTop: 10,
-    marginBottom: 12,
   },
 
   subtitle: {
-    color: "#393737",
     marginBottom: 25,
-    fontSize: 17,
-    fontWeight: "bold",
+    fontSize: 16,
+    fontWeight: "600",
   },
 
-  phoneInput: {
+  phoneContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: "#e5e7eb",
     borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 15,
-    marginBottom: 5,
+    paddingHorizontal: 10,
+    height: 55,
   },
 
-  phoneText: {
+  code: {
     fontSize: 16,
-    marginLeft: 10, // ✅ space after +91
+    marginHorizontal: 6,
+    fontWeight: "600",
+  },
+
+  mobileInput: {
+    flex: 1,
+    fontSize: 16,
   },
 
   loginButton: {
     backgroundColor: "#1C4D8D",
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 25,
-    height: 55,
-    width: "100%",
+    height: 56,
+    width: "100%", // ⭐ makes button full width
     shadowColor: "#000",
     shadowOpacity: 0.15,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 5,
+    elevation: 4,
   },
 
   loginText: {
-    fontSize: 17,
-    fontWeight: "bold",
     color: "#fff",
+    fontWeight: "bold",
+    fontSize: 17,
+    letterSpacing: 0.5,
   },
-
-  forgot: {
-    color: "#666",
-    textAlign: "center",
-  },
-
-  signup: {
-    textAlign: "center",
-    color: "#2d73b6",
-    fontWeight: "600",
-  },
-
   otpBox: {
     marginTop: 20,
-    alignItems: "center",
+    width: "100%", // ⭐ important
   },
-
-  otpTitle: {
-    marginBottom: 10,
-    fontWeight: "600",
-  },
-
   otpRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -357,51 +324,16 @@ const styles = StyleSheet.create({
   },
 
   otpDigit: {
-    width: 48,
+    width: 45,
     height: 55,
     borderRadius: 12,
     backgroundColor: "#f1f3f6",
     textAlign: "center",
     fontSize: 20,
     marginHorizontal: 4,
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
   },
 
-  errorText: {
-    color: "red",
-    marginTop: 6,
-  },
-  phoneContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    height: 55,
-    backgroundColor: "#fff",
-  },
+  otpTitle: { fontWeight: "600" },
 
-  mobileInput: {
-    flex: 1,
-    fontSize: 16,
-    marginLeft: 8,
-  },
-
-  flag: {
-    width: 24,
-    height: 16,
-    borderRadius: 2,
-  },
-
-  code: {
-    fontSize: 16,
-    marginLeft: 8,
-    marginRight: 8,
-    fontWeight: "600",
-    color: "#111",
-  },
-
-  
+  errorText: { color: "red", marginTop: 6 },
 });

@@ -34,7 +34,9 @@ const verifyOtp = async (mobile, otp) => {
 
   if (String(user.otp) !== String(otp)) throw new Error("Invalid OTP");
 
-  if (new Date() > new Date(user.otpExpiryAt)) throw new Error("OTP expired");
+  if (!user.otpExpiryAt || new Date() > new Date(user.otpExpiryAt)) {
+    throw new Error("OTP expired");
+  }
 
   user.otp = null;
   user.otpExpiryAt = null;

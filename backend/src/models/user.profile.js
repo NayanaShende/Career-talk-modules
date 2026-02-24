@@ -1,3 +1,4 @@
+
 module.exports = (sequelize, DataTypes) => {
   const UserProfile = sequelize.define("UserProfile", {
     fullName: DataTypes.STRING,

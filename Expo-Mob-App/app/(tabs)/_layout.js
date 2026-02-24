@@ -19,6 +19,7 @@ export default function TabLayout() {
         name="dashboard/dashboard"
         options={{
           title: "Home",
+          href: "/(tabs)/dashboard/dashboard",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
@@ -30,6 +31,7 @@ export default function TabLayout() {
         name="expert/search"
         options={{
           title: "Search",
+          href: "/(tabs)/expert/search",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="search" size={size} color={color} />
           ),
@@ -41,6 +43,7 @@ export default function TabLayout() {
         name="chat"
         options={{
           title: "Chat",
+          href: "/(tabs)/chat",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="chatbubble" size={size} color={color} />
           ),
@@ -52,6 +55,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Profile",
+          href: "/(tabs)/profile",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

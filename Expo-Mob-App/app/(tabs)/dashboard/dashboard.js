@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -106,13 +107,6 @@ export default function Dashboard() {
           </Text>
         </Pressable>
 
-        {/* CATEGORY */}
-        <View style={styles.categoryRow}>
-          <Category title="Python" icon="🐍" />
-          <Category title="AWS" icon="🚀" />
-          <Category title="Power BI" icon="📶" />
-          <Category title="React.js" icon="🔯" />
-        </View>
 
         {/* BANNER */}
         <View style={styles.banner}>
@@ -468,4 +462,4 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 13,
   },
-});
+}); 

@@ -18,12 +18,14 @@ exports.sendOtp = async (req, res) => {
     return res.json({
       success: true,
       message: "OTP sent successfully",
-      // TEMP for testing — remove later
-      otp,
+      otp, // remove in production
     });
   } catch (err) {
     console.error("SEND OTP ERROR:", err);
-    return res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };
 
@@ -67,7 +69,7 @@ exports.verifyOtp = async (req, res) => {
 };
 
 // ---------------------------------------
-// SET ROLE
+// SET ROLE (Optional - if called from profile)
 // ---------------------------------------
 exports.setRole = async (req, res) => {
   try {
