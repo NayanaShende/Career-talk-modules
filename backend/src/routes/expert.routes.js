@@ -1,13 +1,18 @@
 const express = require("express");
 const router = express.Router();
+
 const expertController = require("../controllers/expert.profile.controller");
 const protect = require("../middleware/protect");
 const upload = require("../middleware/upload");
 
-// GET ALL (with optional ?skill= filter)
+// ==========================
+// PUBLIC ROUTES
+// ==========================
+
+// GET ALL (with optional ?skill filter)
 router.get("/", expertController.getAllExperts);
 
-// SEARCH by skill/headline
+// SEARCH
 router.get("/search", expertController.searchExpertsByHeadline);
 
 // RECOMMENDED
@@ -16,25 +21,35 @@ router.get("/recommended", expertController.getRecommendedExperts);
 // ONLINE
 router.get("/online", expertController.getOnlineExperts);
 
-// GET BY ID (keep last)
+// GET BY ID (keep last in public)
 router.get("/:id", expertController.getExpertById);
 
-// CREATE
+// ==========================
+// PROTECTED ROUTES
+// ==========================
+
+// CREATE BASIC EXPERT
 router.post("/", expertController.createExpert);
 
-// UPDATE
+// UPDATE EXPERT
 router.put("/:id", expertController.updateExpert);
 
 // ADD SKILLS
 router.post("/:expertId/skills", expertController.addSkills);
 
+// CREATE PROFILE (WITH FILE UPLOAD)
 router.post(
-  "/create",
+  "/create-profile",
   protect,
   upload.single("cv"),
-  expertController.createExpertProfile,
+  expertController.createExpertProfile
 );
 
-router.get("/", protect, expertController.getExpertProfile);
+// GET LOGGED-IN EXPERT PROFILE
+router.get(
+  "/my-profile",
+  protect,
+  expertController.getExpertProfile
+);
 
 module.exports = router;

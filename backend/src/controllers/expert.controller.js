@@ -1,4 +1,3 @@
-
 // src/controllers/expert.controller.js
 
 const expertService = require("../services/expert.service");
@@ -6,16 +5,13 @@ const expertService = require("../services/expert.service");
 // ================= GET ALL (with optional skill filter) =================
 exports.getAllExperts = async (req, res) => {
   try {
-    const { skill } = req.query; // reads ?skill=React from frontend
-
+    const { skill } = req.query;
 
     let experts;
 
     if (skill && skill !== "All") {
-      // ✅ filter by skill column
-      experts = await expertService.searchExpertsByHeadline(skill);
+      experts = await expertService.getExpertsBySkill(skill);
     } else {
-      // return all experts
       experts = await expertService.getAllExperts();
     }
 
@@ -47,10 +43,14 @@ exports.addSkills = async (req, res) => {
     const { skills } = req.body;
 
     if (!skills || !Array.isArray(skills)) {
-      return res.status(400).json({ success: false, message: "skills must be an array" });
+      return res.status(400).json({
+        success: false,
+        message: "skills must be an array",
+      });
     }
 
     await expertService.addSkills(expertId, skills);
+
     return res.json({ success: true, message: "Skills added" });
   } catch (err) {
     console.error("addSkills error:", err);
@@ -75,23 +75,26 @@ exports.getRecommendedExperts = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const experts = await expertService.getRecommendedExperts(limit);
-    return res.json(experts);
+    return res.json({ success: true, data: experts });
   } catch (err) {
     console.error("getRecommendedExperts error:", err);
-    return res.status(500).json({ message: "Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 };
 
-// ================= SEARCH BY HEADLINE =================
+// ================= SEARCH BY SKILL =================
 exports.searchExpertsByHeadline = async (req, res) => {
   try {
     const { skill } = req.query;
 
     if (!skill) {
-      return res.status(400).json({ success: false, message: "Skill is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Skill is required" });
     }
 
-    const experts = await expertService.searchExpertsByHeadline(skill);
+    const experts = await expertService.getExpertsBySkill(skill);
+
     return res.json({ success: true, data: experts });
   } catch (err) {
     console.error("searchExpertsByHeadline error:", err);
@@ -111,7 +114,6 @@ exports.getOnlineExperts = async (req, res) => {
   }
 };
 
-
 // ================= GET EXPERT BY ID =================
 exports.getExpertById = async (req, res) => {
   try {
@@ -119,7 +121,9 @@ exports.getExpertById = async (req, res) => {
     const expert = await expertService.getExpertById(id);
 
     if (!expert) {
-      return res.status(404).json({ success: false, message: "Expert not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Expert not found" });
     }
 
     return res.status(200).json({ success: true, data: expert });
@@ -129,9 +133,7 @@ exports.getExpertById = async (req, res) => {
   }
 };
 
-  
-
-// ================= ✅ GET EXPERTS BY SKILL =================
+// ================= GET BY SKILL =================
 exports.getExpertsBySkill = async (req, res) => {
   try {
     const { skill } = req.query;
@@ -152,3 +154,5 @@ exports.getExpertsBySkill = async (req, res) => {
     return res.status(500).json({ success: false, message: err.message });
   }
 };
+
+module.exports = exports;

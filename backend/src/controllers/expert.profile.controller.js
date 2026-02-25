@@ -2,6 +2,9 @@
 
 const expertService = require("../services/expert.service");
 
+// ✅ IMPORT MAIN EXPERT CONTROLLER (IMPORTANT FIX)
+const expertController = require("./expert.controller");
+
 // ------------------------------
 // CREATE OR UPDATE EXPERT PROFILE
 // ------------------------------
@@ -21,7 +24,6 @@ exports.createExpertProfile = async (req, res) => {
       req.file
     );
 
-    // Mark user as having completed profile
     await req.user.update({ hasProfile: true });
 
     return res.status(200).json({
@@ -54,4 +56,22 @@ exports.getExpertProfile = async (req, res) => {
     console.error("❌ ERROR fetching expert profile:", err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
+};
+
+// ===================== SAFE EXPORT FIX =====================
+// ✅ Reuse functions from main expert controller
+module.exports = {
+  // FROM MAIN CONTROLLER
+  getAllExperts: expertController.getAllExperts,
+  searchExpertsByHeadline: expertController.searchExpertsByHeadline,
+  getRecommendedExperts: expertController.getRecommendedExperts,
+  getOnlineExperts: expertController.getOnlineExperts,
+  getExpertById: expertController.getExpertById,
+  createExpert: expertController.createExpert,
+  updateExpert: expertController.updateExpert,
+  addSkills: expertController.addSkills,
+
+  // PROFILE FUNCTIONS
+  createExpertProfile: exports.createExpertProfile,
+  getExpertProfile: exports.getExpertProfile,
 };
