@@ -32,6 +32,12 @@ export default function ProfileScreen() {
     customDomain: "",
     experience: "",
     cv: null,
+
+    // ⭐ ADD THESE
+    certificate: "",
+    languages: "",
+    location: "",
+    bio: "",
   });
 
   const [date, setDate] = useState(new Date());
@@ -103,22 +109,29 @@ export default function ProfileScreen() {
       // ✅ GET TOKEN
       const token = await AsyncStorage.getItem("token");
 
-      if (!token) {
-        Alert.alert("Session Expired", "Please login again");
-        return;
+      if (role === "Expert") {
+        if (!formData.bio)
+          return Alert.alert("Missing", "Please add professional bio");
       }
 
       // ✅ PREPARE FORM DATA
       const form = new FormData();
 
-      form.append("fullName", formData.fullName);
-      form.append("role", role.toLowerCase());
-      form.append("email", formData.email);
-      form.append("dob", formData.dob);
-      form.append("qualification", formData.qualification);
-      form.append("domain", formData.domain);
-      form.append("experience", formData.experience);
+     form.append("fullName", formData.fullName);
+     form.append("role", role.toLowerCase());
+     form.append("email", formData.email);
+     form.append("dob", formData.dob);
+     form.append("qualification", formData.qualification);
+     form.append("domain", formData.domain);
+     form.append("experience", formData.experience);
 
+     // ⭐ SEND EXPERT DATA
+     if (role === "Expert") {
+       form.append("certificate", formData.certificate);
+       form.append("languages", formData.languages);
+       form.append("location", formData.location);
+       form.append("bio", formData.bio);
+     }
       if (formData.cv) {
         form.append("cv", {
           uri: formData.cv.uri,
@@ -129,7 +142,7 @@ export default function ProfileScreen() {
 
       // ✅ API CALL - Updated IP to 192.168.1.17
       const res = await axios.post(
-        "http://192.168.1.10:3000/api/users/save-profile", // replace with PC IP
+        "http://192.168.1.19:3000/api/users/save-profile", // replace with PC IP
         form,
         {
           headers: {
@@ -160,7 +173,7 @@ export default function ProfileScreen() {
       const token = await AsyncStorage.getItem("token");
 
       await axios.post(
-        "http://192.168.1.10:3000/api/auth/set-role",
+        "http://192.168.1.19:3000/api/auth/set-role",
         { role: selectedRole },
         {
           headers: {
@@ -180,7 +193,8 @@ export default function ProfileScreen() {
       <LinearGradient colors={["#f5f7fb", "#eef2ff"]} style={{ flex: 1 }}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1 }}>
+          style={{ flex: 1 }}
+        >
           <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.card}>
               <Text style={styles.title}>Create Profile</Text>
@@ -195,12 +209,14 @@ export default function ProfileScreen() {
                       styles.roleBtn,
                       role === item && styles.roleSelected,
                     ]}
-                    onPress={() => setRole(item)}>
+                    onPress={() => setRole(item)}
+                  >
                     <Text
                       style={[
                         styles.roleText,
                         role === item && { color: "#fff" },
-                      ]}>
+                      ]}
+                    >
                       {item}
                     </Text>
                   </TouchableOpacity>
@@ -228,7 +244,8 @@ export default function ProfileScreen() {
               <Text style={styles.label}>Birth Date</Text>
               <TouchableOpacity
                 style={styles.input}
-                onPress={() => setShow(true)}>
+                onPress={() => setShow(true)}
+              >
                 <Text style={{ color: formData.dob ? "#000" : "#999" }}>
                   {formData.dob || "Select Birth Date"}
                 </Text>
@@ -250,7 +267,8 @@ export default function ProfileScreen() {
                   <View style={styles.pickerWrapper}>
                     <Picker
                       selectedValue={formData.qualification}
-                      onValueChange={(v) => handleChange("qualification", v)}>
+                      onValueChange={(v) => handleChange("qualification", v)}
+                    >
                       <Picker.Item label="Select Qualification" value="" />
                       <Picker.Item label="Graduate" value="Graduate" />
                       <Picker.Item label="Post Graduate" value="PG" />
@@ -276,7 +294,8 @@ export default function ProfileScreen() {
                   <View style={styles.pickerWrapper}>
                     <Picker
                       selectedValue={formData.domain}
-                      onValueChange={(v) => handleChange("domain", v)}>
+                      onValueChange={(v) => handleChange("domain", v)}
+                    >
                       <Picker.Item label="Select Domain" value="" />
                       <Picker.Item label="React Developer" value="React" />
                       <Picker.Item label="Java Developer" value="Java" />
@@ -300,12 +319,14 @@ export default function ProfileScreen() {
               <View style={styles.pickerWrapper}>
                 <Picker
                   selectedValue={formData.experience}
-                  onValueChange={(v) => handleChange("experience", v)}>
+                  onValueChange={(v) => handleChange("experience", v)}
+                >
                   <Picker.Item label="Select Experience" value="" />
                   <Picker.Item label="Fresher" value="Fresher" />
                   <Picker.Item label="1-2 Years" value="1-2" />
                   <Picker.Item label="3-5 Years" value="3-5" />
                   <Picker.Item label="5+ Years" value="5+" />
+                  <Picker.Item label="10+ Years" value="10+" />
                 </Picker>
               </View>
 
@@ -317,10 +338,45 @@ export default function ProfileScreen() {
                 </Text>
               </TouchableOpacity>
 
+              {/* ⭐ EXPERT EXTRA FIELDS */}
+              {role === "Expert" && (
+                <>
+                  <Text style={styles.label}>Certification</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Your certifications"
+                    onChangeText={(v) => handleChange("certificate", v)}
+                  />
+
+                  <Text style={styles.label}>Languages Spoken</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="English, Hindi..."
+                    onChangeText={(v) => handleChange("languages", v)}
+                  />
+
+                  <Text style={styles.label}>Location</Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="City, Country"
+                    onChangeText={(v) => handleChange("location", v)}
+                  />
+
+                  <Text style={styles.label}>Professional Bio</Text>
+                  <TextInput
+                    style={[styles.input, { height: 100 }]}
+                    multiline
+                    placeholder="Tell users about your expertise..."
+                    onChangeText={(v) => handleChange("bio", v)}
+                  />
+                </>
+              )}
+
               {/* SUBMIT */}
               <TouchableOpacity
                 style={styles.submitBtn}
-                onPress={submitProfile}>
+                onPress={submitProfile}
+              >
                 <Text style={styles.submitText}>Save & Continue</Text>
               </TouchableOpacity>
             </View>

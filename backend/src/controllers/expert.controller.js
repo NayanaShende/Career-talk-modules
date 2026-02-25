@@ -113,8 +113,7 @@ exports.getExpertById = async (req, res) => {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
-
-  }
+};
 
 // ================= ✅ GET EXPERTS BY SKILL =================
 exports.getExpertsBySkill = async (req, res) => {

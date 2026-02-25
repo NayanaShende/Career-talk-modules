@@ -79,8 +79,6 @@ const getExpertById = async (id) => {
   return await expertRepo.findExpertById(id);
 };
 
-
-
 module.exports = {
   getAllExperts,
   createExpert,

@@ -38,4 +38,26 @@ const protect = async (req, res, next) => {
   }
 };
 
+
+exports.createExpertProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // from JWT middleware
+
+    const expertData = {
+      ...req.body,
+      userId, // force logged-in user
+    };
+
+    const expert = await expertService.createExpert(expertData);
+
+    res.status(201).json({
+      success: true,
+      message: "Expert profile created",
+      data: expert,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = protect;

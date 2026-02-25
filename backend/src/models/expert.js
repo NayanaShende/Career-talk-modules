@@ -12,6 +12,11 @@ module.exports = (sequelize, DataTypes) => {
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onDelete: "CASCADE",
       },
 
       name: {
@@ -89,7 +94,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: "Experts",
       timestamps: true,
-    }
+    },
   );
 
   // ✅ SAFE ASSOCIATIONS (NO CRASH)
