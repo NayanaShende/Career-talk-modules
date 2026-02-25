@@ -8,7 +8,6 @@ const routes = require("./routes");
 const apiRouter = require("./routes/index.routes");
 const { sequelize } = require("./models");
 const expertRoutes = require("./routes/expert.routes");
-// ✅ CREATE APP FIRST
 var app = express();
 
 // ------------------------------------------------------

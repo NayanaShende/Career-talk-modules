@@ -1,32 +1,31 @@
 const express = require("express");
 const router = express.Router();
-const expertController = require("../controllers/expert.profile.controller");
-const protect = require("../middleware/protect");
-const upload = require("../middleware/upload");
 
-// GET ALL
-// GET ALL (with optional ?skill= filter)
+const expertController = require("../controllers/expert.controller");
+
+// ============================
+// GET ALL EXPERTS
+// ============================
 router.get("/", expertController.getAllExperts);
 
-// SEARCH by skill/headline
-router.get("/search", expertController.searchExpertsByHeadline);
+// ============================
+// CREATE EXPERT PROFILE
+// ============================
+router.post("/", expertController.createExpertProfile);
 
-// RECOMMENDED
+// ============================
+// GET RECOMMENDED EXPERTS
+// ============================
 router.get("/recommended", expertController.getRecommendedExperts);
 
-// ONLINE
+// ============================
+// GET ONLINE EXPERTS
+// ============================
 router.get("/online", expertController.getOnlineExperts);
 
-// GET BY ID (keep last)
-router.get("/:id", expertController.getExpertById);
-
-// CREATE
-router.post("/", expertController.createExpert);
-
-// UPDATE
-router.put("/:id", expertController.updateExpert);
-
-// ADD SKILLS
+// ============================
+// ADD SKILLS TO EXPERT
+// ============================
 router.post("/:expertId/skills", expertController.addSkills);
 // SEARCH experts by headline/skill
 // GET /api/experts/search?skill=Node
@@ -39,6 +38,9 @@ router.post(
   expertController.createExpertProfile,
 );
 
-router.get("/", protect, expertController.getExpertProfile);
+// ============================
+// GET EXPERT BY ID (KEEP LAST)
+// ============================
+router.get("/:id", expertController.getExpertById);
 
 module.exports = router;

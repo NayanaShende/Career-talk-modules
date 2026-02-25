@@ -20,33 +20,46 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-// MODELS
-db.Expert = require("./expert")(sequelize, DataTypes);
-db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
+/* =========================
+   LOAD MODELS (ORDER SAFE)
+========================= */
+
+// Load User FIRST (since Expert depends on it)
 db.User = require("./user")(sequelize, DataTypes);
-db.UserProfile = require("./user.profile")(sequelize, DataTypes);
-db.ExpertProfile = require("./expert.profile")(sequelize, DataTypes);
+db.Expert = require("./expert")(sequelize, DataTypes);
 
-// OTHER RELATIONS
-db.User.hasOne(db.UserProfile, { foreignKey: "userId" });
-db.UserProfile.belongsTo(db.User, { foreignKey: "userId" });
+// db.UserProfile = require("./user.profile")(sequelize, DataTypes);
+// db.ExpertProfile = require("./expert.profile")(sequelize, DataTypes);
+db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
 
-// AUTO ASSOCIATE
+/* =========================
+   BASIC RELATIONS
+========================= */
+
+// db.User.hasOne(db.UserProfile, { foreignKey: "userId" });
+// db.UserProfile.belongsTo(db.User, { foreignKey: "userId" });
+
+/* =========================
+   AUTO ASSOCIATE
+========================= */
+
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
   }
 });
 
-/* ✅✅✅ ADD THIS BLOCK (DO NOT REMOVE) */
+/* =========================
+   SYNC DATABASE
+========================= */
+
 db.sequelize
-  .sync({ alter: true })   // safely updates DB columns without deleting data
+  .sync({ alter: true }) // safely updates DB without deleting data
   .then(() => {
     console.log("✅ Database synced successfully");
   })
   .catch((err) => {
     console.error("❌ Database sync error:", err);
   });
-/* ✅✅✅ END ADD */
 
 module.exports = db;

@@ -1,17 +1,17 @@
 const express = require("express");
 const router = express.Router();
 
-// Experts routes
-const expertsRoutes = require("./experts");
+// experts routes
+const expertsRoutes = require("./expert.routes");
 
-// Mount experts routes
+// mount
 router.use("/experts", expertsRoutes);
 
-// Health check route
+// health route
 router.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Career Talk API running successfully"
+    message: "Career Talk API running successfully",
   });
 });
 

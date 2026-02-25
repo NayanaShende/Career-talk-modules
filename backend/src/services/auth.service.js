@@ -2,6 +2,7 @@
 
 const jwt = require("jsonwebtoken");
 const authRepo = require("../repositories/auth.repository");
+const expertRepository = require("../repositories/expert.repository");
 
 const sendOtp = async (mobile) => {
   const normalizedMobile = authRepo.normalizeMobile(mobile);
@@ -19,7 +20,11 @@ const sendOtp = async (mobile) => {
       isVerified: false,
     });
   } else {
-    await authRepo.updateUser(user, { otp, otpExpiryAt, isVerified: false });
+    await authRepo.updateUser(user, {
+      otp,
+      otpExpiryAt,
+      isVerified: false,
+    });
   }
 
   console.log("🔥 OTP SAVED FOR", normalizedMobile, ":", otp);
@@ -55,20 +60,56 @@ const verifyOtp = async (mobile, otp) => {
   const freshUser = await authRepo.findUserById(user.id);
 
   let redirectTo = "";
+
   if (freshUser.hasProfile === true) {
     redirectTo = "/dashboard";
   } else {
-    if (!freshUser.role) redirectTo = "/select-role";
-    else if (freshUser.role === "jobseeker") redirectTo = "/jobseeker";
-    else if (freshUser.role === "expert") redirectTo = "/expert";
+    if (!freshUser.role) {
+      redirectTo = "/select-role";
+    } else if (freshUser.role === "jobseeker") {
+      redirectTo = "/jobseeker";
+    } else if (freshUser.role === "expert") {
+      redirectTo = "/expert";
+    }
   }
 
   return { token, redirectTo, freshUser };
 };
 
 const setRole = async (user, role) => {
+  console.log("🔥 setRole called with role:", role);
+
   user.role = role;
   await user.save();
+
+  // 🔥 AUTO CREATE EXPERT RECORD
+  if (role === "expert") {
+    try {
+      console.log("🔥 Checking expert profile for user:", user.id);
+
+      const existingExpert =
+        await expertRepository.findExpertByUserId(user.id);
+
+      if (!existingExpert) {
+        console.log("🔥 Creating expert profile...");
+
+        await expertRepository.createExpert({
+          userId: user.id,
+          name: user.fullName || "New Expert",
+          experience: 0,
+          rating: 0,
+          is_online: false,
+        });
+
+        console.log("✅ Expert profile created successfully");
+      } else {
+        console.log("⚠️ Expert already exists");
+      }
+    } catch (error) {
+      console.error("❌ Expert creation error:", error.message);
+    }
+  }
+
   return user;
 };
 
