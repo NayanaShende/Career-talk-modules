@@ -79,10 +79,13 @@ const verifyOtp = async (mobile, otp) => {
 const setRole = async (user, role) => {
   console.log("🔥 setRole called with role:", role);
 
-  user.role = role;
-  await user.save();
+  // ✅ Only update role if changed
+  if (user.role !== role) {
+    user.role = role;
+    await user.save();
+  }
 
-  // 🔥 AUTO CREATE EXPERT RECORD
+  // 🔥 SAFE EXPERT AUTO-CREATE
   if (role === "expert") {
     try {
       console.log("🔥 Checking expert profile for user:", user.id);
@@ -90,6 +93,7 @@ const setRole = async (user, role) => {
       const existingExpert =
         await expertRepository.findExpertByUserId(user.id);
 
+      // ✅ ONLY CREATE IF ABSOLUTELY NOT EXISTS
       if (!existingExpert) {
         console.log("🔥 Creating expert profile...");
 
@@ -103,7 +107,7 @@ const setRole = async (user, role) => {
 
         console.log("✅ Expert profile created successfully");
       } else {
-        console.log("⚠️ Expert already exists");
+        console.log("✅ Expert already exists - NOT creating again");
       }
     } catch (error) {
       console.error("❌ Expert creation error:", error.message);
