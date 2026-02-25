@@ -74,7 +74,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      
+
       // ✅ NEW: Skill column added to model
       skill: {
         type: DataTypes.STRING,
@@ -88,15 +88,20 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Expert.associate = (models) => {
-    Expert.hasOne(models.ExpertProfile, {
-      foreignKey: "expertId",
-      as: "profile",
-    });
+    // ✅ SAFE association (prevents crash if model missing)
+    if (models.ExpertProfile) {
+      Expert.hasOne(models.ExpertProfile, {
+        foreignKey: "expertId",
+        as: "profile",
+      });
+    }
 
-    Expert.hasMany(models.ExpertSkill, {
-      foreignKey: "expert_id",
-      as: "skills",
-    });
+    if (models.ExpertSkill) {
+      Expert.hasMany(models.ExpertSkill, {
+        foreignKey: "expert_id",
+        as: "skills",
+      });
+    }
   };
 
   return Expert;
