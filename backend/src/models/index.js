@@ -27,17 +27,7 @@ db.sequelize = sequelize;
 // Load User FIRST (since Expert depends on it)
 db.User = require("./user")(sequelize, DataTypes);
 db.Expert = require("./expert")(sequelize, DataTypes);
-
-// db.UserProfile = require("./user.profile")(sequelize, DataTypes);
-// db.ExpertProfile = require("./expert.profile")(sequelize, DataTypes);
 db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
-
-/* =========================
-   BASIC RELATIONS
-========================= */
-
-// db.User.hasOne(db.UserProfile, { foreignKey: "userId" });
-// db.UserProfile.belongsTo(db.User, { foreignKey: "userId" });
 
 /* =========================
    AUTO ASSOCIATE
@@ -50,13 +40,14 @@ Object.keys(db).forEach((modelName) => {
 });
 
 /* =========================
-   SYNC DATABASE
+   SYNC DATABASE (SAFE MODE)
 ========================= */
 
+// ✅ IMPORTANT: Do NOT use alter or force in production
 db.sequelize
-  .sync({ alter: true }) // safely updates DB without deleting data
+  .sync()  // ← changed from { alter: true }
   .then(() => {
-    console.log("✅ Database synced successfully");
+    console.log("✅ Database synced safely");
   })
   .catch((err) => {
     console.error("❌ Database sync error:", err);

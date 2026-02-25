@@ -1,26 +1,13 @@
 require("dotenv").config();
-var createError = require("http-errors");
 var express = require("express");
 var logger = require("morgan");
 const cors = require("cors");
 
-const routes = require("./routes");
-const apiRouter = require("./routes/index.routes");
+const routes = require("./routes"); // this loads index.routes.js
 const { sequelize } = require("./models");
-const expertRoutes = require("./routes/expert.routes");
+
 var app = express();
 
-// ------------------------------------------------------
-// DATABASE SYNC
-// ------------------------------------------------------
-// sequelize
-//   .sync({ alter: true })
-//   .then(() => console.log("✅ Database synced"))
-//   .catch((err) => console.error("❌ Sync error:", err));
-
-// ------------------------------------------------------
-// CORS
-// ------------------------------------------------------
 app.use(
   cors({
     origin: "*",
@@ -39,8 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 // ROUTES
 // ------------------------------------------------------
 app.use("/api", routes);
-app.use("/api", apiRouter);
-app.use("/api/experts", expertRoutes);
+
 // ------------------------------------------------------
 // 404 HANDLER
 // ------------------------------------------------------
