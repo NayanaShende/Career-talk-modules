@@ -1,4 +1,5 @@
 const { User } = require("../models");
+const authService = require("../services/auth.service"); // ✅ ADDED
 
 exports.saveProfile = async (req, res) => {
   try {
@@ -34,7 +35,7 @@ exports.saveProfile = async (req, res) => {
       });
     }
 
-    // ✅ FIX 2: Prepare updateData object properly
+    // ✅ Prepare updateData object properly
     const updateData = {
       fullName,
       email,
@@ -46,13 +47,18 @@ exports.saveProfile = async (req, res) => {
       hasProfile: true,
     };
 
-    // ✅ FIX 3: Save CV file if uploaded (moved before update)
+    // ✅ Save CV file if uploaded
     if (req.file) {
       updateData.cvFile = req.file.filename;
     }
 
-    // ✅ FIX 4: Single update call with all data including cv
+    // ✅ Update user table
     await req.user.update(updateData);
+
+    // 🔥 VERY IMPORTANT: create expert if role = expert
+    if (role === "expert") {
+      await authService.setRole(req.user, role);
+    }
 
     return res.json({
       success: true,

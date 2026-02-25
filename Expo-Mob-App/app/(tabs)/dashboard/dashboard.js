@@ -15,7 +15,16 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const SKILLS = ["All", "React", "Python", "DevOps", "Angular", "Java Spring Boot", "UI/UX Design", "Data Analysis"];
+const SKILLS = [
+  "All",
+  "React",
+  "Python",
+  "DevOps",
+  "Angular",
+  "Java Spring Boot",
+  "UI/UX Design",
+  "Data Analysis",
+];
 
 export default function Dashboard() {
   const [onlineExperts, setOnlineExperts] = useState([]);
@@ -39,6 +48,15 @@ export default function Dashboard() {
   useEffect(() => {
     fetchFilteredExperts(activeSkill);
   }, [activeSkill]);
+
+  const fetchExperts = async () => {
+    try {
+      const data = await getAllExperts();
+      setExperts(data || []);
+    } catch (err) {
+      console.log("Dashboard fetch error:", err);
+    }
+  };
 
   const fetchOnlineExperts = async () => {
     try {
@@ -66,6 +84,7 @@ export default function Dashboard() {
     }
   };
 
+  // ✅ Fetch experts filtered by skill from backend
   const fetchFilteredExperts = async (skill) => {
     try {
       setLoadingFiltered(true);
@@ -84,7 +103,8 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 80 }}>
+        contentContainerStyle={{ paddingBottom: 100 }}>
+  
 
         {/* HEADER */}
         <View style={styles.header}>
@@ -168,24 +188,40 @@ export default function Dashboard() {
         {loadingFiltered ? (
           <ActivityIndicator style={{ marginTop: 10 }} color="#7C3AED" />
         ) : filteredExperts.length === 0 ? (
-          <Text style={styles.noExpertText}>No experts found for {activeSkill}</Text>
+          <Text style={styles.noExpertText}>
+            No experts found for "{activeSkill}"
+          </Text>
+
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingLeft: 15 }}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{ paddingLeft: 15 }}>
             {filteredExperts.map((e) => (
               <Pressable
                 key={e.id}
                 style={styles.filteredCard}
                 onPress={() => router.push(`/expert/${e.id}`)}>
                 <Image
-                  source={{ uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}&background=7C3AED&color=fff` }}
+                  source={{
+                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}&background=7C3AED&color=fff`,
+                  }}
                   style={styles.filteredImage}
                 />
                 <View style={styles.filteredInfo}>
-                  <Text style={styles.filteredName} numberOfLines={1}>{e.name || ""}</Text>
-                  <Text style={styles.filteredHeadline} numberOfLines={1}>{e.headline || ""}</Text>
+                  <Text style={styles.filteredName} numberOfLines={1}>
+                    {e.name || ""}
+                  </Text>
+                  <Text style={styles.filteredHeadline} numberOfLines={1}>
+                    {e.headline || ""}
+                  </Text>
                   <View style={styles.filteredMeta}>
-                    <Text style={styles.filteredSkillTag}>{e.skill || activeSkill}</Text>
-                    <Text style={styles.filteredRating}>⭐ {e.rating || "N/A"}</Text>
+                    <Text style={styles.filteredSkillTag}>
+                      {e.skill || activeSkill}
+                    </Text>
+                    <Text style={styles.filteredRating}>
+                      ⭐ {e.rating || "N/A"}
+                    </Text>
                   </View>
                 </View>
               </Pressable>
@@ -246,6 +282,7 @@ export default function Dashboard() {
         )}
 
       </ScrollView>
+
     </SafeAreaView>
   );
 }
@@ -418,23 +455,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
   },
-  filteredImage: {
-    width: "100%",
-    height: 100,
-  },
-  filteredInfo: {
-    padding: 10,
-  },
-  filteredName: {
-    fontWeight: "bold",
-    fontSize: 13,
-    color: "#111",
-  },
-  filteredHeadline: {
-    fontSize: 11,
-    color: "#666",
-    marginTop: 2,
-  },
+  filteredImage: { width: "100%", height: 100 },
+  filteredInfo: { padding: 10 },
+  filteredName: { fontWeight: "bold", fontSize: 13, color: "#111" },
+  filteredHeadline: { fontSize: 11, color: "#666", marginTop: 2 },
   filteredMeta: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -450,11 +474,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     fontWeight: "600",
   },
-  filteredRating: {
-    fontSize: 11,
-    color: "#444",
-    fontWeight: "600",
-  },
+  filteredRating: { fontSize: 11, color: "#444", fontWeight: "600" },
   noExpertText: {
     textAlign: "center",
     color: "#999",
@@ -462,4 +482,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     fontSize: 13,
   },
-}); 
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderColor: "#eee",
+  },
+  navItem: { alignItems: "center" },
+});

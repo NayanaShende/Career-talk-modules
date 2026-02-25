@@ -31,7 +31,14 @@ export default function ExpertProfile() {
   const fetchExpert = async () => {
     try {
       const res = await getExpertById(id);
-      setExpert(res?.data || res);
+      const data = res?.data || res;
+      
+      // ─── DEBUG: See exactly what fields we received from backend ───
+      console.log("═══════ EXPERT FULL DATA ═══════");
+      console.log(JSON.stringify(data, null, 2));
+      console.log("═══════════════════════════════");
+
+      setExpert(data);
     } catch (err) {
       console.log("Profile error:", err);
     } finally {
@@ -59,11 +66,46 @@ export default function ExpertProfile() {
     ? expert.skills.map((s) => s.skill_name)
     : [];
 
-  // REAL DATABASE VALUES
   const ratingValue = parseFloat(expert.rating) || 0;
   const totalReviews = expert.total_reviews || 0;
 
-  // Helper to render stars based on DB rating
+  // Helper to get experience value from common possible field names
+  const experienceYears =
+    expert?.years_of_experience ??
+    expert?.experience_years ??
+    expert?.exp_years ??
+    expert?.total_experience ??
+    expert?.experience ??
+    expert?.years ??
+    "—";
+
+  // Helper for location
+  const locationValue =
+    expert?.location ??
+    expert?.city ??
+    expert?.base_location ??
+    expert?.work_location ??
+    expert?.address ??
+    "Not specified";
+
+  // Helper for languages
+  const languagesValue = (() => {
+    if (Array.isArray(expert?.languages)) return expert.languages.join(", ");
+    if (Array.isArray(expert?.spoken_languages)) return expert.spoken_languages.join(", ");
+    return (
+      expert?.language_spoken ??
+      expert?.languages_spoken ??
+      expert?.lang ??
+      expert?.language ??
+      "Not specified"
+    );
+  })();
+
+  // Helper for certification
+  const certificationValue =
+    expert?.certification ??
+    (Array.isArray(expert?.certifications) ? expert.certifications.join(" • ") : "Not specified");
+
   const renderStars = (rating) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -121,7 +163,7 @@ export default function ExpertProfile() {
             <View style={styles.statsRow}>
               <View style={styles.statPill}>
                 <Text style={styles.statText}>
-                  {expert.experience} Years Experience
+                  {experienceYears} Years Experience
                 </Text>
               </View>
               <View style={styles.statPill}>
@@ -166,7 +208,7 @@ export default function ExpertProfile() {
 
           <View style={styles.fullWidthCard}>
             <Text style={styles.cardTitle}>About Me</Text>
-            <Text style={styles.cardText}>{expert.bio}</Text>
+            <Text style={styles.cardText}>{expert.bio || "No bio available"}</Text>
           </View>
 
           <View style={styles.detailsCard}>
@@ -174,22 +216,22 @@ export default function ExpertProfile() {
             <DetailItem
               icon="briefcase-outline"
               label="Experience"
-              value={`${expert.experience} Years`}
+              value={`${experienceYears} Years`}
             />
             <DetailItem
               icon="map-marker-outline"
               label="Location"
-              value={expert.location}
+              value={locationValue}
             />
             <DetailItem
               icon="translate"
               label="Languages"
-              value={expert.language_spoken}
+              value={languagesValue}
             />
             <DetailItem
               icon="certificate-outline"
               label="Certification"
-              value={expert.certification}
+              value={certificationValue}
             />
           </View>
 
@@ -206,7 +248,6 @@ export default function ExpertProfile() {
             </View>
           )}
 
-          {/* REAL DATABASE RATINGS SECTION */}
           <View style={styles.fullWidthCard}>
             <Text style={styles.cardTitle}>Ratings & Reviews</Text>
             <View style={styles.ratingRow}>

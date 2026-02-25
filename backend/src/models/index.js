@@ -20,25 +20,41 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-// ✅ MODELS
-db.Expert = require("./expert")(sequelize, DataTypes);
-db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
-db.User = require("./user")(sequelize, DataTypes);
+/* =========================
+   LOAD MODELS (ORDER SAFE)
+========================= */
 
-// ❌ REMOVED (you deleted these files)
+// Load User FIRST (since Expert depends on it)
+db.User = require("./user")(sequelize, DataTypes);
+db.Expert = require("./expert")(sequelize, DataTypes);
+
 // db.UserProfile = require("./user.profile")(sequelize, DataTypes);
 // db.ExpertProfile = require("./expert.profile")(sequelize, DataTypes);
+db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
 
-// AUTO ASSOCIATE
+/* =========================
+   BASIC RELATIONS
+========================= */
+
+// db.User.hasOne(db.UserProfile, { foreignKey: "userId" });
+// db.UserProfile.belongsTo(db.User, { foreignKey: "userId" });
+
+/* =========================
+   AUTO ASSOCIATE
+========================= */
+
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {
     db[modelName].associate(db);
   }
 });
 
-/* ✅ Database Sync */
+/* =========================
+   SYNC DATABASE
+========================= */
+
 db.sequelize
-  .sync({ alter: true })
+  .sync({ alter: true }) // safely updates DB without deleting data
   .then(() => {
     console.log("✅ Database synced successfully");
   })
