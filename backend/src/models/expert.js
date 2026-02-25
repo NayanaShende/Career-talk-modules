@@ -8,6 +8,12 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
       },
 
+      // ✅ ADDED: Link Expert to User
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+
       name: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -54,12 +60,12 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
+      // ✅ KEEP ONLY ONE skill FIELD
       skill: {
         type: DataTypes.STRING,
         allowNull: true,
       },
 
-      // ✅ NEW ADDED FIELDS
       location: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -79,12 +85,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
-      
-      // ✅ NEW: Skill column added to model
-      skill: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
     },
     {
       tableName: "Experts",
@@ -94,6 +94,14 @@ module.exports = (sequelize, DataTypes) => {
 
   // ✅ SAFE ASSOCIATIONS (NO CRASH)
   Expert.associate = (models) => {
+
+    // ✅ ADDED: Expert belongs to User
+    if (models.User) {
+      Expert.belongsTo(models.User, {
+        foreignKey: "userId",
+        as: "user",
+      });
+    }
 
     // hasOne Profile
     if (models.ExpertProfile) {
@@ -110,7 +118,6 @@ module.exports = (sequelize, DataTypes) => {
         as: "skills",
       });
     }
-
   };
 
   return Expert;

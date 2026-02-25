@@ -115,7 +115,7 @@ export default function ProfileScreen() {
 
       // ✅ API CALL - Updated IP to 192.168.1.17
       const res = await axios.post(
-        "http://172.20.10.3:3000/api/users/save-profile",
+        "http://192.168.1.17:3000/api/users/save-profile",
         form,
         {
           headers: {

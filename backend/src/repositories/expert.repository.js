@@ -1,6 +1,6 @@
 // src/repositories/expert.repository.js
 
-const { Expert, ExpertSkill, ExpertProfile } = require("../models");
+const { Expert, ExpertSkill, ExpertProfile, sequelize } = require("../models");
 const { Op } = require("sequelize");
 
 const findAllExperts = async () => {
@@ -13,6 +13,11 @@ const createExpert = async (data) => {
   return await Expert.create(data);
 };
 
+// ✅ ADDED (VERY IMPORTANT - used in auth.service)
+const findExpertByUserId = async (userId) => {
+  return await Expert.findOne({ where: { userId } });
+};
+
 const updateExpertById = async (id, data) => {
   return await Expert.update(data, { where: { id } });
 };
@@ -22,7 +27,6 @@ const findExpertById = async (id) => {
     where: { id },
     include: { model: ExpertSkill, as: "skills" },
   });
-  return await Expert.findByPk(id);
 };
 
 const findRecommendedExperts = async (limit) => {
@@ -56,7 +60,7 @@ const searchExpertsByHeadline = async (skill) => {
 
     const result = await Expert.findAll({
       where: {
-        skill: { [Op.iLike]: `%${skill}%` }, // ✅ only skill column
+        skill: { [Op.iLike]: `%${skill}%` },
       },
       include: { model: ExpertSkill, as: "skills" },
       order: [
@@ -75,6 +79,7 @@ const searchExpertsByHeadline = async (skill) => {
 
 const searchExpertsBySkill = async (skill) => {
   if (!skill) return await Expert.findAll();
+
   return await Expert.findAll({
     where: {
       skill: { [Op.iLike]: `%${skill}%` },
@@ -83,10 +88,10 @@ const searchExpertsBySkill = async (skill) => {
   });
 };
 
-// ✅ Find experts by skill column
 const findExpertsBySkill = async (skill) => {
   try {
     console.log("🔍 Searching skill:", skill);
+
     const result = await Expert.findAll({
       where: { skill: { [Op.iLike]: `%${skill}%` } },
       include: { model: ExpertSkill, as: "skills" },
@@ -95,6 +100,7 @@ const findExpertsBySkill = async (skill) => {
         ["experience", "DESC"],
       ],
     });
+
     console.log("✅ Found:", result.length, "experts");
     return result;
   } catch (err) {
@@ -115,16 +121,18 @@ const updateExpertProfile = async (profile, data) => {
   return await profile.update(data);
 };
 
-exports.deleteExpert = async (id) => {
-  const query = `DELETE FROM experts WHERE id = $1 RETURNING *`;
-  const result = await db.query(query, [id]);
-  return result.rows[0];
+// ✅ FIXED DELETE (was broken before)
+const deleteExpert = async (id) => {
+  const expert = await Expert.findByPk(id);
+  if (!expert) return null;
+  await expert.destroy();
+  return expert;
 };
-  
 
 module.exports = {
   findAllExperts,
   createExpert,
+  findExpertByUserId, // ✅ IMPORTANT EXPORT
   updateExpertById,
   findExpertById,
   findRecommendedExperts,
@@ -136,4 +144,5 @@ module.exports = {
   findExpertProfileByUserId,
   createExpertProfile,
   updateExpertProfile,
+  deleteExpert,
 };

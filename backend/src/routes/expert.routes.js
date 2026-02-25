@@ -1,55 +1,41 @@
 const express = require("express");
 const router = express.Router();
 
-const expertController = require("../controllers/expert.profile.controller");
-const protect = require("../middleware/protect");
-const upload = require("../middleware/upload");
+const expertController = require("../controllers/expert.controller");
 
-// ==========================
-// PUBLIC ROUTES
-// ==========================
-
-// GET ALL (with optional ?skill filter)
+// ============================
+// GET ALL EXPERTS
+// ============================
 router.get("/", expertController.getAllExperts);
 
-// SEARCH
-router.get("/search", expertController.searchExpertsByHeadline);
+// ============================
+// CREATE EXPERT PROFILE
+// ============================
+router.post("/", expertController.createExpertProfile);
 
-// RECOMMENDED
+// ============================
+// GET RECOMMENDED EXPERTS
+// ============================
 router.get("/recommended", expertController.getRecommendedExperts);
 
-// ONLINE
+// ============================
+// GET ONLINE EXPERTS
+// ============================
 router.get("/online", expertController.getOnlineExperts);
 
-// GET BY ID (keep last in public)
-router.get("/:id", expertController.getExpertById);
-
-// ==========================
-// PROTECTED ROUTES
-// ==========================
-
-// CREATE BASIC EXPERT
-router.post("/", expertController.createExpert);
-
-// UPDATE EXPERT
-router.put("/:id", expertController.updateExpert);
-
-// ADD SKILLS
+// ============================
+// ADD SKILLS TO EXPERT
+// ============================
 router.post("/:expertId/skills", expertController.addSkills);
 
-// CREATE PROFILE (WITH FILE UPLOAD)
-router.post(
-  "/create-profile",
-  protect,
-  upload.single("cv"),
-  expertController.createExpertProfile
-);
+// ============================
+// UPDATE EXPERT PROFILE
+// ============================
+router.put("/:id", expertController.updateExpertProfile);
 
-// GET LOGGED-IN EXPERT PROFILE
-router.get(
-  "/my-profile",
-  protect,
-  expertController.getExpertProfile
-);
+// ============================
+// GET EXPERT BY ID (KEEP LAST)
+// ============================
+router.get("/:id", expertController.getExpertById);
 
 module.exports = router;
