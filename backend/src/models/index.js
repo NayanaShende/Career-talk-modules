@@ -12,7 +12,7 @@ const sequelize = new Sequelize(
     port: config.port || 5432,
     dialect: config.dialect || "postgres",
     logging: false,
-  }
+  },
 );
 
 const db = {};
@@ -20,18 +20,14 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-/* =========================
-   LOAD MODELS (ORDER SAFE)
-========================= */
-
-// Load User FIRST (since Expert depends on it)
-db.User = require("./user")(sequelize, DataTypes);
+// ✅ MODELS
 db.Expert = require("./expert")(sequelize, DataTypes);
 db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
+db.User = require("./user")(sequelize, DataTypes);
 
-/* =========================
-   AUTO ASSOCIATE
-========================= */
+// ❌ REMOVED (you deleted these files)
+// db.UserProfile = require("./user.profile")(sequelize, DataTypes);
+// db.ExpertProfile = require("./expert.profile")(sequelize, DataTypes);
 
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {
@@ -39,13 +35,9 @@ Object.keys(db).forEach((modelName) => {
   }
 });
 
-/* =========================
-   SYNC DATABASE (SAFE MODE)
-========================= */
-
-// ✅ IMPORTANT: Do NOT use alter or force in production
+/* ✅ Database Sync */
 db.sequelize
-  .sync()  // ← changed from { alter: true }
+  .sync({ alter: true })
   .then(() => {
     console.log("✅ Database synced safely");
   })

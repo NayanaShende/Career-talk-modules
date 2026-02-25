@@ -36,15 +36,5 @@ module.exports = (sequelize, DataTypes) => {
     cvFile: DataTypes.STRING,
   });
 
-  // ✅ ADDED ASSOCIATION (DO NOT REMOVE)
-  User.associate = (models) => {
-    if (models.Expert) {
-      User.hasOne(models.Expert, {
-        foreignKey: "userId",
-        as: "expert",
-      });
-    }
-  };
-
-  return User;
+  return User; // ✅ FIXED
 };

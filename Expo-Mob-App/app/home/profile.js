@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -105,7 +105,6 @@ function MenuItem({ icon, text, right, onPress }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6", padding: 20 },
   header: { alignItems: "center", marginTop: 20, marginBottom: 20 },
-
   avatar: {
     width: 110,
     height: 110,
@@ -120,23 +119,19 @@ const styles = StyleSheet.create({
   name: { fontSize: 22, fontWeight: "bold", marginTop: 12 },
   email: { color: "#6B7280", marginTop: 4 },
   phone: { color: "#6B7280", marginTop: 2 },
-
   menuContainer: {
     backgroundColor: "#fff",
     borderRadius: 16,
     paddingVertical: 10,
   },
-
   menuItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
   },
-
   left: { flexDirection: "row", alignItems: "center" },
   menuText: { marginLeft: 14, fontSize: 16 },
   rightText: { color: "#8B5CF6", fontWeight: "600" },
-
   divider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 8 },
 });

@@ -1,8 +1,8 @@
 {
   "development": {
     "username": "postgres",
-    "password": "postgres",      
-    "database": "career_talk",   
+    "password": "Sakshi@18",      
+    "database": "new_database",   
     "host": "127.0.0.1",
     "port": 5432,
     "dialect": "postgres"

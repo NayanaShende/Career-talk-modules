@@ -3,22 +3,8 @@ const expertService = require("../services/expert.service");
 // ================= GET ALL =================
 exports.getAllExperts = async (req, res) => {
   try {
-    const { skill } = req.query;
-
-    let experts;
-
-    if (skill && skill !== "All") {
-      // ✅ filter by skill column
-      experts = await expertService.searchExpertsByHeadline(skill);
-    } else {
-      // return all experts
-      experts = await expertService.getAllExperts();
-    }
-
-    return res.status(200).json({
-      success: true,
-      data: experts,
-    });
+    const experts = await expertService.getAllExperts();
+    res.status(200).json({ success: true, data: experts });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });
@@ -97,7 +83,7 @@ exports.getOnlineExperts = async (req, res) => {
   }
 };
 
-// ================= GET EXPERT BY ID =================
+// ================= GET BY ID =================
 exports.getExpertById = async (req, res) => {
   try {
     const expert = await expertService.getExpertById(req.params.id);
@@ -112,27 +98,5 @@ exports.getExpertById = async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// ================= ✅ GET EXPERTS BY SKILL =================
-exports.getExpertsBySkill = async (req, res) => {
-  try {
-    const { skill } = req.query;
-
-    if (!skill || skill === "All") {
-      const experts = await expertService.getAllExperts();
-      return res.status(200).json({ success: true, data: experts });
-    }
-
-    const experts = await expertService.getExpertsBySkill(skill);
-
-    return res.status(200).json({
-      success: true,
-      data: experts,
-    });
-  } catch (err) {
-    console.error("getExpertsBySkill error:", err);
-    return res.status(500).json({ success: false, message: err.message });
   }
 };

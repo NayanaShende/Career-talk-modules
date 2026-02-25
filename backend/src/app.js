@@ -5,7 +5,6 @@ const cors = require("cors");
 
 const routes = require("./routes"); // this loads index.routes.js
 const { sequelize } = require("./models");
-
 var app = express();
 
 app.use(
