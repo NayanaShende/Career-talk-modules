@@ -1,13 +1,32 @@
 const express = require("express");
 const router = express.Router();
 
-// experts routes
+// --------------------------------------
+// IMPORT ROUTES
+// --------------------------------------
+const authRoutes = require("./auth.routes");
+const userRoutes = require("./user.routes");
 const expertsRoutes = require("./expert.routes");
 
-// mount
+// --------------------------------------
+// MOUNT ROUTES
+// --------------------------------------
+
+// Auth routes
+// Example: /api/auth/send-otp
+router.use("/auth", authRoutes);
+
+// User routes
+// Example: /api/users/save-profile
+router.use("/users", userRoutes);
+
+// Expert routes
+// Example: /api/experts
 router.use("/experts", expertsRoutes);
 
-// health route
+// --------------------------------------
+// HEALTH CHECK ROUTE
+// --------------------------------------
 router.get("/", (req, res) => {
   res.status(200).json({
     success: true,

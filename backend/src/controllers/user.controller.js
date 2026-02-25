@@ -1,5 +1,6 @@
 const { User } = require("../models");
 const authService = require("../services/auth.service"); // ✅ ADDED
+const expertRepository = require("../repositories/expert.repository"); // ✅ ADDED
 
 exports.saveProfile = async (req, res) => {
   try {
@@ -65,9 +66,34 @@ exports.saveProfile = async (req, res) => {
     // ✅ Update user
     await req.user.update(updateData);
 
-    // 🔥 VERY IMPORTANT: create expert if role = expert
+    // 🔥 VERY IMPORTANT: create/update expert if role = expert
     if (role === "expert") {
       await authService.setRole(req.user, role);
+
+      // 1️⃣ Check if expert row exists
+      let expert = await expertRepository.findExpertByUserId(req.user.id);
+
+      // 2️⃣ If not exists → create expert row
+      if (!expert) {
+        expert = await expertRepository.createExpert({
+          userId: req.user.id,
+          name: fullName,
+          experience: 0,
+          rating: 0,
+          is_online: false,
+        });
+      }
+
+      // 3️⃣ Always update expert professional info
+      await expert.update({
+        name: fullName,
+        skill: domain,
+        headline: qualification,
+        bio: `${qualification} | ${experience} years experience`,
+        location: domain,
+        language_spoken: "English",
+        cv: req.file ? req.file.filename : expert.cv,
+      });
     }
 
     return res.json({
