@@ -12,15 +12,16 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Picker } from "@react-native-picker/picker";
-import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 export default function ProfileScreen() {
   const [role, setRole] = useState("Jobseeker");
+  const [date, setDate] = useState(new Date());
+  const [show, setShow] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -31,17 +32,17 @@ export default function ProfileScreen() {
     domain: "",
     customDomain: "",
     experience: "",
+    customExperience: "", // 🔥 ADDED
     cv: null,
-
-    // ⭐ ADD THESE
     certificate: "",
     languages: "",
+    customLanguages: "", // 🔥 ADDED
     location: "",
+    customLocation: "", // 🔥 ADDED
     bio: "",
+    certifiedCity: "", // 🔥 ADDED FOR EXPERT ONLY
+    customCertifiedCity: "", // 🔥 ADDED
   });
-
-  const [date, setDate] = useState(new Date());
-  const [show, setShow] = useState(false);
 
   const handleChange = (field, value) =>
     setFormData({ ...formData, [field]: value });
@@ -61,21 +62,6 @@ export default function ProfileScreen() {
     handleChange("dob", formatted);
   };
 
-  // const onChangeDate = (event, selectedDate) => {
-  //   const currentDate = selectedDate || date;
-  //   setShow(false);
-  //   setDate(currentDate);
-
-  //   const formatted =
-  //     currentDate.getFullYear() +
-  //     "-" +
-  //     String(currentDate.getMonth() + 1).padStart(2, "0") +
-  //     "-" +
-  //     String(currentDate.getDate()).padStart(2, "0");
-
-  //   handleChange("dob", formatted);
-  // };
-
   const pickCV = async () => {
     const result = await DocumentPicker.getDocumentAsync({});
     if (!result.canceled) {
@@ -85,53 +71,29 @@ export default function ProfileScreen() {
 
   const submitProfile = async () => {
     try {
-      // ✅ VALIDATIONS
       if (!formData.fullName.trim())
         return Alert.alert("Missing", "Please enter full name");
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.email))
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
         return Alert.alert("Invalid Email", "Enter valid email");
 
-      if (!formData.dob)
-        return Alert.alert("Missing", "Please select birth date");
-
+      if (!formData.dob) return Alert.alert("Missing", "Select birth date");
       if (!formData.qualification)
         return Alert.alert("Missing", "Select qualification");
 
       if (!formData.domain) return Alert.alert("Missing", "Select domain");
-
       if (!formData.experience)
         return Alert.alert("Missing", "Select experience");
 
       if (!formData.cv) return Alert.alert("Missing", "Upload your CV");
 
-      // ✅ GET TOKEN
       const token = await AsyncStorage.getItem("token");
 
-      if (role === "Expert") {
-        if (!formData.bio)
-          return Alert.alert("Missing", "Please add professional bio");
-      }
-
-      // ✅ PREPARE FORM DATA
       const form = new FormData();
+      Object.keys(formData).forEach((key) => {
+        if (key !== "cv") form.append(key, formData[key]);
+      });
 
-     form.append("fullName", formData.fullName);
-     form.append("role", role.toLowerCase());
-     form.append("email", formData.email);
-     form.append("dob", formData.dob);
-     form.append("qualification", formData.qualification);
-     form.append("domain", formData.domain);
-     form.append("experience", formData.experience);
-
-     // ⭐ SEND EXPERT DATA
-     if (role === "Expert") {
-       form.append("certificate", formData.certificate);
-       form.append("languages", formData.languages);
-       form.append("location", formData.location);
-       form.append("bio", formData.bio);
-     }
       if (formData.cv) {
         form.append("cv", {
           uri: formData.cv.uri,
@@ -140,306 +102,349 @@ export default function ProfileScreen() {
         });
       }
 
-      // ✅ API CALL - Updated IP to 192.168.1.17
-      const res = await axios.post(
-        "http://192.168.1.19:3000/api/users/save-profile", // replace with PC IP
+      await axios.post(
+        "http://192.168.1.19:3000/api/users/save-profile",
         form,
         {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
-      Alert.alert("Success", "Profile saved successfully!", [
+      Alert.alert("Success", "Profile saved!", [
         {
           text: "OK",
           onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
         },
       ]);
     } catch (error) {
-      console.log("PROFILE ERROR:", error.response?.data || error.message);
-
       Alert.alert(
         "Error",
-        error.response?.data?.message || "Could not save profile"
+        error.response?.data?.message || "Could not save profile",
       );
-    }
-  };
-
-  const saveRole = async (selectedRole) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-
-      await axios.post(
-        "http://192.168.1.19:3000/api/auth/set-role",
-        { role: selectedRole },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      console.log("Role saved");
-    } catch (err) {
-      console.log(err.response?.data || err.message);
     }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <LinearGradient colors={["#f5f7fb", "#eef2ff"]} style={{ flex: 1 }}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-          style={{ flex: 1 }}
-        >
-          <ScrollView contentContainerStyle={styles.container}>
-            <View style={styles.card}>
-              <Text style={styles.title}>Create Profile</Text>
+    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView contentContainerStyle={styles.container}>
+          <Text style={styles.header}>Profile Information</Text>
 
-              {/* ROLE */}
-              <Text style={styles.label}>Select Role</Text>
-              <View style={styles.roleRow}>
-                {["Jobseeker", "Expert"].map((item) => (
-                  <TouchableOpacity
-                    key={item}
-                    style={[
-                      styles.roleBtn,
-                      role === item && styles.roleSelected,
-                    ]}
-                    onPress={() => setRole(item)}
-                  >
-                    <Text
-                      style={[
-                        styles.roleText,
-                        role === item && { color: "#fff" },
-                      ]}
-                    >
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-
-              {/* NAME */}
-              <Text style={styles.label}>Full Name</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter full name"
-                onChangeText={(v) => handleChange("fullName", v)}
-              />
-
-              {/* EMAIL */}
-              <Text style={styles.label}>Email</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter email"
-                keyboardType="email-address"
-                onChangeText={(v) => handleChange("email", v)}
-              />
-
-              {/* DOB */}
-              <Text style={styles.label}>Birth Date</Text>
+          {/* ROLE SELECT */}
+          <Text style={styles.label}>Select Role</Text>
+          <View style={styles.roleRow}>
+            {["Jobseeker", "Expert"].map((item) => (
               <TouchableOpacity
-                style={styles.input}
-                onPress={() => setShow(true)}
+                key={item}
+                style={[styles.roleBtn, role === item && styles.roleSelected]}
+                onPress={() => setRole(item)}
               >
-                <Text style={{ color: formData.dob ? "#000" : "#999" }}>
-                  {formData.dob || "Select Birth Date"}
+                <Text
+                  style={[styles.roleText, role === item && { color: "#fff" }]}
+                >
+                  {item}
                 </Text>
               </TouchableOpacity>
+            ))}
+          </View>
 
-              {show && (
-                <DateTimePicker
-                  value={date}
-                  mode="date"
-                  maximumDate={new Date()}
-                  onChange={onChangeDate}
-                />
-              )}
+          {/* FULL NAME */}
+          <Text style={styles.label}>Full Name *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter full name"
+            onChangeText={(v) => handleChange("fullName", v)}
+          />
 
-              {/* QUALIFICATION */}
-              <Text style={styles.label}>Qualification</Text>
-              <View style={styles.row}>
-                <View style={styles.flex}>
-                  <View style={styles.pickerWrapper}>
-                    <Picker
-                      selectedValue={formData.qualification}
-                      onValueChange={(v) => handleChange("qualification", v)}
-                    >
-                      <Picker.Item label="Select Qualification" value="" />
-                      <Picker.Item label="Graduate" value="Graduate" />
-                      <Picker.Item label="Post Graduate" value="PG" />
-                      <Picker.Item label="Diploma" value="Diploma" />
-                      <Picker.Item label="Other" value="Other" />
-                    </Picker>
-                  </View>
-                </View>
+          {/* EMAIL */}
+          <Text style={styles.label}>Email *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter email"
+            keyboardType="email-address"
+            onChangeText={(v) => handleChange("email", v)}
+          />
 
-                {formData.qualification === "Other" && (
-                  <TextInput
-                    style={[styles.input, styles.otherBox]}
-                    placeholder="Other"
-                    onChangeText={(v) => handleChange("customQualification", v)}
-                  />
-                )}
-              </View>
+          {/* DOB */}
+          <Text style={styles.label}>Birth Date *</Text>
+          <TouchableOpacity style={styles.input} onPress={() => setShow(true)}>
+            <Text style={{ color: formData.dob ? "#000" : "#777" }}>
+              {formData.dob || "Select Birth Date"}
+            </Text>
+          </TouchableOpacity>
 
-              {/* DOMAIN */}
-              <Text style={styles.label}>Domain</Text>
-              <View style={styles.row}>
-                <View style={styles.flex}>
-                  <View style={styles.pickerWrapper}>
-                    <Picker
-                      selectedValue={formData.domain}
-                      onValueChange={(v) => handleChange("domain", v)}
-                    >
-                      <Picker.Item label="Select Domain" value="" />
-                      <Picker.Item label="React Developer" value="React" />
-                      <Picker.Item label="Java Developer" value="Java" />
-                      <Picker.Item label="Python Developer" value="Python" />
-                      <Picker.Item label="Other" value="Other" />
-                    </Picker>
-                  </View>
-                </View>
+          {show && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              maximumDate={new Date()}
+              onChange={onChangeDate}
+            />
+          )}
 
-                {formData.domain === "Other" && (
-                  <TextInput
-                    style={[styles.input, styles.otherBox]}
-                    placeholder="Other"
-                    onChangeText={(v) => handleChange("customDomain", v)}
-                  />
-                )}
-              </View>
+          {/* QUALIFICATION */}
+          <Text style={styles.label}>Qualification *</Text>
+          <View style={styles.pickerBox}>
+            <Picker
+              selectedValue={formData.qualification}
+              onValueChange={(v) => handleChange("qualification", v)}
+            >
+              <Picker.Item label="Select Qualification" value="" />
+              <Picker.Item label="Graduate" value="Graduate" />
+              <Picker.Item label="Post Graduate" value="PG" />
+              <Picker.Item label="Diploma" value="Diploma" />
+              <Picker.Item label="Marathi Medium" value="Marathi Medium" />
+              <Picker.Item label="Other" value="Other" />
+            </Picker>
+          </View>
 
-              {/* EXPERIENCE */}
-              <Text style={styles.label}>Experience</Text>
-              <View style={styles.pickerWrapper}>
+          {formData.qualification === "Other" && (
+            <TextInput
+              style={styles.input}
+              placeholder="Enter custom qualification"
+              onChangeText={(v) => handleChange("customQualification", v)}
+            />
+          )}
+
+          {/* DOMAIN */}
+          <Text style={styles.label}>Domain *</Text>
+          <View style={styles.pickerBox}>
+            <Picker
+              selectedValue={formData.domain}
+              onValueChange={(v) => handleChange("domain", v)}
+            >
+              <Picker.Item label="Select Domain" value="" />
+              <Picker.Item label="React Developer" value="React" />
+              <Picker.Item label="Java Developer" value="Java" />
+              <Picker.Item label="Python Developer" value="Python" />
+              <Picker.Item label="Marathi Teacher" value="Marathi Teacher" />
+              <Picker.Item label="Other" value="Other" />
+            </Picker>
+          </View>
+
+          {formData.domain === "Other" && (
+            <TextInput
+              style={styles.input}
+              placeholder="Enter custom domain"
+              onChangeText={(v) => handleChange("customDomain", v)}
+            />
+          )}
+
+          {/* EXPERIENCE */}
+          <Text style={styles.label}>Experience *</Text>
+          <View style={styles.pickerBox}>
+            <Picker
+              selectedValue={formData.experience}
+              onValueChange={(v) => handleChange("experience", v)}
+            >
+              <Picker.Item label="Select Experience" value="" />
+              <Picker.Item label="Fresher" value="Fresher" />
+              <Picker.Item label="1-2 Years" value="1-2" />
+              <Picker.Item label="3-5 Years" value="3-5" />
+              <Picker.Item label="5+ Years" value="5+" />
+              <Picker.Item label="Other" value="Other" />
+            </Picker>
+          </View>
+
+          {formData.experience === "Other" && (
+            <TextInput
+              style={styles.input}
+              placeholder="Enter custom experience"
+              onChangeText={(v) => handleChange("customExperience", v)}
+            />
+          )}
+
+          {/* CV */}
+          <Text style={styles.label}>Upload CV *</Text>
+          <TouchableOpacity style={styles.uploadBtn} onPress={pickCV}>
+            <Text style={{ fontWeight: "600" }}>
+              {formData.cv ? formData.cv.name : "Choose File"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* ----------------- EXPERT ONLY FIELDS ----------------- */}
+          {role === "Expert" && (
+            <>
+              {/* CERTIFICATE */}
+              <Text style={styles.label}>Certification</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Enter certifications"
+                onChangeText={(v) => handleChange("certificate", v)}
+              />
+
+              {/* CERTIFIED CITY */}
+              <Text style={styles.label}>Certified City</Text>
+              <View style={styles.pickerBox}>
                 <Picker
-                  selectedValue={formData.experience}
-                  onValueChange={(v) => handleChange("experience", v)}
+                  selectedValue={formData.certifiedCity}
+                  onValueChange={(v) => handleChange("certifiedCity", v)}
                 >
-                  <Picker.Item label="Select Experience" value="" />
-                  <Picker.Item label="Fresher" value="Fresher" />
-                  <Picker.Item label="1-2 Years" value="1-2" />
-                  <Picker.Item label="3-5 Years" value="3-5" />
-                  <Picker.Item label="5+ Years" value="5+" />
-                  <Picker.Item label="10+ Years" value="10+" />
+                  <Picker.Item label="Select City" value="" />
+                  <Picker.Item label="Mumbai" value="Mumbai" />
+                  <Picker.Item label="Pune" value="Pune" />
+                  <Picker.Item label="Nashik" value="Nashik" />
+                  <Picker.Item label="Nagpur" value="Nagpur" />
+                  <Picker.Item label="Other" value="Other" />
                 </Picker>
               </View>
 
-              {/* CV UPLOAD */}
-              <Text style={styles.label}>Upload CV</Text>
-              <TouchableOpacity style={styles.uploadBtn} onPress={pickCV}>
-                <Text style={styles.uploadText}>
-                  {formData.cv ? formData.cv.name : "Select CV File"}
-                </Text>
-              </TouchableOpacity>
-
-              {/* ⭐ EXPERT EXTRA FIELDS */}
-              {role === "Expert" && (
-                <>
-                  <Text style={styles.label}>Certification</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Your certifications"
-                    onChangeText={(v) => handleChange("certificate", v)}
-                  />
-
-                  <Text style={styles.label}>Languages Spoken</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="English, Hindi..."
-                    onChangeText={(v) => handleChange("languages", v)}
-                  />
-
-                  <Text style={styles.label}>Location</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="City, Country"
-                    onChangeText={(v) => handleChange("location", v)}
-                  />
-
-                  <Text style={styles.label}>Professional Bio</Text>
-                  <TextInput
-                    style={[styles.input, { height: 100 }]}
-                    multiline
-                    placeholder="Tell users about your expertise..."
-                    onChangeText={(v) => handleChange("bio", v)}
-                  />
-                </>
+              {formData.certifiedCity === "Other" && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter custom certified city"
+                  onChangeText={(v) => handleChange("customCertifiedCity", v)}
+                />
               )}
 
-              {/* SUBMIT */}
-              <TouchableOpacity
-                style={styles.submitBtn}
-                onPress={submitProfile}
-              >
-                <Text style={styles.submitText}>Save & Continue</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </LinearGradient>
+              {/* LANGUAGES */}
+              <Text style={styles.label}>Languages Known</Text>
+              <View style={styles.pickerBox}>
+                <Picker
+                  selectedValue={formData.languages}
+                  onValueChange={(v) => handleChange("languages", v)}
+                >
+                  <Picker.Item label="Select Language" value="" />
+                  <Picker.Item label="English" value="English" />
+                  <Picker.Item label="Hindi" value="Hindi" />
+                  <Picker.Item label="Marathi" value="Marathi" />
+                  <Picker.Item label="Other" value="Other" />
+                </Picker>
+              </View>
+
+              {formData.languages === "Other" && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter custom language"
+                  onChangeText={(v) => handleChange("customLanguages", v)}
+                />
+              )}
+
+              {/* LOCATION */}
+              <Text style={styles.label}>Your Location</Text>
+              <View style={styles.pickerBox}>
+                <Picker
+                  selectedValue={formData.location}
+                  onValueChange={(v) => handleChange("location", v)}
+                >
+                  <Picker.Item label="Select City" value="" />
+                  <Picker.Item label="Mumbai" value="Mumbai" />
+                  <Picker.Item label="Pune" value="Pune" />
+                  <Picker.Item label="Nashik" value="Nashik" />
+                  <Picker.Item label="Other" value="Other" />
+                </Picker>
+              </View>
+
+              {formData.location === "Other" && (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter custom location"
+                  onChangeText={(v) => handleChange("customLocation", v)}
+                />
+              )}
+
+              {/* BIO */}
+              <Text style={styles.label}>Bio</Text>
+              <TextInput
+                style={[styles.input, { height: 100 }]}
+                placeholder="Short bio"
+                multiline
+                onChangeText={(v) => handleChange("bio", v)}
+              />
+            </>
+          )}
+
+          {/* SUBMIT */}
+          <TouchableOpacity style={styles.submitBtn} onPress={submitProfile}>
+            <Text style={styles.submitText}>Submit</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-
+// ---------------- STYLES ----------------
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, justifyContent: "center", padding: 20 },
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 20,
+  container: {
     padding: 20,
-    elevation: 6,
   },
-  title: { fontSize: 22, fontWeight: "bold", marginBottom: 10 },
-  label: { marginBottom: 6, fontWeight: "600", marginTop: 12 },
+
+  header: {
+    fontSize: 26,
+    fontWeight: "700",
+    marginBottom: 7,
+    color: "#0B2D72",
+  },
+
+  label: {
+    marginTop: 15,
+    fontWeight: "600",
+    color: "#0B2D72",
+  },
+
   input: {
-    borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 12,
-    padding: 15,
-    backgroundColor: "#fff",
+    backgroundColor: "#f3f4f6",
+    padding: 14,
+    borderRadius: 8,
+    marginTop: 5,
   },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: "#dbe2ef",
-    borderRadius: 10,
-    backgroundColor: "#f8f9fc",
+
+  pickerBox: {
+    backgroundColor: "#f3f4f6",
+    borderRadius: 8,
+    marginTop: 5,
   },
-  row: { flexDirection: "row", alignItems: "center" },
-  flex: { flex: 1 },
-  otherBox: { width: 110, marginLeft: 8 },
-  roleRow: { flexDirection: "row", marginBottom: 10 },
+
+  roleRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 10,
+  },
+
   roleBtn: {
     flex: 1,
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#2F6FED",
+    borderColor: "#0B2D72",
     alignItems: "center",
-    marginRight: 10,
   },
-  roleSelected: { backgroundColor: "#2F6FED" },
-  roleText: { color: "#2F6FED", fontWeight: "600" },
+
+  roleSelected: {
+    backgroundColor: "#0B2D72",
+  },
+
+  roleText: {
+    color: "#0B2D72",
+    fontWeight: "600",
+  },
+
   uploadBtn: {
-    marginTop: 10,
-    backgroundColor: "#eef2ff",
+    backgroundColor: "#e5e7eb",
     padding: 14,
-    borderRadius: 10,
+    borderRadius: 8,
+    marginTop: 8,
     alignItems: "center",
   },
-  uploadText: { color: "#2F6FED", fontWeight: "600" },
+
   submitBtn: {
-    marginTop: 25,
-    backgroundColor: "#2F6FED",
+    backgroundColor: "#0B2D72",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 10,
+    marginTop: 30,
     alignItems: "center",
   },
-  submitText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+
+  submitText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+  },
 });
