@@ -5,11 +5,26 @@ const expertRepository = require("../repositories/expert.repository"); // ✅ AD
 exports.saveProfile = async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ success: false, message: "Unauthorized" });
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
     }
 
+<<<<<<< HEAD
     const { fullName, email, dob, qualification, experience, domain, role } =
       req.body;
+=======
+    const {
+      fullName,
+      email,
+      dob,
+      qualification,
+      experience,
+      domain,
+      role, // ✅ DEFINE ROLE HERE
+    } = req.body;
+>>>>>>> faf22664448805d4a8455879ac84a3bc9e77a186
 
     // ✅ BASIC VALIDATION
     if (
@@ -35,7 +50,12 @@ exports.saveProfile = async (req, res) => {
       });
     }
 
+<<<<<<< HEAD
     // ✅ Prepare updateData
+=======
+    // ✅ Prepare update object
+    // ✅ Prepare updateData object properly
+>>>>>>> faf22664448805d4a8455879ac84a3bc9e77a186
     const updateData = {
       fullName,
       email,
@@ -43,7 +63,7 @@ exports.saveProfile = async (req, res) => {
       qualification,
       domain,
       experience,
-      role,
+      role: role || req.user.role, // keep old role if not provided
       hasProfile: true,
     };
 
@@ -52,7 +72,7 @@ exports.saveProfile = async (req, res) => {
       updateData.cvFile = req.file.filename;
     }
 
-    // ✅ Update user table
+    // ✅ Update user
     await req.user.update(updateData);
 
     // 🔥 If role = expert → create or update expert table
@@ -104,16 +124,26 @@ exports.saveProfile = async (req, res) => {
   }
 };
 
+
+
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findByPk(req.user.id);
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
 
     return res.json({
       success: true,
-      user,
+      user: req.user,
     });
   } catch (err) {
     console.error("GET PROFILE ERROR:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+    });
   }
 };

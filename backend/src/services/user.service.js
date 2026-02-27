@@ -2,17 +2,7 @@
 
 const userRepo = require("../repositories/user.repository");
 
-const normalizeMobile = (mobile) =>
-  String(mobile || "").replace(/\D/g, "").slice(-10);
-
-// ================== Generate OTP ==================
 const generateOtp = async (mobile) => {
-  mobile = normalizeMobile(mobile);
-
-  if (!mobile || mobile.length !== 10) {
-    throw new Error("Invalid mobile number");
-  }
-
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpExpiryAt = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -41,15 +31,11 @@ const generateOtp = async (mobile) => {
 
 // ================== Verify OTP ==================
 const verifyOtp = async (mobile, otp) => {
-  mobile = normalizeMobile(mobile);
-
   const user = await userRepo.findUserByMobile(mobile);
 
   if (!user) throw new Error("User not found");
 
-  if (!user.otp || String(user.otp).trim() !== String(otp).trim()) {
-    throw new Error("Invalid OTP");
-  }
+  if (String(user.otp) !== String(otp)) throw new Error("Invalid OTP");
 
   if (!user.otpExpiryAt || new Date() > new Date(user.otpExpiryAt)) {
     throw new Error("OTP expired");
@@ -64,9 +50,7 @@ const verifyOtp = async (mobile, otp) => {
   return user;
 };
 
-// ================== Get User ==================
 const getUserByMobile = async (mobile) => {
-  mobile = normalizeMobile(mobile);
   return await userRepo.findUserByMobile(mobile);
 };
 

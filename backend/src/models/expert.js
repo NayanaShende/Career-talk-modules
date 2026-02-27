@@ -89,7 +89,7 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: "Experts",
       timestamps: true,
-    }
+    },
   );
 
   // ✅ SAFE ASSOCIATIONS

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,71 +6,48 @@ import {
   SafeAreaView,
   Pressable,
   ScrollView,
-  TextInput,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
+import { useCallback } from "react";
 
 export default function ProfileScreen() {
-  // profile state
+  const navigation = useNavigation();
+
   const [profile, setProfile] = useState({
-    name: "NAME",
-    email: "xyz@gmail.com",
-    phone: "123-456-7890",
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
   });
 
-  // toggle between screens
-  const [editing, setEditing] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      loadProfile();
+    }, []),
+  );
 
-  // edit form state
-  const [form, setForm] = useState(profile);
+  const loadProfile = async () => {
+    const data = await AsyncStorage.getItem("profile");
 
-  const handleSubmit = () => {
-    setProfile(form); // update profile
-    setEditing(false); // go back to profile
+    if (data) {
+      setProfile(JSON.parse(data));
+    } else {
+      const defaultProfile = {
+        name: "NAME",
+        email: "xyz@gmail.com",
+        phone: "123-456-7890",
+        address: "",
+      };
+      setProfile(defaultProfile);
+      await AsyncStorage.setItem("profile", JSON.stringify(defaultProfile));
+    }
   };
 
-  // ================= EDIT SCREEN =================
-  if (editing) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <Text style={styles.title}>Edit Profile</Text>
-
-        <TextInput
-          style={styles.input}
-          placeholder="Full Name"
-          value={form.name}
-          onChangeText={(text) => setForm({ ...form, name: text })}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={form.email}
-          onChangeText={(text) => setForm({ ...form, email: text })}
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Phone"
-          value={form.phone}
-          onChangeText={(text) => setForm({ ...form, phone: text })}
-        />
-
-        <Pressable style={styles.button} onPress={handleSubmit}>
-          <Text style={styles.buttonText}>SUBMIT</Text>
-        </Pressable>
-
-        <Pressable onPress={() => setEditing(false)}>
-          <Text style={styles.cancel}>Cancel</Text>
-        </Pressable>
-      </SafeAreaView>
-    );
-  }
-
-  // ================= PROFILE SCREEN =================
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView>
         <View style={styles.header}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>PROFILE</Text>
@@ -85,10 +62,7 @@ export default function ProfileScreen() {
           <MenuItem
             icon="person-outline"
             text="Edit profile information"
-            onPress={() => {
-              setForm(profile);
-              setEditing(true);
-            }}
+          onPress={() => router.push("/home/edit")}
           />
 
           <MenuItem
@@ -130,13 +104,7 @@ function MenuItem({ icon, text, right, onPress }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6", padding: 20 },
-
-  header: {
-    alignItems: "center",
-    marginTop: 20,
-    marginBottom: 20,
-  },
-
+  header: { alignItems: "center", marginTop: 20, marginBottom: 20 },
   avatar: {
     width: 110,
     height: 110,
@@ -144,81 +112,26 @@ const styles = StyleSheet.create({
     backgroundColor: "#8B5CF6",
     alignItems: "center",
     justifyContent: "center",
-    elevation: 6,
   },
 
-  avatarText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  avatarText: { color: "#fff", fontWeight: "bold" },
 
-  name: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginTop: 12,
-  },
-
+  name: { fontSize: 22, fontWeight: "bold", marginTop: 12 },
   email: { color: "#6B7280", marginTop: 4 },
-
   phone: { color: "#6B7280", marginTop: 2 },
-
   menuContainer: {
     backgroundColor: "#fff",
     borderRadius: 16,
     paddingVertical: 10,
-    elevation: 3,
   },
-
   menuItem: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     padding: 16,
   },
-
   left: { flexDirection: "row", alignItems: "center" },
-
   menuText: { marginLeft: 14, fontSize: 16 },
-
   rightText: { color: "#8B5CF6", fontWeight: "600" },
-
-  divider: {
-    height: 1,
-    backgroundColor: "#E5E7EB",
-    marginVertical: 8,
-  },
-
-  title: {
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 20,
-    textAlign: "center",
-  },
-
-  input: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 15,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-
-  button: {
-    backgroundColor: "#8B5CF6",
-    padding: 15,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
-
-  cancel: {
-    textAlign: "center",
-    marginTop: 15,
-    color: "#6B7280",
-  },
+  divider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 8 },
 });

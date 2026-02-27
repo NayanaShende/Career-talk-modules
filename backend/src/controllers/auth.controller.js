@@ -106,7 +106,6 @@ exports.verifyOtp = async (req, res) => {
 
     await user.update({
       otp: null,
-      otpExpiryAt: null,
       isVerified: true,
     });
 

@@ -79,6 +79,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
+<<<<<<< HEAD
   // ✅ ADDED ASSOCIATION (DO NOT REMOVE)
   User.associate = (models) => {
     if (models.Expert) {
@@ -92,3 +93,7 @@ module.exports = (sequelize, DataTypes) => {
 
   return User;
 };
+=======
+  return User; // ✅ FIXED
+};
+>>>>>>> faf22664448805d4a8455879ac84a3bc9e77a186
