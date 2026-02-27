@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  Image,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
@@ -35,33 +36,46 @@ export default function Home() {
     }
   };
 
+  // Logic to filter experts based on search input
   const filteredExperts = experts.filter((e) =>
-    e?.name?.toLowerCase().includes(search.toLowerCase()),
+    e?.name?.toLowerCase().includes(search.toLowerCase()) ||
+    e?.role?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
     <SafeAreaView style={styles.container}>
-
-      {/* 🔥 NEW CURVED HEADER */}
+      {/* --- HEADER --- */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Find Your Experts</Text>
-        <Ionicons name="menu" size={26} color="#fff" />
+        <Pressable onPress={() => router.back()}>
+                  <Ionicons name="chevron-back" size={24} color="#fff" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Experts Search </Text>
+        <Ionicons name="notifications-outline" size={24} color="#fff" />
       </View>
 
-      {/* 🔥 SEARCH WITH ICON */}
-      <View style={styles.searchBox}>
-        <Ionicons name="search" size={18} color="#777" />
-        <TextInput
-          style={{ marginLeft: 8, flex: 1 }}
-          placeholder="Search expert..."
-          placeholderTextColor="#888"
-          value={search}
-          onChangeText={setSearch}
-        />
+      {/* --- SEARCH BAR SECTION --- */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={20} color="#0B2D72" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for an expert..."
+            placeholderTextColor="#999"
+            value={search}
+            onChangeText={setSearch}
+          />
+          {search.length > 0 && (
+            <Pressable onPress={() => setSearch("")}>
+              <Ionicons name="close-circle" size={20} color="#ccc" />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       {loading ? (
-        <ActivityIndicator size="large" color="#3B82F6" />
+        <View style={styles.center}>
+          <ActivityIndicator size="large" color="#0B2D72" />
+        </View>
       ) : (
         <FlatList
           data={filteredExperts}
@@ -69,37 +83,52 @@ export default function Home() {
             item?.id ? item.id.toString() : index.toString()
           }
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 30 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+          ListEmptyComponent={() => (
+            <View style={styles.center}>
+              <Text style={{ marginTop: 50, color: '#999' }}>No experts found.</Text>
+            </View>
+          )}
           renderItem={({ item }) => (
             <Pressable
               style={styles.card}
               onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
             >
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {item?.name?.charAt(0).toUpperCase()}
-                </Text>
-
-                {/* ONLINE DOT */}
-                <View style={styles.onlineDot} />
+              <View style={styles.imageContainer}>
+                {item?.profile_image ? (
+                  <Image source={{ uri: item.profile_image }} style={styles.image} />
+                ) : (
+                  <View style={[styles.image, styles.placeholderImg]}>
+                    <Text style={styles.avatarText}>
+                      {item?.name?.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
               </View>
 
-              <View style={{ flex: 1 }}>
+              <View style={styles.infoContainer}>
                 <Text style={styles.name}>{item?.name}</Text>
-
-                <Text style={styles.role}>
-                  Expert • {item?.experience || 5} yrs
-                </Text>
+                <Text style={styles.role}>{item?.role || "UI Designer"}</Text>
 
                 <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={16} color="#FACC15" />
-                  <Text style={styles.rating}>{item?.rating || 4.5}</Text>
+                  <Ionicons name="star" size={16} color="#FFD700" />
+                  <Text style={styles.ratingText}>
+                    {item?.rating || "4.9"}({item?.reviews || "234"})
+                  </Text>
+                  <Text style={styles.expText}>
+                    {item?.experience || 8} years exp
+                  </Text>
+                </View>
+
+                <View style={styles.badge}>
+                  <View style={styles.greenDot} />
+                  <Text style={styles.badgeText}>Available Now</Text>
                 </View>
               </View>
 
-              {/* 🔥 VIEW BUTTON */}
               <View style={styles.viewBtn}>
-                <Text style={styles.viewText}>View</Text>
+                <Text style={styles.viewBtnText}>View</Text>
               </View>
             </Pressable>
           )}
@@ -112,112 +141,140 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#EEF2F7",
+    backgroundColor: "#FFFFFF",
   },
-
+  center: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   /* HEADER */
   header: {
-    backgroundColor: "#3B5BDB",
-    paddingTop: 20,
-    paddingBottom: 26,
-    paddingHorizontal: 18,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    backgroundColor: "#0B2D72",
+    height: 60,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    elevation: 6,
+    justifyContent: "space-between",
+    paddingHorizontal: 15,
   },
   headerTitle: {
     color: "#fff",
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: "600",
   },
-
-  /* SEARCH */
+  /* SEARCH BAR */
+  searchContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+    backgroundColor: "#fff",
+  },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    marginHorizontal: 16,
-    marginTop: -18,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-    height: 54,
-    borderRadius: 22,
-    elevation: 4,
+    backgroundColor: "#F5F7FA",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 50,
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
   },
-
-  /* CARD */
-  card: {
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#333",
+  },
+  /* CARD LIST */
+card: {
     flexDirection: "row",
-    alignItems: "center",
+    paddingHorizontal: 15,
+    paddingVertical: 15,
     backgroundColor: "#fff",
-    marginHorizontal: 16,
-    marginBottom: 14,
-    padding: 16,
-    borderRadius: 20,
-    elevation: 3,
+    alignItems: 'center', // This ensures all items in the row are centered vertically
   },
-
-  avatar: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: "#D1D5DB",
+  separator: {
+    height: 1,
+    backgroundColor: "#F0F0F0",
+  },
+  imageContainer: {
+    marginRight: 15,
+  },
+  image: {
+    width: 80,
+    height: 85,
+    borderRadius: 8,
+  },
+  placeholderImg: {
+    backgroundColor: "#E0E0E0",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 14,
   },
-
   avatarText: {
-    fontSize: 20,
+    fontSize: 24,
+    color: "#757575",
     fontWeight: "bold",
-    color: "#555",
   },
-
-  onlineDot: {
-    position: "absolute",
-    bottom: 3,
-    right: 3,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: "#22C55E",
-    borderWidth: 2,
-    borderColor: "#fff",
+  infoContainer: {
+    flex: 1,
+    paddingHorizontal: 10,
+    justifyContent: 'center',
   },
-
   name: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "bold",
+    color: "#000",
   },
-
   role: {
-    color: "#6B7280",
-    marginTop: 3,
+    fontSize: 14,
+    color: "#666",
   },
-
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 6,
+    marginTop: 4,
   },
-
-  rating: {
-    marginLeft: 6,
+  ratingText: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 4,
+  },
+  expText: {
+    fontSize: 14,
+    color: "#333",
+    marginLeft: 10,
+  },
+  badge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E8F5E9",
+    alignSelf: "flex-start",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 15,
+    marginTop: 8,
+  },
+  greenDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#0B2D72",
+    marginRight: 6,
+  },
+  badgeText: {
+    color: "#0B2D72",
+    fontSize: 12,
     fontWeight: "600",
   },
-
   viewBtn: {
-    backgroundColor: "#2F6BFF",
+    backgroundColor: "#0B2D72",
     paddingHorizontal: 18,
-    paddingVertical: 9,
-    borderRadius: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
   },
-
-  viewText: {
+  viewBtnText: {
     color: "#fff",
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 });

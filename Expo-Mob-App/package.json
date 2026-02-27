@@ -3,7 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "set REACT_NATIVE_PACKAGER_HOSTNAME= 192.168.1.18 && expo start",
+    "start": "set REACT_NATIVE_PACKAGER_HOSTNAME= 172.20.10.4 && expo start",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",

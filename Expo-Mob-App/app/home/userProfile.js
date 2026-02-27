@@ -115,7 +115,7 @@ export default function ProfileScreen() {
 
       // ✅ API CALL - Updated IP to 192.168.1.17
       const res = await axios.post(
-        "http://192.168.1.18:3000/api/users/save-profile",
+        "http://172.20.10.4:3000/api/users/save-profile",
         form,
         {
           headers: {
@@ -146,7 +146,7 @@ export default function ProfileScreen() {
       const token = await AsyncStorage.getItem("token");
 
       await axios.post(
-        "http://192.168.1.17:3000/api/auth/set-role",
+        "http://172.20.10.4:3000/api/auth/set-role",
         { role: selectedRole },
         {
           headers: {
