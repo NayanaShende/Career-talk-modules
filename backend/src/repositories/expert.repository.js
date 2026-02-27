@@ -3,9 +3,13 @@
 const { Expert, ExpertSkill, ExpertProfile, sequelize } = require("../models");
 const { Op } = require("sequelize");
 
+/* ===============================
+   BASIC CRUD
+================================ */
+
 const findAllExperts = async () => {
   return await Expert.findAll({
-    include: { model: ExpertSkill, as: "skills" },
+    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
   });
 };
 
@@ -13,7 +17,7 @@ const createExpert = async (data) => {
   return await Expert.create(data);
 };
 
-// ✅ ADDED (VERY IMPORTANT - used in auth.service)
+// ✅ Used in auth.service
 const findExpertByUserId = async (userId) => {
   return await Expert.findOne({ where: { userId } });
 };
@@ -25,9 +29,13 @@ const updateExpertById = async (id, data) => {
 const findExpertById = async (id) => {
   return await Expert.findOne({
     where: { id },
-    include: { model: ExpertSkill, as: "skills" },
+    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
   });
 };
+
+/* ===============================
+   LISTING
+================================ */
 
 const findRecommendedExperts = async (limit) => {
   return await Expert.findAll({
@@ -39,7 +47,7 @@ const findRecommendedExperts = async (limit) => {
 const findOnlineExperts = async (limit) => {
   return await Expert.findAll({
     where: { is_online: true },
-    include: { model: ExpertSkill, as: "skills" },
+    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
     order: [
       ["rating", "DESC"],
       ["experience", "DESC"],
@@ -49,27 +57,35 @@ const findOnlineExperts = async (limit) => {
   });
 };
 
+/* ===============================
+   SKILLS
+================================ */
+
 const bulkCreateSkills = async (skillRows) => {
   return await ExpertSkill.bulkCreate(skillRows);
 };
 
-// ✅ SIMPLE FIX: filter by skill column only (exact match, case-insensitive)
-const searchExpertsByHeadline = async (skill) => {
+/* ===============================
+   DOMAIN SEARCH (UPDATED)
+================================ */
+
+// 🔥 Replaced skill filtering with domain filtering
+const searchExpertsByHeadline = async (domain) => {
   try {
-    console.log("🔍 Filtering by skill column:", skill);
+    console.log("🔍 Filtering by domain:", domain);
 
     const result = await Expert.findAll({
       where: {
-        skill: { [Op.iLike]: `%${skill}%` },
+        domain: { [Op.iLike]: `%${domain}%` },
       },
-      include: { model: ExpertSkill, as: "skills" },
+      include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
       order: [
         ["rating", "DESC"],
         ["experience", "DESC"],
       ],
     });
 
-    console.log("✅ Found:", result.length, "experts for skill:", skill);
+    console.log("✅ Found:", result.length, "experts for domain:", domain);
     return result;
   } catch (err) {
     console.error("❌ searchExpertsByHeadline error:", err.message);
@@ -77,24 +93,24 @@ const searchExpertsByHeadline = async (skill) => {
   }
 };
 
-const searchExpertsBySkill = async (skill) => {
-  if (!skill) return await Expert.findAll();
+const searchExpertsBySkill = async (domain) => {
+  if (!domain) return await Expert.findAll();
 
   return await Expert.findAll({
     where: {
-      skill: { [Op.iLike]: `%${skill}%` },
+      domain: { [Op.iLike]: `%${domain}%` },
     },
-    include: { model: ExpertSkill, as: "skills" },
+    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
   });
 };
 
-const findExpertsBySkill = async (skill) => {
+const findExpertsBySkill = async (domain) => {
   try {
-    console.log("🔍 Searching skill:", skill);
+    console.log("🔍 Searching domain:", domain);
 
     const result = await Expert.findAll({
-      where: { skill: { [Op.iLike]: `%${skill}%` } },
-      include: { model: ExpertSkill, as: "skills" },
+      where: { domain: { [Op.iLike]: `%${domain}%` } },
+      include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
       order: [
         ["rating", "DESC"],
         ["experience", "DESC"],
@@ -109,6 +125,10 @@ const findExpertsBySkill = async (skill) => {
   }
 };
 
+/* ===============================
+   PROFILE
+================================ */
+
 const findExpertProfileByUserId = async (userId) => {
   return await ExpertProfile.findOne({ where: { userId } });
 };
@@ -121,7 +141,10 @@ const updateExpertProfile = async (profile, data) => {
   return await profile.update(data);
 };
 
-// ✅ FIXED DELETE (was broken before)
+/* ===============================
+   DELETE
+================================ */
+
 const deleteExpert = async (id) => {
   const expert = await Expert.findByPk(id);
   if (!expert) return null;
@@ -132,7 +155,7 @@ const deleteExpert = async (id) => {
 module.exports = {
   findAllExperts,
   createExpert,
-  findExpertByUserId, // ✅ IMPORTANT EXPORT
+  findExpertByUserId,
   updateExpertById,
   findExpertById,
   findRecommendedExperts,

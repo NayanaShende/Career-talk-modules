@@ -8,7 +8,6 @@ exports.saveProfile = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
-    // ✅ FIX 1: Added `role` to destructuring
     const { fullName, email, dob, qualification, experience, domain, role } =
       req.body;
 
@@ -36,7 +35,7 @@ exports.saveProfile = async (req, res) => {
       });
     }
 
-    // ✅ Prepare updateData object properly
+    // ✅ Prepare updateData
     const updateData = {
       fullName,
       email,
@@ -56,34 +55,39 @@ exports.saveProfile = async (req, res) => {
     // ✅ Update user table
     await req.user.update(updateData);
 
-    // 🔥 VERY IMPORTANT: create/update expert if role = expert
+    // 🔥 If role = expert → create or update expert table
     if (role === "expert") {
       await authService.setRole(req.user, role);
 
-      // 1️⃣ Check if expert row exists
+      // 1️⃣ Check if expert exists
       let expert = await expertRepository.findExpertByUserId(req.user.id);
 
-      // 2️⃣ If not exists → create expert row
+      // 2️⃣ If not exists → create
       if (!expert) {
         expert = await expertRepository.createExpert({
           userId: req.user.id,
           name: fullName,
-          experience: 0,
+          experience: parseInt(experience) || 0,
           rating: 0,
           is_online: false,
+          domain: domain,
+          bio: `${qualification} | ${experience} years experience`,
+          location: domain,
+          language_spoken: "English",
+          cv: req.file ? req.file.filename : null,
+        });
+      } else {
+        // 3️⃣ Update existing expert
+        await expert.update({
+          name: fullName,
+          experience: parseInt(experience) || expert.experience,
+          domain: domain,
+          bio: `${qualification} | ${experience} years experience`,
+          location: domain,
+          language_spoken: expert.language_spoken || "English",
+          cv: req.file ? req.file.filename : expert.cv,
         });
       }
-
-      // 3️⃣ Always update expert professional info
-      await expert.update({
-        name: fullName,
-        skill: domain,
-        headline: qualification,
-        bio: `${qualification} | ${experience} years experience`,
-        location: domain,
-        language_spoken: "English",
-        cv: req.file ? req.file.filename : expert.cv,
-      });
     }
 
     return res.json({
@@ -95,7 +99,7 @@ exports.saveProfile = async (req, res) => {
     console.error("SAVE PROFILE ERROR:", err);
     return res.status(500).json({
       success: false,
-      message: "Server error",
+      message: err.message || "Server error",
     });
   }
 };

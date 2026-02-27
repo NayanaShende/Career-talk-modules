@@ -2,25 +2,21 @@
 
 const userRepo = require("../repositories/user.repository");
 
-<<<<<<< HEAD
 const normalizeMobile = (mobile) =>
-  String(mobile).replace(/\D/g, "").slice(-10);
+  String(mobile || "").replace(/\D/g, "").slice(-10);
 
-// Generate OTP
+// ================== Generate OTP ==================
 const generateOtp = async (mobile) => {
   mobile = normalizeMobile(mobile);
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const otpExpiryAt = new Date(Date.now() + 5 * 60 * 1000);
+  if (!mobile || mobile.length !== 10) {
+    throw new Error("Invalid mobile number");
+  }
 
-  let user = await User.findOne({ where: { mobile } });
-=======
-const generateOtp = async (mobile) => {
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const otpExpiryAt = new Date(Date.now() + 5 * 60 * 1000);
 
   let user = await userRepo.findUserByMobile(mobile);
->>>>>>> be472dc42a199b58c8a839293261594068cffcca
 
   if (user) {
     user.otp = otp;
@@ -28,45 +24,32 @@ const generateOtp = async (mobile) => {
     user.isVerified = false;
     await userRepo.saveUser(user);
   } else {
-<<<<<<< HEAD
-    user = await User.create({
-=======
     user = await userRepo.createUser({
->>>>>>> be472dc42a199b58c8a839293261594068cffcca
       mobile,
       otp,
       otpExpiryAt,
       isVerified: false,
+      role: "user", // default role
+      hasProfile: false,
     });
   }
 
-<<<<<<< HEAD
-  console.log("Generated OTP:", otp);
-=======
   console.log("Generated OTP for", mobile, ":", otp);
->>>>>>> be472dc42a199b58c8a839293261594068cffcca
 
   return otp;
 };
 
+// ================== Verify OTP ==================
 const verifyOtp = async (mobile, otp) => {
-<<<<<<< HEAD
   mobile = normalizeMobile(mobile);
 
-  const user = await User.findOne({ where: { mobile } });
+  const user = await userRepo.findUserByMobile(mobile);
 
   if (!user) throw new Error("User not found");
 
   if (!user.otp || String(user.otp).trim() !== String(otp).trim()) {
     throw new Error("Invalid OTP");
   }
-=======
-  const user = await userRepo.findUserByMobile(mobile);
-
-  if (!user) throw new Error("User not found");
-
-  if (String(user.otp) !== String(otp)) throw new Error("Invalid OTP");
->>>>>>> be472dc42a199b58c8a839293261594068cffcca
 
   if (!user.otpExpiryAt || new Date() > new Date(user.otpExpiryAt)) {
     throw new Error("OTP expired");
@@ -75,24 +58,30 @@ const verifyOtp = async (mobile, otp) => {
   user.otp = null;
   user.otpExpiryAt = null;
   user.isVerified = true;
+
   await userRepo.saveUser(user);
 
   return user;
 };
 
-<<<<<<< HEAD
-// Get user
+// ================== Get User ==================
 const getUserByMobile = async (mobile) => {
   mobile = normalizeMobile(mobile);
-  return await User.findOne({ where: { mobile } });
-=======
-const getUserByMobile = async (mobile) => {
   return await userRepo.findUserByMobile(mobile);
 };
 
+// ================== Create / Update Profile ==================
 const createUserProfile = async (userId, profileData, file) => {
+  if (!userId) throw new Error("User ID required");
+
   const data = {
-    ...profileData,
+    fullName: profileData.fullName || null,
+    email: profileData.email || null,
+    dob: profileData.dob || null,
+    qualification: profileData.qualification || null,
+    experience: profileData.experience || null,
+    domain: profileData.domain || null,
+    role: profileData.role || "user",
     cvFile: file ? file.filename : null,
     userId,
   };
@@ -105,14 +94,30 @@ const createUserProfile = async (userId, profileData, file) => {
     profile = await userRepo.createProfile(data);
   }
 
+  // ✅ Mark user hasProfile true
+  const user = await userRepo.findUserById
+    ? await userRepo.findUserById(userId)
+    : null;
+
+  if (user) {
+    user.hasProfile = true;
+
+    // ✅ If role selected as expert, update role
+    if (profileData.role === "expert") {
+      user.role = "expert";
+    }
+
+    await userRepo.saveUser(user);
+  }
+
   return profile;
 };
 
+// ================== Get Profile ==================
 const getUserProfile = async (userId) => {
   const profile = await userRepo.findProfileByUserId(userId);
   if (!profile) throw new Error("Profile not found");
   return profile;
->>>>>>> be472dc42a199b58c8a839293261594068cffcca
 };
 
 module.exports = {

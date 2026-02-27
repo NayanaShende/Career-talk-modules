@@ -2,11 +2,21 @@
 
 const expertRepo = require("../repositories/expert.repository");
 
+/* ===============================
+   BASIC CRUD
+================================ */
+
 const getAllExperts = async () => {
   return await expertRepo.findAllExperts();
 };
 
 const createExpert = async (data) => {
+  // ✅ Prevent duplicate expert profile
+  const existing = await expertRepo.findExpertByUserId(data.userId);
+  if (existing) {
+    throw new Error("Expert profile already exists for this user");
+  }
+
   return await expertRepo.createExpert(data);
 };
 
@@ -15,13 +25,24 @@ const updateExpert = async (id, data) => {
   return await expertRepo.findExpertById(id);
 };
 
+/* ===============================
+   SKILLS
+================================ */
+
 const addSkills = async (expertId, skills) => {
+  if (!skills || !skills.length) return [];
+
   const skillRows = skills.map((skill) => ({
     expert_id: expertId,
     skill_name: skill,
   }));
+
   return await expertRepo.bulkCreateSkills(skillRows);
 };
+
+/* ===============================
+   LISTING
+================================ */
 
 const getRecommendedExperts = async (limit = 10) => {
   return await expertRepo.findRecommendedExperts(limit);
@@ -31,18 +52,27 @@ const getOnlineExperts = async (limit = 10) => {
   return await expertRepo.findOnlineExperts(limit);
 };
 
-const searchExperts = async (skill) => {
-  return await expertRepo.searchExpertsBySkill(skill);
+/* ===============================
+   DOMAIN SEARCH (UPDATED)
+================================ */
+
+// 🔥 Now using domain instead of skill
+const searchExperts = async (domain) => {
+  return await expertRepo.searchExpertsBySkill(domain);
 };
 
-const searchExpertsByHeadline = async (skill) => {
-  return await expertRepo.searchExpertsByHeadline(skill);
+const searchExpertsByHeadline = async (domain) => {
+  return await expertRepo.searchExpertsByHeadline(domain);
 };
 
-// ✅ NEW: Get experts filtered by skill column
-const getExpertsBySkill = async (skill) => {
-  return await expertRepo.findExpertsBySkill(skill);
+// ✅ Filter experts by domain
+const getExpertsBySkill = async (domain) => {
+  return await expertRepo.findExpertsBySkill(domain);
 };
+
+/* ===============================
+   EXPERT PROFILE (SEPARATE TABLE)
+================================ */
 
 const createExpertProfile = async (userId, profileData, file) => {
   const data = {
@@ -79,8 +109,6 @@ const getExpertById = async (id) => {
   return await expertRepo.findExpertById(id);
 };
 
-
-
 module.exports = {
   getAllExperts,
   createExpert,
@@ -90,7 +118,7 @@ module.exports = {
   getOnlineExperts,
   searchExperts,
   searchExpertsByHeadline,
-  getExpertsBySkill, // ✅ NEW
+  getExpertsBySkill,
   createExpertProfile,
   getExpertProfile,
   getExpertById,

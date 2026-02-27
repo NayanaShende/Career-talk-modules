@@ -12,7 +12,7 @@ const sequelize = new Sequelize(
     port: config.port || 5432,
     dialect: config.dialect || "postgres",
     logging: false,
-  },
+  }
 );
 
 const db = {};
@@ -26,28 +26,54 @@ db.sequelize = sequelize;
 
 // Load User FIRST (since Expert depends on it)
 db.User = require("./user")(sequelize, DataTypes);
+
+// Load Expert (depends on User)
 db.Expert = require("./expert")(sequelize, DataTypes);
-db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
+
+// Load ExpertSkill (if exists)
+try {
+  db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
+} catch (err) {
+  console.warn("⚠️ ExpertSkill model not found, skipping...");
+}
 
 /* =========================
-   AUTO ASSOCIATE
+   AUTO ASSOCIATE (SAFE)
 ========================= */
 
 Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
+  if (db[modelName] && db[modelName].associate) {
     db[modelName].associate(db);
   }
 });
 
 /* =========================
-   SYNC DATABASE (SAFE MODE)
+   TEST CONNECTION
 ========================= */
 
-// ✅ IMPORTANT: Do NOT use alter or force in production
-db.sequelize
-  .sync()  // ← changed from { alter: true }
+sequelize
+  .authenticate()
   .then(() => {
-    console.log("✅ Database synced safely");
+    console.log("✅ Database connection successful");
+  })
+  .catch((err) => {
+    console.error("❌ Unable to connect to database:", err);
+  });
+
+/* =========================
+   SYNC DATABASE
+========================= */
+
+// ✅ In development → automatically update columns
+// ❌ In production → safe sync only
+db.sequelize
+  .sync(
+    env === "development"
+      ? { alter: true }   // auto update new fields
+      : {}                // safe mode in production
+  )
+  .then(() => {
+    console.log("✅ Database synced successfully");
   })
   .catch((err) => {
     console.error("❌ Database sync error:", err);
