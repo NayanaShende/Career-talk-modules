@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import {
   View,
@@ -29,7 +28,6 @@ const SKILLS = [
 export default function Dashboard() {
   const [onlineExperts, setOnlineExperts] = useState([]);
   const [loadingOnline, setLoadingOnline] = useState(true);
-
   const [topExperts, setTopExperts] = useState([]);
   const [loadingTop, setLoadingTop] = useState(true);
   const [activeSkill, setActiveSkill] = useState("All");
@@ -39,7 +37,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetchOnlineExperts();
     fetchTopExperts();
-
     const interval = setInterval(fetchOnlineExperts, 300000);
     return () => clearInterval(interval);
   }, []);
@@ -47,6 +44,16 @@ export default function Dashboard() {
   useEffect(() => {
     fetchFilteredExperts(activeSkill);
   }, [activeSkill]);
+
+  // Logic to get first letter of First Name and First letter of Last Name
+  const getInitials = (name) => {
+    if (!name) return "EX";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return name.substring(0, 2).toUpperCase();
+  };
 
   const fetchOnlineExperts = async () => {
     try {
@@ -79,8 +86,7 @@ export default function Dashboard() {
       setLoadingFiltered(true);
       const url = skill === "All" ? "/experts" : `/experts?skill=${skill}`;
       const res = await axiosInstance.get(url);
-      const list = res?.data?.data || [];
-      setFilteredExperts(list);
+      setFilteredExperts(res?.data?.data || []);
     } catch {
       setFilteredExperts([]);
     } finally {
@@ -92,122 +98,87 @@ export default function Dashboard() {
     <SafeAreaView style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 100 }}>
-
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* HEADER */}
         <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={{ color: "#fff", fontWeight: "bold" }}>C</Text>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarInitial}>C</Text>
           </View>
-          <Text style={styles.headerText}>Career-Talk</Text>
-          <Pressable style={styles.walletBtn}>
-            <Text style={styles.walletText}>Add Cash +</Text>
-          </Pressable>
+          <Text style={styles.headerTitle}>Career-Talk</Text>
+          <TouchableOpacity style={styles.addCashBtn}>
+            <Text style={styles.addCashText}>Add Cash +</Text>
+          </TouchableOpacity>
         </View>
 
         {/* SEARCH */}
         <Pressable
-          style={styles.searchBox}
-          onPress={() => router.push("/expert/search")}>
-          <Ionicons name="search" size={18} color="#777" />
-          <Text style={{ marginLeft: 8, color: "#888" }}>
-            Search experts...
-          </Text>
+          style={styles.searchBar}
+          onPress={() => router.push("/expert/search")}
+        >
+          <Ionicons name="search" size={20} color="#C4C4C4" />
+          <Text style={styles.searchText}>Search</Text>
         </Pressable>
 
         {/* BANNER */}
-        <View style={styles.banner}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bannerTitle}>
+        <View style={styles.promoBanner}>
+          <View style={styles.promoTextContainer}>
+            <Text style={styles.promoTitle}>
               What will my future be{"\n"}in the next 5 years?
             </Text>
-            <Text>Ask Expert</Text>
+            <Text style={styles.promoSub}>Ask Expert</Text>
+            <TouchableOpacity style={styles.askExpertBtn}>
+              <Text style={styles.askExpertBtnText}>Ask Expert</Text>
+            </TouchableOpacity>
           </View>
           <Image
             source={require("../../../assets/banner.png")}
-            style={styles.bannerImage}
+            style={styles.promoImage}
           />
         </View>
 
-        {/* PROMO */}
-        <View style={styles.new}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.bannertitle}>Got any questions?</Text>
-            <Text style={styles.bannertitle}>Chat With Expert</Text>
-            <Text style={styles.bannertitle}>@INR 5/min</Text>
-          </View>
-          <Image
-            source={require("../../../assets/new.png")}
-            style={styles.bannerImage}
-          />
-        </View>
-
-        {/* SKILL FILTER SECTION */}
+        {/* TOP EXPERT BY SKILL */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Browse by Skill</Text>
+          <Text style={styles.sectionTitle}>Top Exper by Skill</Text>
+          <TouchableOpacity onPress={() => router.push("/expert/recommended")}>
+            <Text style={styles.viewAllText}>View All</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Skill Filter Pills */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ paddingLeft: 15, marginBottom: 12 }}>
-          {SKILLS.map((skill) => (
-            <TouchableOpacity
-              key={skill}
-              onPress={() => setActiveSkill(skill)}
-              style={[
-                styles.skillPill,
-                activeSkill === skill && styles.skillPillActive,
-              ]}>
-              <Text
-                style={[
-                  styles.skillPillText,
-                  activeSkill === skill && styles.skillPillTextActive,
-                ]}>
-                {skill}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Filtered Expert Cards */}
         {loadingFiltered ? (
-          <ActivityIndicator style={{ marginTop: 10 }} color="#7C3AED" />
-        ) : filteredExperts.length === 0 ? (
-          <Text style={styles.noExpertText}>No experts found for {activeSkill}</Text>
+          <ActivityIndicator color="#0B2D72" style={{ marginVertical: 20 }} />
         ) : (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            style={{ paddingLeft: 15 }}>
+            contentContainerStyle={styles.expertBySkillList}
+          >
             {filteredExperts.map((e) => (
               <Pressable
                 key={e.id}
-                style={styles.filteredCard}
-                onPress={() => router.push(`/expert/${e.id}`)}>
-                <Image
-                  source={{
-                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}&background=7C3AED&color=fff`,
-                  }}
-                  style={styles.filteredImage}
-                />
-                <View style={styles.filteredInfo}>
-                  <Text style={styles.filteredName} numberOfLines={1}>
-                    {e.name || ""}
+                style={styles.skillExpertCard}
+                onPress={() => router.push(`/expert/${e.id}`)}
+              >
+                <View style={styles.expertInitialCircle}>
+                  {/* CHANGED: Now shows First and Last initial */}
+                  <Text style={styles.expertInitialText}>
+                    {getInitials(e.name)}
                   </Text>
-                  <Text style={styles.filteredHeadline} numberOfLines={1}>
-                    {e.headline || ""}
-                  </Text>
-                  <View style={styles.filteredMeta}>
-                    <Text style={styles.filteredSkillTag}>
-                      {e.skill || activeSkill}
-                    </Text>
-                    <Text style={styles.filteredRating}>
-                      ⭐ {e.rating || "N/A"}
-                    </Text>
-                  </View>
                 </View>
+                <Text style={styles.expertCardName} numberOfLines={1}>
+                  {e.name}
+                </Text>
+                <View style={styles.starRow}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Ionicons key={s} name="star" size={14} color="#FBBF24" />
+                  ))}
+                </View>
+                <View style={styles.expertSkillBadge}>
+                  <Text style={styles.expertSkillText}>
+                    {e.skill || activeSkill}
+                  </Text>
+                </View>
+                <View style={styles.expertCardFooter} />
               </Pressable>
             ))}
           </ScrollView>
@@ -216,69 +187,67 @@ export default function Dashboard() {
         {/* TOP EXPERTS */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Top Experts</Text>
-          <Text
-            style={styles.viewAll}
-            onPress={() => router.push("/expert/recommended")}>
-            View All
-          </Text>
         </View>
 
         {loadingTop ? (
-          <ActivityIndicator style={{ marginTop: 20 }} />
+          <ActivityIndicator color="#0B2D72" />
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.topExpertsList}
+          >
             {topExperts.map((e) => (
-              <Pressable
+              <TouchableOpacity
                 key={e.id}
-                style={styles.topExpertCard}
-                onPress={() => router.push(`/expert/${e.id}`)}>
-                <Image
-                  source={{
-                    uri: e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}`,
-                  }}
-                  style={styles.topExpertImage}
-                />
-                <Text style={styles.topExpertName}>{e.name || ""}</Text>
-              </Pressable>
+                style={styles.circularExpertContainer}
+                onPress={() => router.push(`/expert/${e.id}`)}
+              >
+                <View style={styles.goldBorder}>
+                  <View style={styles.innerCircle}>
+                    {/* CHANGED: Now shows First and Last initial */}
+                    <Text style={styles.circleInitial}>
+                      {getInitials(e.name)}
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         )}
 
-        {/* LIVE EXPERTS */}
+        {/* LIVE EXPERTS SECTION */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Live Experts</Text>
         </View>
 
         {loadingOnline ? (
-          <ActivityIndicator style={{ marginTop: 20 }} />
+          <ActivityIndicator color="#0B2D72" />
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.liveScrollContainer}
+          >
             {onlineExperts.map((e) => (
               <LiveExpert
                 key={e.id}
                 name={e.name || ""}
                 title={e.role || ""}
-                image={e.image || `https://ui-avatars.com/api/?name=${e.name || "User"}`}
+                image={
+                  e.image ||
+                  `https://ui-avatars.com/api/?name=${e.name || "User"}`
+                }
                 onPress={() => router.push(`/expert/${e.id}`)}
               />
             ))}
           </ScrollView>
         )}
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-/* CATEGORY */
-const Category = ({ title, icon }) => (
-  <View style={styles.categoryItem}>
-    <Text style={styles.categoryIcon}>{icon}</Text>
-    <Text style={styles.categoryText}>{title}</Text>
-  </View>
-);
-
-/* LIVE EXPERT CARD */
 const LiveExpert = ({ name, title, image, onPress }) => (
   <Pressable style={styles.liveCard} onPress={onPress}>
     <Image source={{ uri: image }} style={styles.liveImage} />
@@ -292,95 +261,154 @@ const LiveExpert = ({ name, title, image, onPress }) => (
   </Pressable>
 );
 
-/* STYLES */
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F4F5F7" },
-
-  header: { flexDirection: "row", alignItems: "center", padding: 15 },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#7C3AED",
+  container: { flex: 1, backgroundColor: "#FFF" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop:20,
+  },
+  avatarCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#0B2D72",
     justifyContent: "center",
     alignItems: "center",
   },
-  headerText: { marginLeft: 10, fontSize: 18, fontWeight: "bold" },
-  walletBtn: {
+  avatarInitial: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginLeft: 12,
+    color: "#333",
+  },
+  addCashBtn: {
     marginLeft: "auto",
-    borderWidth: 1,
+    backgroundColor: "#0B2D72",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
   },
-  walletText: { fontWeight: "600" },
-
-  searchBox: {
-    backgroundColor: "#fff",
-    margin: 15,
+  addCashText: { color: "#FFF", fontWeight: "600", fontSize: 13 },
+  searchBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F2F2F2",
+    marginHorizontal: 16,
     borderRadius: 10,
-    padding: 12,
+    paddingHorizontal: 12,
+    height: 45,
+    marginBottom: 20,
+  },
+  searchText: { color: "#0B2D72", marginLeft: 8, fontSize: 16 },
+  promoBanner: {
+    backgroundColor: "#ffeda6",
+    marginHorizontal: 16,
+    borderRadius: 20,
+    padding: 20,
     flexDirection: "row",
+    marginBottom: 25,
   },
-  categoryRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginTop: 20,
+  promoTextContainer: { flex: 1 },
+  promoTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#333",
+    lineHeight: 22,
   },
-  categoryItem: { alignItems: "center" },
-  categoryIcon: {
-    fontSize: 28,
-    backgroundColor: "#BDE8F5",
-    padding: 16,
-    borderRadius: 40,
+  promoSub: { fontSize: 18, fontWeight: "700", color: "#333", marginTop: 8 },
+  askExpertBtn: {
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: "#0B2D72",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: "flex-start",
   },
-  categoryText: { marginTop: 6 },
-
-  banner: {
-    flexDirection: "row",
-    backgroundColor: "#FFF7CC",
-    margin: 15,
-    padding: 15,
-    borderRadius: 14,
-  },
-  new: {
-    flexDirection: "row",
-    backgroundColor: "#111",
-    margin: 15,
-    padding: 15,
-    borderRadius: 14,
-  },
-  bannertitle: { color: "#fff", fontWeight: "bold" },
-
-  bannerTitle: { fontWeight: "bold", fontSize: 16 },
-  bannerImage: { width: 160, height: 120 },
+  askExpertBtnText: { color: "#0B2D72", fontSize: 10, fontWeight: "600" },
+  promoImage: { width: 150, height: 130, borderRadius: 12 },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginHorizontal: 15,
-    marginTop: 20,
+    paddingHorizontal: 16,
+    marginBottom: 15,
+    marginTop: 10,
   },
-  sectionTitle: { fontWeight: "bold", fontSize: 16 },
-  viewAll: { color: "#7C3AED", fontWeight: "600" },
-
-  topExpertCard: { alignItems: "center", marginLeft: 15 },
-  topExpertImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    borderWidth: 3,
-    borderColor: "#6A5AE0",
+  sectionTitle: { fontSize:24, fontWeight: "700", color: "#333" },
+  viewAllText: { color: "#0B2D72", fontSize: 20,fontWeight: "600" },
+  expertBySkillList: { paddingLeft: 16, paddingBottom: 10 },
+  skillExpertCard: {
+    width: 140,
+    backgroundColor: "#F3F0FF",
+    borderRadius: 20,
+    padding: 12,
+    alignItems: "center",
+    marginRight: 15,
   },
-  topExpertName: { marginTop: 6, fontSize: 12 },
+  expertInitialCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#0B2D72",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  expertInitialText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
+  expertCardName: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#333",
+    marginBottom: 4,
+  },
+  starRow: { flexDirection: "row", marginBottom: 8 },
+  expertSkillBadge: {
+    backgroundColor: "#0B2D72",
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  expertSkillText: { color: "#FFF", fontSize: 10, fontWeight: "600" },
+  expertCardFooter: {
+    height: 4,
+    width: 60,
+    backgroundColor: "#DDD",
+    borderRadius: 2,
+    marginTop: 12,
+  },
+  topExpertsList: { paddingLeft: 16, paddingBottom: 10 },
+  circularExpertContainer: { marginRight: 15 },
+  goldBorder: {
+    width: 66,
+    height: 66,
+    borderRadius: 33,
+    borderWidth: 2,
+    borderColor: "#FBBF24",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  innerCircle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: "#0B2D72",
+        justifyContent: "center",
+    alignItems: "center",
+  },
+  circleInitial: { fontSize: 18, fontWeight: "600", color: "#f2f6fb" },
+  liveScrollContainer: { paddingLeft: 16 },
   liveCard: {
     width: 130,
     height: 170,
     borderRadius: 18,
-    marginLeft: 15,
+    marginRight: 15,
     overflow: "hidden",
   },
   liveImage: { width: "100%", height: "100%" },
-
   liveBadge: {
     position: "absolute",
     top: 8,
@@ -391,7 +419,6 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   liveText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
-
   liveOverlay: {
     position: "absolute",
     bottom: 0,
@@ -401,64 +428,4 @@ const styles = StyleSheet.create({
   },
   liveName: { color: "#fff", fontWeight: "bold" },
   liveTitle: { color: "#ddd", fontSize: 11 },
-  skillPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: "#fff",
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginRight: 8,
-  },
-  skillPillActive: {
-    backgroundColor: "#7C3AED",
-    borderColor: "#7C3AED",
-  },
-  skillPillText: {
-    fontSize: 13,
-    color: "#555",
-    fontWeight: "500",
-  },
-  skillPillTextActive: {
-    color: "#fff",
-    fontWeight: "700",
-  },
-  filteredCard: {
-    width: 160,
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    marginRight: 12,
-    overflow: "hidden",
-    elevation: 2,
-    shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-  filteredImage: { width: "100%", height: 100 },
-  filteredInfo: { padding: 10 },
-  filteredName: { fontWeight: "bold", fontSize: 13, color: "#111" },
-  filteredHeadline: { fontSize: 11, color: "#666", marginTop: 2 },
-  filteredMeta: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  filteredSkillTag: {
-    fontSize: 10,
-    backgroundColor: "#EDE9FF",
-    color: "#7C3AED",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    fontWeight: "600",
-  },
-  filteredRating: { fontSize: 11, color: "#444", fontWeight: "600" },
-  noExpertText: {
-    textAlign: "center",
-    color: "#999",
-    marginTop: 10,
-    marginBottom: 10,
-    fontSize: 13,
-  },
-}); 
+});

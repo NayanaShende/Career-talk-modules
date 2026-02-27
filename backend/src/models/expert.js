@@ -99,7 +99,7 @@ module.exports = (sequelize, DataTypes) => {
 
   // ✅ SAFE ASSOCIATIONS (NO CRASH)
   Expert.associate = (models) => {
-
+   
     // ✅ ADDED: Expert belongs to User
     if (models.User) {
       Expert.belongsTo(models.User, {
