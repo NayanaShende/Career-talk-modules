@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,10 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
+import { io } from "socket.io-client"; // ✅ Socket.io
+import AsyncStorage from "@react-native-async-storage/async-storage"; // ✅ NEW
+
+const BASE_URL = "http://172.20.10.3:3000"; // ✅ Your server URL
 
 const SKILLS = [
   "All",
@@ -34,11 +38,74 @@ export default function Dashboard() {
   const [filteredExperts, setFilteredExperts] = useState([]);
   const [loadingFiltered, setLoadingFiltered] = useState(false);
 
+  const socketRef = useRef(null); // ✅ Keep socket reference
+  const expertIdRef = useRef(null); // ✅ NEW: Store expertId for cleanup
+
   useEffect(() => {
     fetchOnlineExperts();
     fetchTopExperts();
-    const interval = setInterval(fetchOnlineExperts, 300000);
-    return () => clearInterval(interval);
+
+    // ✅ UPDATED: Connect socket and emit online if user is expert
+    const setupSocket = async () => {
+      try {
+        const userStr = await AsyncStorage.getItem("user");
+        const user = userStr ? JSON.parse(userStr) : null;
+
+        socketRef.current = io(BASE_URL, {
+          transports: ["websocket"],
+          reconnectionAttempts: 5,
+        });
+
+        // ✅ Listen for real-time expert status changes
+        socketRef.current.on("expert:status", ({ expertId, is_online }) => {
+          console.log(`🔴🟢 Expert ${expertId} is now ${is_online ? "ONLINE" : "OFFLINE"}`);
+
+          if (is_online) {
+            // Add expert to online list if not already there
+            setOnlineExperts((prev) => {
+              const alreadyExists = prev.find((e) => e.id === expertId);
+              if (alreadyExists) return prev;
+              // Fetch fresh online list to get full expert details
+              fetchOnlineExperts();
+              return prev;
+            });
+          } else {
+            // Remove expert from online list instantly
+            setOnlineExperts((prev) => prev.filter((e) => e.id !== expertId));
+          }
+        });
+
+        socketRef.current.on("connect", () => {
+          console.log("✅ Socket connected to server");
+
+          // ✅ NEW: If user is expert → emit online with their userId
+          if (user && user.role === "expert") {
+            expertIdRef.current = user.id;
+            socketRef.current.emit("expert:online", user.id);
+            console.log("🟢 Emitted expert:online for userId:", user.id);
+          }
+        });
+
+        socketRef.current.on("disconnect", () => {
+          console.log("🔌 Socket disconnected");
+        });
+
+      } catch (err) {
+        console.log("Socket setup error:", err);
+      }
+    };
+
+    setupSocket();
+
+    // ✅ UPDATED: Cleanup - emit offline + disconnect on unmount
+    return () => {
+      if (socketRef.current) {
+        if (expertIdRef.current) {
+          socketRef.current.emit("expert:offline", expertIdRef.current);
+        }
+        socketRef.current.disconnect();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -219,10 +286,17 @@ export default function Dashboard() {
         {/* LIVE EXPERTS SECTION */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Live Experts</Text>
+          {/* ✅ Real-time indicator */}
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveIndicatorText}>Live</Text>
+          </View>
         </View>
 
         {loadingOnline ? (
           <ActivityIndicator color="#0B2D72" />
+        ) : onlineExperts.length === 0 ? (
+          <Text style={styles.noExpertsText}>No experts online right now</Text>
         ) : (
           <ScrollView
             horizontal
@@ -268,7 +342,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop:20,
+    marginTop: 20,
   },
   avatarCircle: {
     width: 36,
@@ -334,12 +408,36 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     marginBottom: 15,
     marginTop: 10,
   },
-  sectionTitle: { fontSize:24, fontWeight: "700", color: "#333" },
-  viewAllText: { color: "#0B2D72", fontSize: 20,fontWeight: "600" },
+  sectionTitle: { fontSize: 24, fontWeight: "700", color: "#333" },
+  viewAllText: { color: "#0B2D72", fontSize: 20, fontWeight: "600" },
+  // ✅ Live indicator styles
+  liveIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF0F0",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "red",
+    marginRight: 5,
+  },
+  liveIndicatorText: { color: "red", fontSize: 12, fontWeight: "700" },
+  noExpertsText: {
+    textAlign: "center",
+    color: "#999",
+    marginVertical: 20,
+    fontSize: 14,
+  },
   expertBySkillList: { paddingLeft: 16, paddingBottom: 10 },
   skillExpertCard: {
     width: 140,
@@ -396,7 +494,7 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 29,
     backgroundColor: "#0B2D72",
-        justifyContent: "center",
+    justifyContent: "center",
     alignItems: "center",
   },
   circleInitial: { fontSize: 18, fontWeight: "600", color: "#f2f6fb" },

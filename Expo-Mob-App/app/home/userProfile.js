@@ -158,9 +158,48 @@ export default function ProfileScreen() {
       const form = new FormData();
       form.append("role", role.toLowerCase());
 
-      Object.keys(formData).forEach((key) => {
-        if (key !== "cv" && formData[key] !== null && formData[key] !== "") {
-          form.append(key, formData[key]);
+      // ✅ FIX: Resolve "Other" fields — send custom value instead of "Other"
+      const resolvedData = {
+        ...formData,
+        location:
+          formData.location === "Other"
+            ? formData.customLocation
+            : formData.location,
+        domain:
+          formData.domain === "Other"
+            ? formData.customDomain
+            : formData.domain,
+        qualification:
+          formData.qualification === "Other"
+            ? formData.customQualification
+            : formData.qualification,
+        experience:
+          formData.experience === "Other"
+            ? formData.customExperience
+            : formData.experience,
+        languages:
+          formData.languages === "Other"
+            ? formData.customLanguages
+            : formData.languages,
+      };
+
+      // ✅ Skip cv and all custom* fields (already resolved above)
+      const skipFields = [
+        "cv",
+        "customLocation",
+        "customDomain",
+        "customQualification",
+        "customExperience",
+        "customLanguages",
+      ];
+
+      Object.keys(resolvedData).forEach((key) => {
+        if (
+          !skipFields.includes(key) &&
+          resolvedData[key] !== null &&
+          resolvedData[key] !== ""
+        ) {
+          form.append(key, resolvedData[key]);
         }
       });
 
