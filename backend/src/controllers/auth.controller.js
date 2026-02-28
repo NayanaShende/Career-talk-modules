@@ -1,9 +1,9 @@
 // src/controllers/auth.controller.js
 
 const authService = require("../services/auth.service");
-const { User } = require("../models");   // ✅ ADDED
-const jwt = require("jsonwebtoken");     // ✅ ADDED
-const { normalizeMobile } = require("../utils/normalizeMobile"); // ✅ ADDED (adjust path if needed)
+const { User } = require("../models");   
+const jwt = require("jsonwebtoken");     
+const { normalizeMobile } = require("../utils/normalizeMobile"); 
 
 // ---------------------------------------
 // SEND OTP
@@ -34,7 +34,7 @@ exports.sendOtp = async (req, res) => {
         otp,
         otpExpiryAt,
         isVerified: false,
-        role: null,
+        role: "user", // ✅ FIXED (was null)
         hasProfile: false,
       });
     } else {
@@ -45,7 +45,6 @@ exports.sendOtp = async (req, res) => {
       });
     }
 
-    // ✅ FIXED VARIABLE NAME (no redeclare error)
     const { otp: sentOtp } = await authService.sendOtp(mobile);
 
     return res.json({
@@ -145,7 +144,7 @@ exports.verifyOtp = async (req, res) => {
 };
 
 // ---------------------------------------
-// SET ROLE
+// SET ROLE  ✅ FIXED - now calls authService.setRole()
 // ---------------------------------------
 exports.setRole = async (req, res) => {
   try {
@@ -165,12 +164,13 @@ exports.setRole = async (req, res) => {
       });
     }
 
-    await req.user.update({ role: role.toLowerCase() });
+    // ✅ FIX: Call authService.setRole() so expert record gets created
+    const updatedUser = await authService.setRole(req.user, role.toLowerCase());
 
     return res.json({
       success: true,
       message: "Role updated successfully",
-      user: req.user,
+      user: updatedUser,
     });
   } catch (err) {
     console.error("Set role error:", err);

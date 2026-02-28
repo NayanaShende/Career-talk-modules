@@ -64,14 +64,9 @@ sequelize
    SYNC DATABASE
 ========================= */
 
-// ✅ In development → automatically update columns
-// ❌ In production → safe sync only
+// ✅ Safe sync - never deletes or overwrites existing data
 db.sequelize
-  .sync(
-    env === "development"
-      ? { alter: true }   // auto update new fields
-      : {}                // safe mode in production
-  )
+  .sync({})
   .then(() => {
     console.log("✅ Database synced successfully");
   })

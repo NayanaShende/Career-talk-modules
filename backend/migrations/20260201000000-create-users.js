@@ -2,7 +2,7 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Experts", {
+    await queryInterface.createTable("Users", {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -10,40 +10,20 @@ module.exports = {
         type: Sequelize.INTEGER,
       },
 
-      // from both files
       name: {
         type: Sequelize.STRING,
         allowNull: false,
       },
 
-      // from second file
-      headline: {
+      email: {
         type: Sequelize.STRING,
-        allowNull: true,
-      },
-      bio: {
-        type: Sequelize.TEXT,
-        allowNull: true,
+        allowNull: false,
+        unique: true,
       },
 
-      // merged experience fields
-      experience: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-      },
-      experience_years: {
-        type: Sequelize.INTEGER,
-        allowNull: true,
-      },
-
-      // merged rating / verified
-      rating: {
-        type: Sequelize.FLOAT,
-        defaultValue: 0,
-      },
-      verified: {
-        type: Sequelize.BOOLEAN,
-        defaultValue: false,
+      password: {
+        type: Sequelize.STRING,
+        allowNull: false,
       },
 
       createdAt: {
@@ -51,6 +31,7 @@ module.exports = {
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
       },
+
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -60,6 +41,6 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable("Experts");
+    await queryInterface.dropTable("Users");
   },
 };

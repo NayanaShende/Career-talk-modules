@@ -1,6 +1,6 @@
 const { User } = require("../models");
-const authService = require("../services/auth.service"); // ✅ ADDED
-const expertRepository = require("../repositories/expert.repository"); // ✅ ADDED
+const authService = require("../services/auth.service");
+const expertRepository = require("../repositories/expert.repository");
 
 exports.saveProfile = async (req, res) => {
   try {
@@ -11,10 +11,6 @@ exports.saveProfile = async (req, res) => {
       });
     }
 
-<<<<<<< HEAD
-    const { fullName, email, dob, qualification, experience, domain, role } =
-      req.body;
-=======
     const {
       fullName,
       email,
@@ -22,19 +18,17 @@ exports.saveProfile = async (req, res) => {
       qualification,
       experience,
       domain,
-      role, // ✅ DEFINE ROLE HERE
+      role,
+      // ✅ EXPERT FIELDS - these were missing before!
+      bio,
+      location,
+      languages,
+      certificate,
+      certifiedCity,
     } = req.body;
->>>>>>> faf22664448805d4a8455879ac84a3bc9e77a186
 
     // ✅ BASIC VALIDATION
-    if (
-      !fullName ||
-      !email ||
-      !dob ||
-      !qualification ||
-      !domain ||
-      !experience
-    ) {
+    if (!fullName || !email || !dob || !qualification || !domain || !experience) {
       return res.status(400).json({
         success: false,
         message: "Please fill all required fields",
@@ -50,12 +44,7 @@ exports.saveProfile = async (req, res) => {
       });
     }
 
-<<<<<<< HEAD
     // ✅ Prepare updateData
-=======
-    // ✅ Prepare update object
-    // ✅ Prepare updateData object properly
->>>>>>> faf22664448805d4a8455879ac84a3bc9e77a186
     const updateData = {
       fullName,
       email,
@@ -63,7 +52,7 @@ exports.saveProfile = async (req, res) => {
       qualification,
       domain,
       experience,
-      role: role || req.user.role, // keep old role if not provided
+      role: role || req.user.role,
       hasProfile: true,
     };
 
@@ -90,10 +79,11 @@ exports.saveProfile = async (req, res) => {
           experience: parseInt(experience) || 0,
           rating: 0,
           is_online: false,
-          domain: domain,
-          bio: `${qualification} | ${experience} years experience`,
-          location: domain,
-          language_spoken: "English",
+          domain: domain,                           // ✅ correct
+          bio: bio || null,                         // ✅ from form
+          location: location || null,               // ✅ from form (was domain before!)
+          language_spoken: languages || null,       // ✅ from form (was hardcoded "English"!)
+          certification: certificate || null,       // ✅ from form
           cv: req.file ? req.file.filename : null,
         });
       } else {
@@ -101,10 +91,11 @@ exports.saveProfile = async (req, res) => {
         await expert.update({
           name: fullName,
           experience: parseInt(experience) || expert.experience,
-          domain: domain,
-          bio: `${qualification} | ${experience} years experience`,
-          location: domain,
-          language_spoken: expert.language_spoken || "English",
+          domain: domain,                                       // ✅ correct
+          bio: bio || expert.bio,                               // ✅ from form
+          location: location || expert.location,               // ✅ from form
+          language_spoken: languages || expert.language_spoken, // ✅ from form
+          certification: certificate || expert.certification,   // ✅ from form
           cv: req.file ? req.file.filename : expert.cv,
         });
       }
@@ -123,8 +114,6 @@ exports.saveProfile = async (req, res) => {
     });
   }
 };
-
-
 
 exports.getProfile = async (req, res) => {
   try {

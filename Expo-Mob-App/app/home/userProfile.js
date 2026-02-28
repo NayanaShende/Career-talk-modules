@@ -9,14 +9,73 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
+  FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+
+const BASE_URL = "http://172.20.10.3:3000";
+
+// ✅ iOS-safe dropdown component
+function DropdownPicker({ label, value, options, onChange }) {
+  const [visible, setVisible] = useState(false);
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <>
+      <TouchableOpacity
+        style={styles.dropdownBox}
+        onPress={() => setVisible(true)}
+      >
+        <Text style={{ color: selected ? "#000" : "#777", fontSize: 15 }}>
+          {selected ? selected.label : label}
+        </Text>
+        <Text style={{ color: "#777" }}>▼</Text>
+      </TouchableOpacity>
+
+      <Modal visible={visible} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          onPress={() => setVisible(false)}
+        />
+        <View style={styles.modalBox}>
+          <Text style={styles.modalTitle}>{label}</Text>
+          <FlatList
+            data={options}
+            keyExtractor={(item) => item.value}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[
+                  styles.modalItem,
+                  item.value === value && styles.modalItemSelected,
+                ]}
+                onPress={() => {
+                  onChange(item.value);
+                  setVisible(false);
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 16,
+                    color: item.value === value ? "#0B2D72" : "#333",
+                    fontWeight: item.value === value ? "700" : "400",
+                  }}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </Modal>
+    </>
+  );
+}
 
 export default function ProfileScreen() {
   const [role, setRole] = useState("Jobseeker");
@@ -32,16 +91,14 @@ export default function ProfileScreen() {
     domain: "",
     customDomain: "",
     experience: "",
-    customExperience: "", // 🔥 ADDED
+    customExperience: "",
     cv: null,
     certificate: "",
     languages: "",
-    customLanguages: "", // 🔥 ADDED
+    customLanguages: "",
     location: "",
-    customLocation: "", // 🔥 ADDED
+    customLocation: "",
     bio: "",
-    certifiedCity: "", // 🔥 ADDED FOR EXPERT ONLY
-    customCertifiedCity: "", // 🔥 ADDED
   });
 
   const handleChange = (field, value) =>
@@ -51,14 +108,12 @@ export default function ProfileScreen() {
     const currentDate = selectedDate || date;
     setShow(false);
     setDate(currentDate);
-
     const formatted =
       currentDate.getFullYear() +
       "-" +
       String(currentDate.getMonth() + 1).padStart(2, "0") +
       "-" +
       String(currentDate.getDate()).padStart(2, "0");
-
     handleChange("dob", formatted);
   };
 
@@ -73,25 +128,40 @@ export default function ProfileScreen() {
     try {
       if (!formData.fullName.trim())
         return Alert.alert("Missing", "Please enter full name");
-
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
         return Alert.alert("Invalid Email", "Enter valid email");
-
       if (!formData.dob) return Alert.alert("Missing", "Select birth date");
       if (!formData.qualification)
         return Alert.alert("Missing", "Select qualification");
-
       if (!formData.domain) return Alert.alert("Missing", "Select domain");
       if (!formData.experience)
         return Alert.alert("Missing", "Select experience");
-
       if (!formData.cv) return Alert.alert("Missing", "Upload your CV");
 
       const token = await AsyncStorage.getItem("token");
+      if (!token)
+        return Alert.alert("Error", "Session expired. Please login again.");
 
+      // STEP 1: SET ROLE
+      await axios.post(
+        `${BASE_URL}/api/auth/set-role`,
+        { role: role.toLowerCase() },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // STEP 2: SAVE PROFILE
       const form = new FormData();
+      form.append("role", role.toLowerCase());
+
       Object.keys(formData).forEach((key) => {
-        if (key !== "cv") form.append(key, formData[key]);
+        if (key !== "cv" && formData[key] !== null && formData[key] !== "") {
+          form.append(key, formData[key]);
+        }
       });
 
       if (formData.cv) {
@@ -102,16 +172,12 @@ export default function ProfileScreen() {
         });
       }
 
-      await axios.post(
-        "http://192.168.1.19:3000/api/users/save-profile",
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      await axios.post(`${BASE_URL}/api/users/save-profile`, form, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
 
       Alert.alert("Success", "Profile saved!", [
         {
@@ -120,9 +186,10 @@ export default function ProfileScreen() {
         },
       ]);
     } catch (error) {
+      console.log("Submit error:", error.response?.data || error.message);
       Alert.alert(
         "Error",
-        error.response?.data?.message || "Could not save profile",
+        error.response?.data?.message || "Could not save profile"
       );
     }
   };
@@ -178,7 +245,6 @@ export default function ProfileScreen() {
               {formData.dob || "Select Birth Date"}
             </Text>
           </TouchableOpacity>
-
           {show && (
             <DateTimePicker
               value={date}
@@ -190,20 +256,18 @@ export default function ProfileScreen() {
 
           {/* QUALIFICATION */}
           <Text style={styles.label}>Qualification *</Text>
-          <View style={styles.pickerBox}>
-            <Picker
-              selectedValue={formData.qualification}
-              onValueChange={(v) => handleChange("qualification", v)}
-            >
-              <Picker.Item label="Select Qualification" value="" />
-              <Picker.Item label="Graduate" value="Graduate" />
-              <Picker.Item label="Post Graduate" value="PG" />
-              <Picker.Item label="Diploma" value="Diploma" />
-              <Picker.Item label="Marathi Medium" value="Marathi Medium" />
-              <Picker.Item label="Other" value="Other" />
-            </Picker>
-          </View>
-
+          <DropdownPicker
+            label="Select Qualification"
+            value={formData.qualification}
+            onChange={(v) => handleChange("qualification", v)}
+            options={[
+              { label: "Graduate", value: "Graduate" },
+              { label: "Post Graduate", value: "PG" },
+              { label: "Diploma", value: "Diploma" },
+              { label: "Marathi Medium", value: "Marathi Medium" },
+              { label: "Other", value: "Other" },
+            ]}
+          />
           {formData.qualification === "Other" && (
             <TextInput
               style={styles.input}
@@ -214,20 +278,18 @@ export default function ProfileScreen() {
 
           {/* DOMAIN */}
           <Text style={styles.label}>Domain *</Text>
-          <View style={styles.pickerBox}>
-            <Picker
-              selectedValue={formData.domain}
-              onValueChange={(v) => handleChange("domain", v)}
-            >
-              <Picker.Item label="Select Domain" value="" />
-              <Picker.Item label="React Developer" value="React" />
-              <Picker.Item label="Java Developer" value="Java" />
-              <Picker.Item label="Python Developer" value="Python" />
-              <Picker.Item label="Marathi Teacher" value="Marathi Teacher" />
-              <Picker.Item label="Other" value="Other" />
-            </Picker>
-          </View>
-
+          <DropdownPicker
+            label="Select Domain"
+            value={formData.domain}
+            onChange={(v) => handleChange("domain", v)}
+            options={[
+              { label: "React Developer", value: "React" },
+              { label: "Java Developer", value: "Java" },
+              { label: "Python Developer", value: "Python" },
+              { label: "Marathi Teacher", value: "Marathi Teacher" },
+              { label: "Other", value: "Other" },
+            ]}
+          />
           {formData.domain === "Other" && (
             <TextInput
               style={styles.input}
@@ -238,20 +300,18 @@ export default function ProfileScreen() {
 
           {/* EXPERIENCE */}
           <Text style={styles.label}>Experience *</Text>
-          <View style={styles.pickerBox}>
-            <Picker
-              selectedValue={formData.experience}
-              onValueChange={(v) => handleChange("experience", v)}
-            >
-              <Picker.Item label="Select Experience" value="" />
-              <Picker.Item label="Fresher" value="Fresher" />
-              <Picker.Item label="1-2 Years" value="1-2" />
-              <Picker.Item label="3-5 Years" value="3-5" />
-              <Picker.Item label="5+ Years" value="5+" />
-              <Picker.Item label="Other" value="Other" />
-            </Picker>
-          </View>
-
+          <DropdownPicker
+            label="Select Experience"
+            value={formData.experience}
+            onChange={(v) => handleChange("experience", v)}
+            options={[
+              { label: "Fresher", value: "Fresher" },
+              { label: "1-2 Years", value: "1-2" },
+              { label: "3-5 Years", value: "3-5" },
+              { label: "5+ Years", value: "5+" },
+              { label: "Other", value: "Other" },
+            ]}
+          />
           {formData.experience === "Other" && (
             <TextInput
               style={styles.input}
@@ -268,7 +328,7 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* ----------------- EXPERT ONLY FIELDS ----------------- */}
+          {/* EXPERT ONLY FIELDS */}
           {role === "Expert" && (
             <>
               {/* CERTIFICATE */}
@@ -279,45 +339,19 @@ export default function ProfileScreen() {
                 onChangeText={(v) => handleChange("certificate", v)}
               />
 
-              {/* CERTIFIED CITY */}
-              <Text style={styles.label}>Certified City</Text>
-              <View style={styles.pickerBox}>
-                <Picker
-                  selectedValue={formData.certifiedCity}
-                  onValueChange={(v) => handleChange("certifiedCity", v)}
-                >
-                  <Picker.Item label="Select City" value="" />
-                  <Picker.Item label="Mumbai" value="Mumbai" />
-                  <Picker.Item label="Pune" value="Pune" />
-                  <Picker.Item label="Nashik" value="Nashik" />
-                  <Picker.Item label="Nagpur" value="Nagpur" />
-                  <Picker.Item label="Other" value="Other" />
-                </Picker>
-              </View>
-
-              {formData.certifiedCity === "Other" && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter custom certified city"
-                  onChangeText={(v) => handleChange("customCertifiedCity", v)}
-                />
-              )}
-
               {/* LANGUAGES */}
               <Text style={styles.label}>Languages Known</Text>
-              <View style={styles.pickerBox}>
-                <Picker
-                  selectedValue={formData.languages}
-                  onValueChange={(v) => handleChange("languages", v)}
-                >
-                  <Picker.Item label="Select Language" value="" />
-                  <Picker.Item label="English" value="English" />
-                  <Picker.Item label="Hindi" value="Hindi" />
-                  <Picker.Item label="Marathi" value="Marathi" />
-                  <Picker.Item label="Other" value="Other" />
-                </Picker>
-              </View>
-
+              <DropdownPicker
+                label="Select Language"
+                value={formData.languages}
+                onChange={(v) => handleChange("languages", v)}
+                options={[
+                  { label: "English", value: "English" },
+                  { label: "Hindi", value: "Hindi" },
+                  { label: "Marathi", value: "Marathi" },
+                  { label: "Other", value: "Other" },
+                ]}
+              />
               {formData.languages === "Other" && (
                 <TextInput
                   style={styles.input}
@@ -328,19 +362,17 @@ export default function ProfileScreen() {
 
               {/* LOCATION */}
               <Text style={styles.label}>Your Location</Text>
-              <View style={styles.pickerBox}>
-                <Picker
-                  selectedValue={formData.location}
-                  onValueChange={(v) => handleChange("location", v)}
-                >
-                  <Picker.Item label="Select City" value="" />
-                  <Picker.Item label="Mumbai" value="Mumbai" />
-                  <Picker.Item label="Pune" value="Pune" />
-                  <Picker.Item label="Nashik" value="Nashik" />
-                  <Picker.Item label="Other" value="Other" />
-                </Picker>
-              </View>
-
+              <DropdownPicker
+                label="Select City"
+                value={formData.location}
+                onChange={(v) => handleChange("location", v)}
+                options={[
+                  { label: "Mumbai", value: "Mumbai" },
+                  { label: "Pune", value: "Pune" },
+                  { label: "Nashik", value: "Nashik" },
+                  { label: "Other", value: "Other" },
+                ]}
+              />
               {formData.location === "Other" && (
                 <TextInput
                   style={styles.input}
@@ -370,44 +402,26 @@ export default function ProfileScreen() {
   );
 }
 
-// ---------------- STYLES ----------------
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-  },
-
-  header: {
-    fontSize: 26,
-    fontWeight: "700",
-    marginBottom: 7,
-    color: "#0B2D72",
-  },
-
-  label: {
-    marginTop: 15,
-    fontWeight: "600",
-    color: "#0B2D72",
-  },
-
+  container: { padding: 20 },
+  header: { fontSize: 26, fontWeight: "700", marginBottom: 7, color: "#0B2D72" },
+  label: { marginTop: 15, fontWeight: "600", color: "#0B2D72" },
   input: {
     backgroundColor: "#f3f4f6",
     padding: 14,
     borderRadius: 8,
     marginTop: 5,
   },
-
-  pickerBox: {
+  dropdownBox: {
     backgroundColor: "#f3f4f6",
+    padding: 14,
     borderRadius: 8,
     marginTop: 5,
-  },
-
-  roleRow: {
     flexDirection: "row",
-    gap: 10,
-    marginTop: 10,
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-
+  roleRow: { flexDirection: "row", gap: 10, marginTop: 10 },
   roleBtn: {
     flex: 1,
     padding: 12,
@@ -416,16 +430,8 @@ const styles = StyleSheet.create({
     borderColor: "#0B2D72",
     alignItems: "center",
   },
-
-  roleSelected: {
-    backgroundColor: "#0B2D72",
-  },
-
-  roleText: {
-    color: "#0B2D72",
-    fontWeight: "600",
-  },
-
+  roleSelected: { backgroundColor: "#0B2D72" },
+  roleText: { color: "#0B2D72", fontWeight: "600" },
   uploadBtn: {
     backgroundColor: "#e5e7eb",
     padding: 14,
@@ -433,7 +439,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     alignItems: "center",
   },
-
   submitBtn: {
     backgroundColor: "#0B2D72",
     padding: 16,
@@ -441,10 +446,33 @@ const styles = StyleSheet.create({
     marginTop: 30,
     alignItems: "center",
   },
-
-  submitText: {
-    color: "#fff",
+  submitText: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+  },
+  modalBox: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: "50%",
+  },
+  modalTitle: {
     fontSize: 18,
     fontWeight: "700",
+    color: "#0B2D72",
+    marginBottom: 15,
+    textAlign: "center",
+  },
+  modalItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  modalItemSelected: {
+    backgroundColor: "#f0f4ff",
+    borderRadius: 8,
   },
 });
