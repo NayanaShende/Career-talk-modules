@@ -103,7 +103,7 @@ export default function ProfileScreen() {
       }
 
       await axios.post(
-        "http://192.168.1.19:3000/api/users/save-profile",
+        "http://10.89.141.9:3000/api/users/save-profile",
         form,
         {
           headers: {

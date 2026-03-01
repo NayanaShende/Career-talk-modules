@@ -1,26 +1,41 @@
 const express = require("express");
 const router = express.Router();
+
 const expertController = require("../controllers/expert.controller");
 
+// ============================
 // GET ALL EXPERTS
+// ============================
 router.get("/", expertController.getAllExperts);
 
-// CREATE EXPERT
+// ============================
+// CREATE EXPERT PROFILE
+// ============================
 router.post("/", expertController.createExpertProfile);
 
-// GET RECOMMENDED
+// ============================
+// GET RECOMMENDED EXPERTS
+// ============================
 router.get("/recommended", expertController.getRecommendedExperts);
 
-// GET ONLINE
+// ============================
+// GET ONLINE EXPERTS
+// ============================
 router.get("/online", expertController.getOnlineExperts);
 
-// ADD SKILLS
+// ============================
+// ADD SKILLS TO EXPERT
+// ============================
 router.post("/:expertId/skills", expertController.addSkills);
 
-// UPDATE EXPERT
+// ============================
+// UPDATE EXPERT PROFILE
+// ============================
 router.put("/:id", expertController.updateExpertProfile);
 
-// GET BY ID  (keep last)
+// ============================
+// GET EXPERT BY ID (KEEP LAST)
+// ============================
 router.get("/:id", expertController.getExpertById);
 
 module.exports = router;

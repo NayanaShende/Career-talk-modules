@@ -7,6 +7,8 @@ const router = express.Router();
 const authRoutes = require("./auth.routes");
 const userRoutes = require("./user.routes");
 const expertsRoutes = require("./expert.routes");
+const chatRoutes = require('./chat.routes');
+
 
 // --------------------------------------
 // MOUNT ROUTES
@@ -23,6 +25,10 @@ router.use("/users", userRoutes);
 // Expert routes
 // Example: /api/experts
 router.use("/experts", expertsRoutes);
+
+
+// Chat routes
+router.use('/chat', chatRoutes);
 
 // --------------------------------------
 // HEALTH CHECK ROUTE

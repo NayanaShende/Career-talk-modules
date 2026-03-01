@@ -45,7 +45,6 @@ export default function Dashboard() {
     fetchFilteredExperts(activeSkill);
   }, [activeSkill]);
 
-  // Logic to get first letter of First Name and First letter of Last Name
   const getInitials = (name) => {
     if (!name) return "EX";
     const parts = name.trim().split(" ");
@@ -137,13 +136,41 @@ export default function Dashboard() {
           />
         </View>
 
-        {/* TOP EXPERT BY SKILL */}
+        {/* TOP EXPERT BY SKILL SECTION */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Top Exper by Skill</Text>
           <TouchableOpacity onPress={() => router.push("/expert/recommended")}>
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
+
+        {/* ADDED: SKILL FILTER PILLS */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.skillFilterContainer}
+          contentContainerStyle={{ paddingHorizontal: 16 }}
+        >
+          {SKILLS.map((skill) => (
+            <TouchableOpacity
+              key={skill}
+              onPress={() => setActiveSkill(skill)}
+              style={[
+                styles.skillPill,
+                activeSkill === skill && styles.skillPillActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.skillPillText,
+                  activeSkill === skill && styles.skillPillTextActive,
+                ]}
+              >
+                {skill}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
         {loadingFiltered ? (
           <ActivityIndicator color="#0B2D72" style={{ marginVertical: 20 }} />
@@ -153,34 +180,37 @@ export default function Dashboard() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.expertBySkillList}
           >
-            {filteredExperts.map((e) => (
-              <Pressable
-                key={e.id}
-                style={styles.skillExpertCard}
-                onPress={() => router.push(`/expert/${e.id}`)}
-              >
-                <View style={styles.expertInitialCircle}>
-                  {/* CHANGED: Now shows First and Last initial */}
-                  <Text style={styles.expertInitialText}>
-                    {getInitials(e.name)}
+            {filteredExperts.length === 0 ? (
+              <Text style={styles.noDataText}>No experts found for {activeSkill}</Text>
+            ) : (
+              filteredExperts.map((e) => (
+                <Pressable
+                  key={e.id}
+                  style={styles.skillExpertCard}
+                  onPress={() => router.push(`/expert/${e.id}`)}
+                >
+                  <View style={styles.expertInitialCircle}>
+                    <Text style={styles.expertInitialText}>
+                      {getInitials(e.name)}
+                    </Text>
+                  </View>
+                  <Text style={styles.expertCardName} numberOfLines={1}>
+                    {e.name}
                   </Text>
-                </View>
-                <Text style={styles.expertCardName} numberOfLines={1}>
-                  {e.name}
-                </Text>
-                <View style={styles.starRow}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Ionicons key={s} name="star" size={14} color="#FBBF24" />
-                  ))}
-                </View>
-                <View style={styles.expertSkillBadge}>
-                  <Text style={styles.expertSkillText}>
-                    {e.skill || activeSkill}
-                  </Text>
-                </View>
-                <View style={styles.expertCardFooter} />
-              </Pressable>
-            ))}
+                  <View style={styles.starRow}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <Ionicons key={s} name="star" size={14} color="#FBBF24" />
+                    ))}
+                  </View>
+                  <View style={styles.expertSkillBadge}>
+                    <Text style={styles.expertSkillText}>
+                      {e.skill || activeSkill}
+                    </Text>
+                  </View>
+                  <View style={styles.expertCardFooter} />
+                </Pressable>
+              ))
+            )}
           </ScrollView>
         )}
 
@@ -205,7 +235,6 @@ export default function Dashboard() {
               >
                 <View style={styles.goldBorder}>
                   <View style={styles.innerCircle}>
-                    {/* CHANGED: Now shows First and Last initial */}
                     <Text style={styles.circleInitial}>
                       {getInitials(e.name)}
                     </Text>
@@ -216,7 +245,7 @@ export default function Dashboard() {
           </ScrollView>
         )}
 
-        {/* LIVE EXPERTS SECTION */}
+        {/* LIVE EXPERTS */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Live Experts</Text>
         </View>
@@ -268,7 +297,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop:20,
+    marginTop: 20,
   },
   avatarCircle: {
     width: 36,
@@ -338,8 +367,40 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     marginTop: 10,
   },
-  sectionTitle: { fontSize:24, fontWeight: "700", color: "#333" },
-  viewAllText: { color: "#0B2D72", fontSize: 20,fontWeight: "600" },
+  sectionTitle: { fontSize: 24, fontWeight: "700", color: "#333" },
+  viewAllText: { color: "#0B2D72", fontSize: 20, fontWeight: "600" },
+  
+  /* STYLES FOR ADDED FILTER */
+  skillFilterContainer: {
+    marginBottom: 15,
+  },
+  skillPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#F2F2F2",
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: "#EEE",
+  },
+  skillPillActive: {
+    backgroundColor: "#0B2D72",
+    borderColor: "#0B2D72",
+  },
+  skillPillText: {
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "600",
+  },
+  skillPillTextActive: {
+    color: "#FFF",
+  },
+  noDataText: {
+    paddingLeft: 16,
+    color: "#999",
+    fontStyle: "italic",
+  },
+
   expertBySkillList: { paddingLeft: 16, paddingBottom: 10 },
   skillExpertCard: {
     width: 140,
@@ -396,7 +457,7 @@ const styles = StyleSheet.create({
     height: 58,
     borderRadius: 29,
     backgroundColor: "#0B2D72",
-        justifyContent: "center",
+    justifyContent: "center",
     alignItems: "center",
   },
   circleInitial: { fontSize: 18, fontWeight: "600", color: "#f2f6fb" },

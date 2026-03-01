@@ -28,7 +28,17 @@ exports.createExpertProfile = async (req, res) => {
 // ================= UPDATE =================
 exports.updateExpertProfile = async (req, res) => {
   try {
-    const expert = await expertService.updateExpert(req.params.id, req.body);
+    const { id } = req.params;
+
+    // ✅ validation added
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid expert id",
+      });
+    }
+
+    const expert = await expertService.updateExpert(Number(id), req.body);
 
     res.status(200).json({
       success: true,
@@ -46,13 +56,22 @@ exports.addSkills = async (req, res) => {
     const { expertId } = req.params;
     const { skills } = req.body;
 
-    if (!skills || !Array.isArray(skills)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "skills must be an array" });
+    // ✅ validation added
+    if (!expertId || isNaN(expertId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid expert id",
+      });
     }
 
-    await expertService.addSkills(expertId, skills);
+    if (!skills || !Array.isArray(skills)) {
+      return res.status(400).json({
+        success: false,
+        message: "skills must be an array",
+      });
+    }
+
+    await expertService.addSkills(Number(expertId), skills);
 
     res.json({ success: true, message: "Skills added" });
   } catch (err) {
@@ -86,12 +105,23 @@ exports.getOnlineExperts = async (req, res) => {
 // ================= GET BY ID =================
 exports.getExpertById = async (req, res) => {
   try {
-    const expert = await expertService.getExpertById(req.params.id);
+    const { id } = req.params;
+
+    // ✅ CRITICAL FIX
+    if (!id || isNaN(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid expert id",
+      });
+    }
+
+    const expert = await expertService.getExpertById(Number(id));
 
     if (!expert) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Expert not found" });
+      return res.status(404).json({
+        success: false,
+        message: "Expert not found",
+      });
     }
 
     res.status(200).json({ success: true, data: expert });

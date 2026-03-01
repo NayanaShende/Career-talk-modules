@@ -24,10 +24,7 @@ db.sequelize = sequelize;
 db.Expert = require("./expert")(sequelize, DataTypes);
 db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
 db.User = require("./user")(sequelize, DataTypes);
-
-// ❌ REMOVED (you deleted these files)
-// db.UserProfile = require("./user.profile")(sequelize, DataTypes);
-// db.ExpertProfile = require("./expert.profile")(sequelize, DataTypes);
+db.Chat = require('./chat')(sequelize, DataTypes);
 
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {
