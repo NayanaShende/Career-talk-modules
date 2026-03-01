@@ -30,6 +30,9 @@ db.User = require("./user")(sequelize, DataTypes);
 // Load Expert (depends on User)
 db.Expert = require("./expert")(sequelize, DataTypes);
 
+// Load Review ✅ NEW
+db.Review = require("./review")(sequelize, DataTypes);
+
 // Load ExpertSkill (if exists)
 try {
   db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);

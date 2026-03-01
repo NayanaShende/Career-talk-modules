@@ -11,10 +11,12 @@ import {
   Alert,
   Modal,
   FlatList,
+  Image,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker"; // ✅ NEW
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
@@ -30,8 +32,7 @@ function DropdownPicker({ label, value, options, onChange }) {
     <>
       <TouchableOpacity
         style={styles.dropdownBox}
-        onPress={() => setVisible(true)}
-      >
+        onPress={() => setVisible(true)}>
         <Text style={{ color: selected ? "#000" : "#777", fontSize: 15 }}>
           {selected ? selected.label : label}
         </Text>
@@ -57,15 +58,13 @@ function DropdownPicker({ label, value, options, onChange }) {
                 onPress={() => {
                   onChange(item.value);
                   setVisible(false);
-                }}
-              >
+                }}>
                 <Text
                   style={{
                     fontSize: 16,
                     color: item.value === value ? "#0B2D72" : "#333",
                     fontWeight: item.value === value ? "700" : "400",
-                  }}
-                >
+                  }}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -93,6 +92,7 @@ export default function ProfileScreen() {
     experience: "",
     customExperience: "",
     cv: null,
+    image: null, // ✅ NEW
     certificate: "",
     languages: "",
     customLanguages: "",
@@ -124,6 +124,28 @@ export default function ProfileScreen() {
     }
   };
 
+  // ✅ NEW: Pick profile image from gallery
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      return Alert.alert(
+        "Permission required",
+        "Please allow access to your photo library",
+      );
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      handleChange("image", result.assets[0]);
+    }
+  };
+
   const submitProfile = async () => {
     try {
       if (!formData.fullName.trim())
@@ -151,14 +173,14 @@ export default function ProfileScreen() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-        }
+        },
       );
 
       // STEP 2: SAVE PROFILE
       const form = new FormData();
       form.append("role", role.toLowerCase());
 
-      // ✅ FIX: Resolve "Other" fields — send custom value instead of "Other"
+      // ✅ Resolve "Other" fields
       const resolvedData = {
         ...formData,
         location:
@@ -166,9 +188,7 @@ export default function ProfileScreen() {
             ? formData.customLocation
             : formData.location,
         domain:
-          formData.domain === "Other"
-            ? formData.customDomain
-            : formData.domain,
+          formData.domain === "Other" ? formData.customDomain : formData.domain,
         qualification:
           formData.qualification === "Other"
             ? formData.customQualification
@@ -183,9 +203,10 @@ export default function ProfileScreen() {
             : formData.languages,
       };
 
-      // ✅ Skip cv and all custom* fields (already resolved above)
+      // ✅ Skip cv, image, and all custom* fields (handled separately below)
       const skipFields = [
         "cv",
+        "image", // ✅ NEW
         "customLocation",
         "customDomain",
         "customQualification",
@@ -203,11 +224,22 @@ export default function ProfileScreen() {
         }
       });
 
+      // ✅ Append CV
       if (formData.cv) {
         form.append("cv", {
           uri: formData.cv.uri,
           name: formData.cv.name || "cv.pdf",
           type: "application/pdf",
+        });
+      }
+
+      // ✅ NEW: Append profile image
+      if (formData.image) {
+        const ext = formData.image.uri.split(".").pop();
+        form.append("image", {
+          uri: formData.image.uri,
+          name: `profile.${ext}`,
+          type: `image/${ext}`,
         });
       }
 
@@ -228,7 +260,7 @@ export default function ProfileScreen() {
       console.log("Submit error:", error.response?.data || error.message);
       Alert.alert(
         "Error",
-        error.response?.data?.message || "Could not save profile"
+        error.response?.data?.message || "Could not save profile",
       );
     }
   };
@@ -237,10 +269,25 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
+        style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.header}>Profile Information</Text>
+
+          {/* ✅ NEW: PROFILE IMAGE */}
+          <Text style={styles.label}>Profile Image</Text>
+          <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+            {formData.image ? (
+              <Image
+                source={{ uri: formData.image.uri }}
+                style={styles.imagePreview}
+              />
+            ) : (
+              <Text
+                style={{ color: "#777", fontSize: 13, textAlign: "center" }}>
+                📷{"\n"}Choose Photo
+              </Text>
+            )}
+          </TouchableOpacity>
 
           {/* ROLE SELECT */}
           <Text style={styles.label}>Select Role</Text>
@@ -249,11 +296,9 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 key={item}
                 style={[styles.roleBtn, role === item && styles.roleSelected]}
-                onPress={() => setRole(item)}
-              >
+                onPress={() => setRole(item)}>
                 <Text
-                  style={[styles.roleText, role === item && { color: "#fff" }]}
-                >
+                  style={[styles.roleText, role === item && { color: "#fff" }]}>
                   {item}
                 </Text>
               </TouchableOpacity>
@@ -443,7 +488,12 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 20 },
-  header: { fontSize: 26, fontWeight: "700", marginBottom: 7, color: "#0B2D72" },
+  header: {
+    fontSize: 26,
+    fontWeight: "700",
+    marginBottom: 7,
+    color: "#0B2D72",
+  },
   label: { marginTop: 15, fontWeight: "600", color: "#0B2D72" },
   input: {
     backgroundColor: "#f3f4f6",
@@ -513,5 +563,25 @@ const styles = StyleSheet.create({
   modalItemSelected: {
     backgroundColor: "#f0f4ff",
     borderRadius: 8,
+  },
+  // ✅ NEW: Image picker styles
+  imagePicker: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: "#f3f4f6",
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+    borderWidth: 2,
+    borderColor: "#0B2D72",
+    borderStyle: "dashed",
+    overflow: "hidden",
+  },
+  imagePreview: {
+    width: 110,
+    height: 110,
+    borderRadius: 55,
   },
 });

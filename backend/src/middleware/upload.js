@@ -14,4 +14,11 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+// ✅ Accept both "cv" and "image" fields
+const uploadFields = upload.fields([
+  { name: "cv", maxCount: 1 },
+  { name: "image", maxCount: 1 },
+]);
+
 module.exports = upload;
+module.exports.uploadFields = uploadFields;

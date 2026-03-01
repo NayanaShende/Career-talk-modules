@@ -109,6 +109,58 @@ const getExpertById = async (id) => {
   return await expertRepo.findExpertById(id);
 };
 
+/* ===============================
+   RATINGS ✅ NEW
+================================ */
+
+const submitRating = async (expertId, rating, comment, userId) => {
+  const { Review, Expert } = require("../models");
+
+  // 1. Save the review
+  await Review.create({
+    expert_id: expertId,
+    rating,
+    comment: comment || null,
+    user_id: userId,
+  });
+
+  // 2. Recalculate average rating for the expert
+  const reviews = await Review.findAll({ where: { expert_id: expertId } });
+  const avgRating =
+    reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+
+  // 3. Update expert's rating
+  await Expert.update(
+    { rating: parseFloat(avgRating.toFixed(1)) },
+    { where: { id: expertId } }
+  );
+
+  return {
+    avgRating: parseFloat(avgRating.toFixed(1)),
+    totalReviews: reviews.length,
+  };
+};
+
+const getRatings = async (expertId) => {
+  const { Review } = require("../models");
+
+  const reviews = await Review.findAll({
+    where: { expert_id: expertId },
+    order: [["createdAt", "DESC"]],
+  });
+
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+
+  return {
+    avgRating: parseFloat(avgRating.toFixed(1)),
+    totalReviews: reviews.length,
+    reviews,
+  };
+};
+
 module.exports = {
   getAllExperts,
   createExpert,
@@ -122,4 +174,6 @@ module.exports = {
   createExpertProfile,
   getExpertProfile,
   getExpertById,
+  submitRating, // ✅ NEW
+  getRatings,   // ✅ NEW
 };

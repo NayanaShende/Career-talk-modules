@@ -28,7 +28,14 @@ exports.saveProfile = async (req, res) => {
     } = req.body;
 
     // ✅ BASIC VALIDATION
-    if (!fullName || !email || !dob || !qualification || !domain || !experience) {
+    if (
+      !fullName ||
+      !email ||
+      !dob ||
+      !qualification ||
+      !domain ||
+      !experience
+    ) {
       return res.status(400).json({
         success: false,
         message: "Please fill all required fields",
@@ -44,6 +51,10 @@ exports.saveProfile = async (req, res) => {
       });
     }
 
+    // ✅ Get cv and image from req.files (updated from req.file)
+    const cvFile = req.files?.cv?.[0];
+    const imageFile = req.files?.image?.[0]; // ✅ NEW
+
     // ✅ Prepare updateData
     const updateData = {
       fullName,
@@ -57,8 +68,8 @@ exports.saveProfile = async (req, res) => {
     };
 
     // ✅ Save CV file if uploaded
-    if (req.file) {
-      updateData.cvFile = req.file.filename;
+    if (cvFile) {
+      updateData.cvFile = cvFile.filename;
     }
 
     // ✅ Update user
@@ -79,24 +90,26 @@ exports.saveProfile = async (req, res) => {
           experience: parseInt(experience) || 0,
           rating: 0,
           is_online: false,
-          domain: domain,                           // ✅ correct
-          bio: bio || null,                         // ✅ from form
-          location: location || null,               // ✅ from form (was domain before!)
-          language_spoken: languages || null,       // ✅ from form (was hardcoded "English"!)
-          certification: certificate || null,       // ✅ from form
-          cv: req.file ? req.file.filename : null,
+          domain: domain, // ✅ correct
+          bio: bio || null, // ✅ from form
+          location: location || null, // ✅ from form (was domain before!)
+          language_spoken: languages || null, // ✅ from form (was hardcoded "English"!)
+          certification: certificate || null, // ✅ from form
+          cv: cvFile ? cvFile.filename : null,
+          image: imageFile ? imageFile.filename : null, // ✅ NEW
         });
       } else {
         // 3️⃣ Update existing expert
         await expert.update({
           name: fullName,
           experience: parseInt(experience) || expert.experience,
-          domain: domain,                                       // ✅ correct
-          bio: bio || expert.bio,                               // ✅ from form
-          location: location || expert.location,               // ✅ from form
+          domain: domain, // ✅ correct
+          bio: bio || expert.bio, // ✅ from form
+          location: location || expert.location, // ✅ from form
           language_spoken: languages || expert.language_spoken, // ✅ from form
-          certification: certificate || expert.certification,   // ✅ from form
-          cv: req.file ? req.file.filename : expert.cv,
+          certification: certificate || expert.certification, // ✅ from form
+          cv: cvFile ? cvFile.filename : expert.cv,
+          image: imageFile ? imageFile.filename : expert.image, // ✅ NEW
         });
       }
     }

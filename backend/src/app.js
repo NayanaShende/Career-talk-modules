@@ -2,6 +2,7 @@ require("dotenv").config();
 var express = require("express");
 var logger = require("morgan");
 const cors = require("cors");
+const path = require("path"); // ✅ NEW
 
 const routes = require("./routes"); // this loads index.routes.js
 const { sequelize } = require("./models");
@@ -20,6 +21,9 @@ app.use(
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ✅ Serve uploaded files (cv, images) as static
+app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // ✅ FIXED PATH
 
 // ------------------------------------------------------
 // ROUTES

@@ -4,6 +4,7 @@ const router = express.Router();
 const userController = require("../controllers/user.controller");
 const protect = require("../middleware/protect");
 const upload = require("../middleware/upload");
+const { uploadFields } = require("../middleware/upload"); // ✅ Added for image + cv upload
 const { Expert } = require("../models"); // ✅ Added
 
 /* =========================================
@@ -16,7 +17,7 @@ const { Expert } = require("../models"); // ✅ Added
 router.post(
   "/save-profile",
   protect,
-  upload.single("cv"), // must match frontend FormData key
+  uploadFields, // ✅ updated: was upload.single("cv"), now accepts both cv and image
   userController.saveProfile
 );
 

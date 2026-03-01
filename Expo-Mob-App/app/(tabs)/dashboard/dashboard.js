@@ -13,10 +13,10 @@ import {
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
-import { io } from "socket.io-client"; // ✅ Socket.io
-import AsyncStorage from "@react-native-async-storage/async-storage"; // ✅ NEW
+import { io } from "socket.io-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http://172.20.10.3:3000"; // ✅ Your server URL
+const BASE_URL = "http://172.20.10.3:3000";
 
 const SKILLS = [
   "All",
@@ -38,56 +38,69 @@ export default function Dashboard() {
   const [filteredExperts, setFilteredExperts] = useState([]);
   const [loadingFiltered, setLoadingFiltered] = useState(false);
 
-  const socketRef = useRef(null); // ✅ Keep socket reference
-  const expertIdRef = useRef(null); // ✅ NEW: Store expertId for cleanup
+  const socketRef = useRef(null);
+  const expertIdRef = useRef(null);
 
   useEffect(() => {
     fetchOnlineExperts();
     fetchTopExperts();
 
-    // ✅ UPDATED: Connect socket and emit online if user is expert
     const setupSocket = async () => {
       try {
         const userStr = await AsyncStorage.getItem("user");
         const user = userStr ? JSON.parse(userStr) : null;
+
+        const token = await AsyncStorage.getItem("token");
+
+        console.log("👤 User from storage:", user);
+        console.log("👤 User role:", user?.role);
 
         socketRef.current = io(BASE_URL, {
           transports: ["websocket"],
           reconnectionAttempts: 5,
         });
 
-        // ✅ Listen for real-time expert status changes
+        socketRef.current.on("connect", () => {
+          console.log("✅ Socket connected:", socketRef.current.id);
+
+          if (user && user.id) {
+            const role = (user.role || "").toLowerCase();
+            console.log("🎭 Normalized role:", role);
+
+            if (role === "expert") {
+              expertIdRef.current = user.id;
+              socketRef.current.emit("expert:online", user.id);
+              console.log("🟢 Emitted expert:online for userId:", user.id);
+            } else {
+              console.log("ℹ️ User is not expert, role:", role);
+            }
+          } else {
+            console.log("⚠️ No user found in AsyncStorage");
+          }
+        });
+
         socketRef.current.on("expert:status", ({ expertId, is_online }) => {
           console.log(`🔴🟢 Expert ${expertId} is now ${is_online ? "ONLINE" : "OFFLINE"}`);
 
           if (is_online) {
-            // Add expert to online list if not already there
             setOnlineExperts((prev) => {
               const alreadyExists = prev.find((e) => e.id === expertId);
-              if (alreadyExists) return prev;
-              // Fetch fresh online list to get full expert details
-              fetchOnlineExperts();
+              if (!alreadyExists) {
+                fetchOnlineExperts();
+              }
               return prev;
             });
           } else {
-            // Remove expert from online list instantly
             setOnlineExperts((prev) => prev.filter((e) => e.id !== expertId));
-          }
-        });
-
-        socketRef.current.on("connect", () => {
-          console.log("✅ Socket connected to server");
-
-          // ✅ NEW: If user is expert → emit online with their userId
-          if (user && user.role === "expert") {
-            expertIdRef.current = user.id;
-            socketRef.current.emit("expert:online", user.id);
-            console.log("🟢 Emitted expert:online for userId:", user.id);
           }
         });
 
         socketRef.current.on("disconnect", () => {
           console.log("🔌 Socket disconnected");
+        });
+
+        socketRef.current.on("connect_error", (err) => {
+          console.log("❌ Socket connection error:", err.message);
         });
 
       } catch (err) {
@@ -97,11 +110,11 @@ export default function Dashboard() {
 
     setupSocket();
 
-    // ✅ UPDATED: Cleanup - emit offline + disconnect on unmount
     return () => {
       if (socketRef.current) {
         if (expertIdRef.current) {
           socketRef.current.emit("expert:offline", expertIdRef.current);
+          console.log("🔴 Emitted expert:offline for userId:", expertIdRef.current);
         }
         socketRef.current.disconnect();
       }
@@ -112,7 +125,6 @@ export default function Dashboard() {
     fetchFilteredExperts(activeSkill);
   }, [activeSkill]);
 
-  // Logic to get first letter of First Name and First letter of Last Name
   const getInitials = (name) => {
     if (!name) return "EX";
     const parts = name.trim().split(" ");
@@ -126,8 +138,10 @@ export default function Dashboard() {
     try {
       setLoadingOnline(true);
       const res = await axiosInstance.get("/experts/online");
+      console.log("🟢 Online experts:", res?.data?.data);
       setOnlineExperts(res?.data?.data || []);
-    } catch {
+    } catch (e) {
+      console.log("fetchOnlineExperts error:", e.message);
       setOnlineExperts([]);
     } finally {
       setLoadingOnline(false);
@@ -159,6 +173,12 @@ export default function Dashboard() {
     } finally {
       setLoadingFiltered(false);
     }
+  };
+
+  // ✅ NEW: Helper to build full image URL
+  const getImageUri = (image, name) => {
+    if (image) return `${BASE_URL}/uploads/${image}`;
+    return `https://ui-avatars.com/api/?name=${name || "User"}&background=1A2B4C&color=fff`;
   };
 
   return (
@@ -226,12 +246,19 @@ export default function Dashboard() {
                 style={styles.skillExpertCard}
                 onPress={() => router.push(`/expert/${e.id}`)}
               >
-                <View style={styles.expertInitialCircle}>
-                  {/* CHANGED: Now shows First and Last initial */}
-                  <Text style={styles.expertInitialText}>
-                    {getInitials(e.name)}
-                  </Text>
-                </View>
+                {/* ✅ FIXED: Show image or fallback to initials */}
+                {e.image ? (
+                  <Image
+                    source={{ uri: getImageUri(e.image, e.name) }}
+                    style={[styles.expertInitialCircle, { overflow: "hidden" }]}
+                  />
+                ) : (
+                  <View style={styles.expertInitialCircle}>
+                    <Text style={styles.expertInitialText}>
+                      {getInitials(e.name)}
+                    </Text>
+                  </View>
+                )}
                 <Text style={styles.expertCardName} numberOfLines={1}>
                   {e.name}
                 </Text>
@@ -271,12 +298,19 @@ export default function Dashboard() {
                 onPress={() => router.push(`/expert/${e.id}`)}
               >
                 <View style={styles.goldBorder}>
-                  <View style={styles.innerCircle}>
-                    {/* CHANGED: Now shows First and Last initial */}
-                    <Text style={styles.circleInitial}>
-                      {getInitials(e.name)}
-                    </Text>
-                  </View>
+                  {/* ✅ FIXED: Show image or fallback to initials */}
+                  {e.image ? (
+                    <Image
+                      source={{ uri: getImageUri(e.image, e.name) }}
+                      style={{ width: 58, height: 58, borderRadius: 29 }}
+                    />
+                  ) : (
+                    <View style={styles.innerCircle}>
+                      <Text style={styles.circleInitial}>
+                        {getInitials(e.name)}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               </TouchableOpacity>
             ))}
@@ -286,7 +320,6 @@ export default function Dashboard() {
         {/* LIVE EXPERTS SECTION */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Live Experts</Text>
-          {/* ✅ Real-time indicator */}
           <View style={styles.liveIndicator}>
             <View style={styles.liveDot} />
             <Text style={styles.liveIndicatorText}>Live</Text>
@@ -308,10 +341,7 @@ export default function Dashboard() {
                 key={e.id}
                 name={e.name || ""}
                 title={e.role || ""}
-                image={
-                  e.image ||
-                  `https://ui-avatars.com/api/?name=${e.name || "User"}`
-                }
+                image={getImageUri(e.image, e.name)} // ✅ FIXED
                 onPress={() => router.push(`/expert/${e.id}`)}
               />
             ))}
@@ -415,7 +445,6 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 24, fontWeight: "700", color: "#333" },
   viewAllText: { color: "#0B2D72", fontSize: 20, fontWeight: "600" },
-  // ✅ Live indicator styles
   liveIndicator: {
     flexDirection: "row",
     alignItems: "center",

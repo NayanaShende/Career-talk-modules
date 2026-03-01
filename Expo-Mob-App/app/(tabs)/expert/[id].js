@@ -10,20 +10,116 @@ import {
   Pressable,
   Dimensions,
   StatusBar,
+  Modal,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getExpertById } from "../../../services/expertService";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
 
 const { width } = Dimensions.get("window");
+const BASE_URL = "http://172.20.10.3:3000";
+
+function StarRating({ rating, size = 20 }) {
+  return (
+    <View style={{ flexDirection: "row" }}>
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Ionicons
+          key={star}
+          name={star <= rating ? "star" : "star-outline"}
+          size={size}
+          color="#FBBF24"
+          style={{ marginRight: 2 }}
+        />
+      ))}
+    </View>
+  );
+}
+
+function RatingModal({ visible, onClose, onSubmit }) {
+  const [selectedRating, setSelectedRating] = useState(0);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (selectedRating === 0) {
+      Alert.alert("Please select a rating");
+      return;
+    }
+    setSubmitting(true);
+    await onSubmit(selectedRating);
+    setSubmitting(false);
+    setSelectedRating(0);
+    onClose();
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="slide">
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalBox}>
+          <Text style={styles.modalTitle}>Rate this Expert</Text>
+          <Text style={styles.modalSubtitle}>
+            How would you rate your experience?
+          </Text>
+          <View style={styles.starSelector}>
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Pressable key={star} onPress={() => setSelectedRating(star)}>
+                <Ionicons
+                  name={star <= selectedRating ? "star" : "star-outline"}
+                  size={40}
+                  color="#FBBF24"
+                  style={{ marginHorizontal: 6 }}
+                />
+              </Pressable>
+            ))}
+          </View>
+          <Text style={styles.ratingLabel}>
+            {selectedRating === 1
+              ? "Poor"
+              : selectedRating === 2
+                ? "Fair"
+                : selectedRating === 3
+                  ? "Good"
+                  : selectedRating === 4
+                    ? "Very Good"
+                    : selectedRating === 5
+                      ? "Excellent!"
+                      : "Tap a star"}
+          </Text>
+          <View style={styles.modalBtns}>
+            <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+              <Text style={styles.cancelBtnText}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.submitRatingBtn, submitting && { opacity: 0.6 }]}
+              onPress={handleSubmit}
+              disabled={submitting}>
+              <Text style={styles.submitRatingBtnText}>
+                {submitting ? "Submitting..." : "Submit"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export default function ExpertProfile() {
   const { id } = useLocalSearchParams();
   const [expert, setExpert] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [ratingModal, setRatingModal] = useState(false);
+  const [ratingData, setRatingData] = useState({
+    avgRating: 0,
+    totalReviews: 0,
+  });
 
   useEffect(() => {
     fetchExpert();
+    fetchRatings();
   }, [id]);
 
   const fetchExpert = async () => {
@@ -34,6 +130,37 @@ export default function ExpertProfile() {
       console.log("Profile error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRatings = async () => {
+    try {
+      const res = await axios.get(`${BASE_URL}/api/experts/${id}/ratings`);
+      if (res.data?.success) {
+        setRatingData({
+          avgRating: res.data.data.avgRating || 0,
+          totalReviews: res.data.data.totalReviews || 0,
+        });
+      }
+    } catch (err) {
+      console.log("Fetch ratings error:", err.message);
+    }
+  };
+
+  const handleSubmitRating = async (rating) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      await axios.post(
+        `${BASE_URL}/api/experts/${id}/rate`,
+        { rating },
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      Alert.alert("Thank you!", "Your rating has been submitted.");
+      fetchRatings();
+      fetchExpert();
+    } catch (err) {
+      Alert.alert("Error", "Could not submit rating. Please try again.");
+      console.log("Submit rating error:", err.message);
     }
   };
 
@@ -53,8 +180,9 @@ export default function ExpertProfile() {
     );
   }
 
-  const experienceYears = expert?.years_of_experience ?? expert?.experience ?? "0";
-  const locationValue = expert?.location ?? "Java"; // Set to Java as per your image
+  const experienceYears =
+    expert?.years_of_experience ?? expert?.experience ?? "0";
+  const locationValue = expert?.location ?? "Java";
   const languagesValue = Array.isArray(expert?.languages)
     ? expert.languages.join(", ")
     : (expert?.language ?? "English");
@@ -62,39 +190,66 @@ export default function ExpertProfile() {
   const ratingValue = parseFloat(expert.rating) || 0.0;
   const totalReviews = expert.total_reviews || 0;
 
+  const imageUri = expert.image
+    ? `${BASE_URL}/uploads/${expert.image}`
+    : `https://ui-avatars.com/api/?name=${expert.name}&background=1A2B4C&color=fff`;
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
 
+      <RatingModal
+        visible={ratingModal}
+        onClose={() => setRatingModal(false)}
+        onSubmit={handleSubmitRating}
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 }}
-      >
+        contentContainerStyle={{ paddingBottom: 130 }}>
         {/* PROFILE HEADER */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarWrapper}>
-            <Image
-              source={{
-                uri: expert.image || `https://ui-avatars.com/api/?name=${expert.name}&background=1A2B4C&color=fff`,
-              }}
-              style={styles.avatar}
-            />
+            <Image source={{ uri: imageUri }} style={styles.avatar} />
           </View>
           <Text style={styles.nameText}>{expert.name || ""}</Text>
           <Text style={styles.roleText}>{expert.role || ""}</Text>
 
-          <View style={styles.pillRow}>
-            <Text style={styles.pillLabel}>{experienceYears} Years Experience</Text>
-            <Text style={styles.pillLabel}>{totalReviews} Reviews</Text>
+          {/* Real Star Rating Display */}
+          <View style={styles.ratingRow}>
+            <StarRating rating={Math.round(ratingData.avgRating)} size={22} />
+            <Text style={styles.ratingValue}>
+              {ratingData.avgRating > 0
+                ? ratingData.avgRating.toFixed(1)
+                : "No ratings"}
+            </Text>
+            <Text style={styles.ratingCount}>
+              ({ratingData.totalReviews} reviews)
+            </Text>
           </View>
 
-          {/* FIXED ACTION BUTTONS SECTION */}
+          <View style={styles.pillRow}>
+            <Text style={styles.pillLabel}>
+              {experienceYears} Years Experience
+            </Text>
+            <Text style={styles.pillLabel}>
+              {ratingData.totalReviews} Reviews
+            </Text>
+          </View>
+
+          {/* ACTION BUTTONS */}
           <View style={styles.actionRow}>
             <Pressable style={styles.followBtn}>
               <Text style={styles.followText}>+ Follow</Text>
             </Pressable>
             <Pressable style={styles.askBtn}>
               <Text style={styles.askText}>Ask{"\n"}Question</Text>
+            </Pressable>
+            <Pressable
+              style={styles.rateBtn}
+              onPress={() => setRatingModal(true)}>
+              <Ionicons name="star" size={16} color="#fff" />
+              <Text style={styles.rateBtnText}>Rate</Text>
             </Pressable>
           </View>
         </View>
@@ -116,10 +271,26 @@ export default function ExpertProfile() {
 
           <Text style={[styles.sectionTitle, { marginTop: 25 }]}>Details</Text>
           <View style={styles.detailsList}>
-             <DetailItem icon="briefcase-outline" label="Experience" value={`${experienceYears} Years`} />
-             <DetailItem icon="map-marker-outline" label="Location" value={locationValue} />
-             <DetailItem icon="translate" label="Languages" value={languagesValue} />
-             <DetailItem icon="certificate-outline" label="Certification" value={certificationValue} />
+            <DetailItem
+              icon="briefcase-outline"
+              label="Experience"
+              value={`${experienceYears} Years`}
+            />
+            <DetailItem
+              icon="map-marker-outline"
+              label="Location"
+              value={locationValue}
+            />
+            <DetailItem
+              icon="translate"
+              label="Languages"
+              value={languagesValue}
+            />
+            <DetailItem
+              icon="certificate-outline"
+              label="Certification"
+              value={certificationValue}
+            />
           </View>
         </View>
       </ScrollView>
@@ -127,12 +298,16 @@ export default function ExpertProfile() {
       {/* FIXED BOTTOM NAV BAR */}
       <View style={styles.bottomBarContainer}>
         <Pressable style={styles.chatAction}>
-            <MaterialCommunityIcons name="chat-processing-outline" size={22} color="#fff" />
-            <Text style={styles.chatActionText}>Chat</Text>
+          <MaterialCommunityIcons
+            name="chat-processing-outline"
+            size={22}
+            color="#fff"
+          />
+          <Text style={styles.chatActionText}>Chat</Text>
         </Pressable>
         <Pressable style={styles.callAction}>
-            <Ionicons name="call" size={18} color="#fff" />
-            <Text style={styles.callActionText}>Call</Text>
+          <Ionicons name="call" size={18} color="#fff" />
+          <Text style={styles.callActionText}>Call</Text>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -142,8 +317,8 @@ export default function ExpertProfile() {
 const DetailItem = ({ icon, label, value }) => (
   <View style={styles.detailRow}>
     <View style={styles.detailLeft}>
-        <MaterialCommunityIcons name={icon} size={20} color="#C5A059" />
-        <Text style={styles.detailLabel}>{label}</Text>
+      <MaterialCommunityIcons name={icon} size={20} color="#C5A059" />
+      <Text style={styles.detailLabel}>{label}</Text>
     </View>
     <Text style={styles.detailValue}>{value}</Text>
   </View>
@@ -152,7 +327,6 @@ const DetailItem = ({ icon, label, value }) => (
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF" },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
-  
   profileHeader: { alignItems: "center", paddingTop: 40, paddingBottom: 20 },
   avatarWrapper: {
     padding: 3,
@@ -163,22 +337,32 @@ const styles = StyleSheet.create({
   avatar: { width: 100, height: 100, borderRadius: 50 },
   nameText: { fontSize: 26, fontWeight: "bold", color: "#000", marginTop: 15 },
   roleText: { fontSize: 14, fontWeight: "700", color: "#C5A059", marginTop: 2 },
-
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+    gap: 6,
+  },
+  ratingValue: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#333",
+    marginLeft: 6,
+  },
+  ratingCount: { fontSize: 13, color: "#888" },
   pillRow: { flexDirection: "row", gap: 15, marginTop: 10 },
   pillLabel: { fontSize: 13, color: "#666", fontWeight: "400" },
-
-  /* THE SELECTED PORTION FIX */
-  actionRow: { 
-    flexDirection: "row", 
-    gap: 12, 
+  actionRow: {
+    flexDirection: "row",
+    gap: 12,
     marginTop: 20,
-    justifyContent: 'center' 
+    justifyContent: "center",
   },
   followBtn: {
     width: 90,
     height: 50,
     borderRadius: 8,
-    backgroundColor: "#0B2D72", 
+    backgroundColor: "#0B2D72",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -187,18 +371,28 @@ const styles = StyleSheet.create({
     width: 90,
     height: 50,
     borderRadius: 8,
-    backgroundColor: "#0B2D72", 
+    backgroundColor: "#0B2D72",
     justifyContent: "center",
     alignItems: "center",
   },
-  askText: { 
-    color: "#FFF", 
-    fontWeight: "600", 
-    fontSize: 14, 
-    textAlign: 'center', 
-    lineHeight: 18 
+  askText: {
+    color: "#FFF",
+    fontWeight: "600",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 18,
   },
-
+  rateBtn: {
+    width: 90,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: "#C5A059",
+    justifyContent: "center",
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 5,
+  },
+  rateBtnText: { color: "#FFF", fontWeight: "600", fontSize: 14 },
   contentCard: { paddingHorizontal: 20 },
   tabContainer: {
     flexDirection: "row",
@@ -215,8 +409,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: "#C5A059",
   },
-  inactiveTab: { fontSize: 15, fontWeight: "500", color: "#555", paddingBottom: 10 },
-
+  inactiveTab: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#555",
+    paddingBottom: 10,
+  },
   aboutBox: {
     padding: 15,
     backgroundColor: "#FFF",
@@ -224,21 +422,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#F0F0F0",
   },
-  sectionTitle: { fontSize: 18, fontWeight: "bold", color: "#000", marginBottom: 10 },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#000",
+    marginBottom: 10,
+  },
   aboutText: { fontSize: 14, color: "#555", lineHeight: 20 },
-
   detailsList: { marginTop: 10 },
-  detailRow: { 
-    flexDirection: "row", 
-    justifyContent: "space-between", 
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     paddingVertical: 14,
     borderBottomWidth: 0.5,
-    borderBottomColor: "#F0F0F0"
+    borderBottomColor: "#F0F0F0",
   },
   detailLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   detailLabel: { fontSize: 14, color: "#555" },
   detailValue: { fontSize: 14, fontWeight: "600", color: "#000" },
-
   bottomBarContainer: {
     position: "absolute",
     bottom: 0,
@@ -250,19 +451,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 15,
     borderTopWidth: 1,
-    borderTopColor: "#EEE"
+    borderTopColor: "#EEE",
   },
   chatAction: {
     flex: 1,
     height: 52,
     borderRadius: 10,
-    backgroundColor: "#0B2D72", 
+    backgroundColor: "#0B2D72",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
   },
-  chatActionText: { fontWeight: "bold", color:"#FFF", fontSize: 16 },
+  chatActionText: { fontWeight: "bold", color: "#FFF", fontSize: 16 },
   callAction: {
     flex: 1,
     height: 52,
@@ -274,4 +475,51 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   callActionText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalBox: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 30,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#0B2D72",
+    marginBottom: 8,
+  },
+  modalSubtitle: { fontSize: 14, color: "#888", marginBottom: 20 },
+  starSelector: { flexDirection: "row", marginBottom: 12 },
+  ratingLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#C5A059",
+    marginBottom: 24,
+    height: 24,
+  },
+  modalBtns: { flexDirection: "row", gap: 12, width: "100%" },
+  cancelBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#0B2D72",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cancelBtnText: { color: "#0B2D72", fontWeight: "600", fontSize: 16 },
+  submitRatingBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: 10,
+    backgroundColor: "#0B2D72",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  submitRatingBtnText: { color: "#fff", fontWeight: "600", fontSize: 16 },
 });

@@ -15,6 +15,8 @@ import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
+const BASE_URL = "http://172.20.10.3:3000";
+
 export default function Recommended() {
   const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -32,11 +34,14 @@ export default function Recommended() {
 
       const normalized = data.map((e) => ({
         ...e,
-        exp: e.experience_years ?? e.experience ?? e.yearsOfExperience ?? e.total_experience ?? 0,
+        // ✅ FIXED: correct experience field name from your DB
+        exp: e.experience ?? e.experience_years ?? e.yearsOfExperience ?? e.total_experience ?? 0,
+        // ✅ FIXED: correct rating field from your DB
+        realRating: parseFloat(e.rating) || 0,
       }));
 
       const sorted = [...normalized].sort((a, b) => {
-        const ratingDiff = (b.rating || 0) - (a.rating || 0);
+        const ratingDiff = (b.realRating || 0) - (a.realRating || 0);
         if (ratingDiff !== 0) return ratingDiff;
         return (b.exp || 0) - (a.exp || 0);
       });
@@ -61,6 +66,24 @@ export default function Recommended() {
 
   const animateOut = () => {
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true }).start();
+  };
+
+  const getImageUri = (image, name) => {
+    if (image) return `${BASE_URL}/uploads/${image}`;
+    return `https://ui-avatars.com/api/?name=${name || "Expert"}&background=0B2D72&color=fff`;
+  };
+
+  // ✅ NEW: Render real stars
+  const renderStars = (rating) => {
+    const filled = Math.round(rating);
+    return [1, 2, 3, 4, 5].map((star) => (
+      <Ionicons
+        key={star}
+        name={star <= filled ? "star" : "star-outline"}
+        size={14}
+        color="#FFD700"
+      />
+    ));
   };
 
   return (
@@ -96,20 +119,24 @@ export default function Recommended() {
                 onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
               >
                 <Image
-                  // source={{ uri: item.photo || `https://i.pravatar.cc/150?u=${item.name}` }}
+                  source={{ uri: getImageUri(item.image, item.name) }}
                   style={styles.avatar}
                 />
 
                 <View style={styles.infoContainer}>
                   <Text style={styles.name}>{item.name || ""}</Text>
-                  <Text style={styles.role}>{item.role || ""}</Text>
+                  <Text style={styles.role}>{item.domain || item.role || "Expert"}</Text>
                   
                   <View style={styles.statsRow}>
-                    <Ionicons name="star" size={16} color="#FFD700" />
+                    {/* ✅ FIXED: Real stars from DB */}
+                    {renderStars(item.realRating)}
                     <Text style={styles.ratingText}>
-                      {item.rating || "4.9"}({item.reviews || "234"})
+                      {item.realRating > 0 ? item.realRating.toFixed(1) : "No rating"}
                     </Text>
-                    <Text style={styles.expText}>{item.exp || "8"} years exp</Text>
+                    {/* ✅ FIXED: Real experience from DB */}
+                    <Text style={styles.expText}>
+                      {item.exp > 0 ? `${item.exp} yrs exp` : "New"}
+                    </Text>
                   </View>
 
                   <View style={styles.statusBadge}>
@@ -141,7 +168,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   header: {
-    backgroundColor: "#0B2D72", // Teal color from image
+    backgroundColor: "#0B2D72",
     height: 60,
     flexDirection: "row",
     alignItems: "center",
@@ -212,12 +239,13 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   ratingText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: "600",
     marginLeft: 4,
+    color: "#333",
   },
   expText: {
-    fontSize: 14,
+    fontSize: 13,
     color: "#333",
     marginLeft: 10,
   },
