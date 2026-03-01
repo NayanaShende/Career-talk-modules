@@ -1,137 +1,218 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   SafeAreaView,
-  Pressable,
+  Image,
   ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+  Linking,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { useCallback } from "react";
+import axios from "axios";
+import { router } from "expo-router";
 
 export default function ProfileScreen() {
-  const navigation = useNavigation();
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const [profile, setProfile] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    address: "",
-  });
+  const userEmail = "xyz@gmail.com"; // from login session
 
-  useFocusEffect(
-    useCallback(() => {
-      loadProfile();
-    }, []),
-  );
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
-  const loadProfile = async () => {
-    const data = await AsyncStorage.getItem("profile");
-
-    if (data) {
-      setProfile(JSON.parse(data));
-    } else {
-      const defaultProfile = {
-        name: "NAME",
-        email: "xyz@gmail.com",
-        phone: "123-456-7890",
-        address: "",
-      };
-      setProfile(defaultProfile);
-      await AsyncStorage.setItem("profile", JSON.stringify(defaultProfile));
+  const fetchProfile = async () => {
+    try {
+      const res = await axios.get(
+        `http://192.168.1.22:3000/api/profile/${userEmail}`,
+      );
+      setProfile(res.data);
+    } catch (err) {
+      console.log(err);
+      Alert.alert("Error", "Unable to load profile");
+    } finally {
+      setLoading(false);
     }
   };
 
+  const openCV = () => {
+    if (profile?.cv_file) {
+      Linking.openURL(profile.cv_file);
+    } else {
+      Alert.alert("No CV uploaded");
+    }
+  };
+
+  if (loading) {
+    return <ActivityIndicator size="large" style={{ marginTop: 120 }} />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>PROFILE</Text>
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* COVER AREA */}
+        <View style={styles.cover} />
 
-          <Text style={styles.name}>{profile.name}</Text>
-          <Text style={styles.email}>{profile.email}</Text>
-          <Text style={styles.phone}>{profile.phone}</Text>
+        {/* PROFILE IMAGE */}
+        <View style={styles.avatarWrapper}>
+          <Image
+            source={{
+              uri: profile?.profile_image || "https://i.pravatar.cc/150",
+            }}
+            style={styles.avatar}
+          />
         </View>
 
-        <View style={styles.menuContainer}>
-          <MenuItem
-            icon="person-outline"
-            text="Edit profile information"
+        {/* NAME & DOMAIN */}
+        <View style={styles.center}>
+          <Text style={styles.name}>{profile?.full_name || "No Name"}</Text>
+          <Text style={styles.domain}>
+            {profile?.domain || "Domain not set"}
+          </Text>
+        </View>
+
+        {/* DETAILS CARD */}
+        <View style={styles.card}>
+          <InfoRow icon="mail" label="Email" value={profile?.email} />
+          <InfoRow icon="call" label="Mobile" value={profile?.mobile} />
+          <InfoRow
+            icon="calendar"
+            label="Birth Date"
+            value={profile?.birthdate}
+          />
+          <InfoRow
+            icon="school"
+            label="Qualification"
+            value={profile?.qualification}
+          />
+          <InfoRow
+            icon="briefcase"
+            label="Experience"
+            value={profile?.experience}
+          />
+        </View>
+
+        {/* CV BUTTON */}
+        <TouchableOpacity style={styles.cvButton} onPress={openCV}>
+          <Ionicons name="document-text" size={20} color="#fff" />
+          <Text style={styles.cvText}>View / Download CV</Text>
+        </TouchableOpacity>
+
+        {/* EDIT BUTTON */}
+        {/* EDIT BUTTON */}
+        <TouchableOpacity
+          style={styles.editButton}
           onPress={() => router.push("/home/edit")}
-          />
-
-          <MenuItem
-            icon="notifications-outline"
-            text="Notifications"
-            right="ON"
-          />
-          <MenuItem icon="language-outline" text="Language" right="English" />
-          <MenuItem icon="lock-closed-outline" text="Security" />
-          <MenuItem icon="moon-outline" text="Theme" right="Light mode" />
-
-          <View style={styles.divider} />
-
-          <MenuItem icon="help-circle-outline" text="Help & Support" />
-          <MenuItem icon="mail-outline" text="Contact us" />
-          <MenuItem icon="document-text-outline" text="Privacy policy" />
-        </View>
+        >
+          <Text style={styles.editText}>Edit Profile</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function MenuItem({ icon, text, right, onPress }) {
-  return (
-    <Pressable style={styles.menuItem} onPress={onPress}>
-      <View style={styles.left}>
-        <Ionicons name={icon} size={22} color="#4B5563" />
-        <Text style={styles.menuText}>{text}</Text>
-      </View>
-
-      {right ? (
-        <Text style={styles.rightText}>{right}</Text>
-      ) : (
-        <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
-      )}
-    </Pressable>
-  );
-}
+const InfoRow = ({ icon, label, value }) => (
+  <View style={styles.row}>
+    <Ionicons name={icon} size={20} color="#6B7280" />
+    <View style={{ marginLeft: 12 }}>
+      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.value}>{value || "Not available"}</Text>
+    </View>
+  </View>
+);
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6", padding: 20 },
-  header: { alignItems: "center", marginTop: 20, marginBottom: 20 },
+  container: { flex: 1, backgroundColor: "#F3F4F6" },
+
+  cover: {
+    height: 110,
+    backgroundColor: "#6C63FF",
+  },
+
+  avatarWrapper: {
+    alignItems: "center",
+    marginTop: -55,
+  },
+
   avatar: {
     width: 110,
     height: 110,
     borderRadius: 60,
-    backgroundColor: "#8B5CF6",
-    alignItems: "center",
-    justifyContent: "center",
+    borderWidth: 4,
+    borderColor: "#fff",
   },
 
-  avatarText: { color: "#fff", fontWeight: "bold" },
+  center: {
+    alignItems: "center",
+    marginTop: 10,
+  },
 
-  name: { fontSize: 22, fontWeight: "bold", marginTop: 12 },
-  email: { color: "#6B7280", marginTop: 4 },
-  phone: { color: "#6B7280", marginTop: 2 },
-  menuContainer: {
+  name: {
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+
+  domain: {
+    color: "#6B7280",
+    marginTop: 4,
+  },
+
+  card: {
     backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 10,
+    margin: 20,
+    borderRadius: 18,
+    padding: 20,
+    elevation: 3,
   },
-  menuItem: {
+
+  row: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 16,
+    marginBottom: 18,
   },
-  left: { flexDirection: "row", alignItems: "center" },
-  menuText: { marginLeft: 14, fontSize: 16 },
-  rightText: { color: "#8B5CF6", fontWeight: "600" },
-  divider: { height: 1, backgroundColor: "#E5E7EB", marginVertical: 8 },
+
+  label: {
+    color: "#9CA3AF",
+    fontSize: 12,
+  },
+
+  value: {
+    fontSize: 16,
+    fontWeight: "600",
+  },
+
+  cvButton: {
+    backgroundColor: "#6C63FF",
+    marginHorizontal: 20,
+    padding: 15,
+    borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  cvText: {
+    color: "#fff",
+    marginLeft: 8,
+    fontWeight: "600",
+    fontSize: 15,
+  },
+
+  editButton: {
+    margin: 20,
+    borderWidth: 1,
+    borderColor: "#6C63FF",
+    padding: 15,
+    borderRadius: 14,
+    alignItems: "center",
+  },
+
+  editText: {
+    color: "#6C63FF",
+    fontWeight: "600",
+    fontSize: 15,
+  },
 });

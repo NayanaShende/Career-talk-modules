@@ -1,106 +1,207 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   SafeAreaView,
-  Pressable,
+  TextInput,
+  TouchableOpacity,
   ScrollView,
+  Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as ImagePicker from "expo-image-picker";
+import axios from "axios";
 import { router } from "expo-router";
 
-export default function EditProfile() {
-  const [profile, setProfile] = useState({
-    name: "",
+export default function EditScreen() {
+  const userEmail = "xyz@gmail.com"; // get from login session
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState({
+    full_name: "",
     email: "",
-    phone: "",
-    address: "",
+    mobile: "",
+    domain: "",
+    qualification: "",
+    experience: "",
+    birthdate: "",
+    profile_image: "",
   });
 
   useEffect(() => {
-    loadProfile();
+    fetchProfile();
   }, []);
 
-  const loadProfile = async () => {
-    const data = await AsyncStorage.getItem("profile");
-    if (data) setProfile(JSON.parse(data));
+  const fetchProfile = async () => {
+    try {
+      const res = await axios.get(
+        `http://192.168.1.22:3000/api/profile/${userEmail}`,
+      );
+      setForm(res.data);
+    } catch (err) {
+      Alert.alert("Error", "Unable to load profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (key, value) => {
+    setForm({ ...form, [key]: value });
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      handleChange("profile_image", result.assets[0].uri);
+    }
   };
 
   const saveProfile = async () => {
-    await AsyncStorage.setItem("profile", JSON.stringify(profile));
-    Alert.alert("Saved!", "Profile updated successfully");
-router.back();  };
+    try {
+      setSaving(true);
+
+      await axios.put("http://192.168.1.22:3000/api/profile/update", form);
+
+      Alert.alert("Success", "Profile Updated Successfully");
+      router.back();
+    } catch (err) {
+      Alert.alert("Error", "Failed to update profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <ActivityIndicator size="large" style={{ marginTop: 100 }} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.form}>
-          <Input
-            label="Full Name"
-            value={profile.name}
-            onChangeText={(text) => setProfile({ ...profile, name: text })}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* IMAGE */}
+        <TouchableOpacity style={styles.imageWrapper} onPress={pickImage}>
+          <Image
+            source={{
+              uri: form.profile_image || "https://i.pravatar.cc/150",
+            }}
+            style={styles.avatar}
           />
+          <Text style={styles.changePhoto}>Change Photo</Text>
+        </TouchableOpacity>
 
-          <Input
-            label="Email"
-            value={profile.email}
-            onChangeText={(text) => setProfile({ ...profile, email: text })}
-          />
+        {/* INPUT FIELDS */}
+        <Input
+          label="Full Name"
+          value={form.full_name}
+          onChangeText={(v) => handleChange("full_name", v)}
+        />
+        <Input label="Email" value={form.email} editable={false} />
+        <Input
+          label="Mobile"
+          value={form.mobile}
+          onChangeText={(v) => handleChange("mobile", v)}
+        />
+        <Input
+          label="Domain"
+          value={form.domain}
+          onChangeText={(v) => handleChange("domain", v)}
+        />
+        <Input
+          label="Qualification"
+          value={form.qualification}
+          onChangeText={(v) => handleChange("qualification", v)}
+        />
+        <Input
+          label="Experience"
+          value={form.experience}
+          onChangeText={(v) => handleChange("experience", v)}
+        />
+        <Input
+          label="Birth Date (YYYY-MM-DD)"
+          value={form.birthdate}
+          onChangeText={(v) => handleChange("birthdate", v)}
+        />
 
-          <Input
-            label="Phone"
-            value={profile.phone}
-            onChangeText={(text) => setProfile({ ...profile, phone: text })}
-          />
-
-          <Input
-            label="Address"
-            value={profile.address}
-            onChangeText={(text) => setProfile({ ...profile, address: text })}
-          />
-
-          <Pressable style={styles.button} onPress={saveProfile}>
-            <Text style={styles.buttonText}>SAVE</Text>
-          </Pressable>
-        </View>
+        {/* SAVE BUTTON */}
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={saveProfile}
+          disabled={saving}
+        >
+          <Text style={styles.saveText}>
+            {saving ? "Saving..." : "Save Changes"}
+          </Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function Input({ label, value, onChangeText }) {
-  return (
-    <View style={{ marginBottom: 18 }}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        style={styles.input}
-      />
-    </View>
-  );
-}
+const Input = ({ label, ...props }) => (
+  <View style={styles.inputContainer}>
+    <Text style={styles.label}>{label}</Text>
+    <TextInput style={styles.input} {...props} />
+  </View>
+);
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
-  form: { backgroundColor: "#fff", margin: 16, padding: 20, borderRadius: 16 },
-  label: { marginBottom: 6, color: "#6B7280" },
+  container: { flex: 1, backgroundColor: "#F9FAFB", padding: 20 },
+
+  imageWrapper: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+
+  avatar: {
+    width: 110,
+    height: 110,
+    borderRadius: 60,
+  },
+
+  changePhoto: {
+    color: "#6C63FF",
+    marginTop: 8,
+    fontWeight: "600",
+  },
+
+  inputContainer: {
+    marginBottom: 16,
+  },
+
+  label: {
+    marginBottom: 6,
+    color: "#6B7280",
+    fontSize: 13,
+  },
+
   input: {
+    backgroundColor: "#fff",
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    borderRadius: 10,
-    padding: 12,
-    backgroundColor: "#F9FAFB",
   },
-  button: {
-    backgroundColor: "#8B5CF6",
+
+  saveButton: {
+    backgroundColor: "#6C63FF",
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     marginTop: 10,
+    marginBottom: 40,
   },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
+
+  saveText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
 });

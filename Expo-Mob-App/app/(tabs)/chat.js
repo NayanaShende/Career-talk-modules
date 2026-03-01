@@ -1,9 +1,5 @@
-import { View, Text } from "react-native";
+import ChatLogs from "../home/chatlogs";
 
 export default function Chat() {
-  return (
-    <View>
-      <Text>Chat Screen</Text>
-    </View>
-  );
+  return <ChatLogs />;
 }
