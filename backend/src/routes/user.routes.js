@@ -3,37 +3,33 @@ const router = express.Router();
 
 const userController = require("../controllers/user.controller");
 const protect = require("../middleware/protect");
-const upload = require("../middleware/upload");
-const { uploadFields } = require("../middleware/upload"); // ✅ Added for image + cv upload
-const { Expert } = require("../models"); // ✅ Added
+const { uploadFields } = require("../middleware/upload");
+const { Expert } = require("../models");
 
 /* =========================================
    USER PROFILE ROUTES
 ========================================= */
 
-// ✅ Save / Update Profile
-// Protected route
-// Accepts optional CV file upload (field name: "cv")
-router.post(
-  "/save-profile",
-  protect,
-  uploadFields, // ✅ updated: was upload.single("cv"), now accepts both cv and image
-  userController.saveProfile
-);
+// SAVE / UPDATE PROFILE
+router.post("/save-profile", protect, uploadFields, userController.saveProfile);
 
-// ✅ Get Logged-in User Profile
+// GET LOGGED-IN USER PROFILE
 router.get("/me", protect, userController.getProfile);
 
+// GET PROFILE BY EMAIL
+router.get("/profile/:email", userController.getUserByEmail);
+
+// OPTIONAL update route (can keep)
+router.put("/profile", protect, uploadFields, userController.updateProfile);
+
 /* =========================================
-   ROLE SELECTION ROUTE
+   ROLE SELECTION
 ========================================= */
 
-// ✅ Set Role (user / expert)
 router.put("/set-role", protect, async (req, res) => {
   try {
     const { role } = req.body;
 
-    // Validate role
     if (!role || !["user", "expert"].includes(role)) {
       return res.status(400).json({
         success: false,
@@ -41,11 +37,9 @@ router.put("/set-role", protect, async (req, res) => {
       });
     }
 
-    // 1️⃣ Update role in Users table
     req.user.role = role;
     await req.user.save();
 
-    // 2️⃣ If role = expert → create expert row
     if (role === "expert") {
       const existingExpert = await Expert.findOne({
         where: { userId: req.user.id },
@@ -61,14 +55,11 @@ router.put("/set-role", protect, async (req, res) => {
       }
     }
 
-    // If role = user → do nothing extra
-
-    return res.json({
+    res.json({
       success: true,
       message: "Role updated successfully",
       role,
     });
-
   } catch (err) {
     console.error("SET ROLE ERROR:", err);
     res.status(500).json({

@@ -16,14 +16,13 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
-import * as ImagePicker from "expo-image-picker"; // ✅ NEW
+import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.3:3000"; // ✅ FIXED
 
-// ✅ iOS-safe dropdown component
 function DropdownPicker({ label, value, options, onChange }) {
   const [visible, setVisible] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -32,7 +31,8 @@ function DropdownPicker({ label, value, options, onChange }) {
     <>
       <TouchableOpacity
         style={styles.dropdownBox}
-        onPress={() => setVisible(true)}>
+        onPress={() => setVisible(true)}
+      >
         <Text style={{ color: selected ? "#000" : "#777", fontSize: 15 }}>
           {selected ? selected.label : label}
         </Text>
@@ -44,8 +44,10 @@ function DropdownPicker({ label, value, options, onChange }) {
           style={styles.modalOverlay}
           onPress={() => setVisible(false)}
         />
+
         <View style={styles.modalBox}>
           <Text style={styles.modalTitle}>{label}</Text>
+
           <FlatList
             data={options}
             keyExtractor={(item) => item.value}
@@ -58,13 +60,15 @@ function DropdownPicker({ label, value, options, onChange }) {
                 onPress={() => {
                   onChange(item.value);
                   setVisible(false);
-                }}>
+                }}
+              >
                 <Text
                   style={{
                     fontSize: 16,
-                    color: item.value === value ? "#0B2D72" : "#333",
                     fontWeight: item.value === value ? "700" : "400",
-                  }}>
+                    color: item.value === value ? "#0B2D72" : "#333",
+                  }}
+                >
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -92,7 +96,7 @@ export default function ProfileScreen() {
     experience: "",
     customExperience: "",
     cv: null,
-    image: null, // ✅ NEW
+    image: null,
     certificate: "",
     languages: "",
     customLanguages: "",
@@ -104,19 +108,23 @@ export default function ProfileScreen() {
   const handleChange = (field, value) =>
     setFormData({ ...formData, [field]: value });
 
+  // 📌 DATE PICKER
   const onChangeDate = (event, selectedDate) => {
-    const currentDate = selectedDate || date;
+    const current = selectedDate || date;
     setShow(false);
-    setDate(currentDate);
+    setDate(current);
+
     const formatted =
-      currentDate.getFullYear() +
+      current.getFullYear() +
       "-" +
-      String(currentDate.getMonth() + 1).padStart(2, "0") +
+      String(current.getMonth() + 1).padStart(2, "0") +
       "-" +
-      String(currentDate.getDate()).padStart(2, "0");
+      String(current.getDate()).padStart(2, "0");
+
     handleChange("dob", formatted);
   };
 
+  // 📌 PICK CV
   const pickCV = async () => {
     const result = await DocumentPicker.getDocumentAsync({});
     if (!result.canceled) {
@@ -124,64 +132,63 @@ export default function ProfileScreen() {
     }
   };
 
-  // ✅ NEW: Pick profile image from gallery
+  // 📌 PICK IMAGE
   const pickImage = async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      return Alert.alert(
-        "Permission required",
-        "Please allow access to your photo library",
-      );
+    const p = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!p.granted) {
+      return Alert.alert("Permission Required", "Enable gallery access.");
     }
 
-    const result = await ImagePicker.launchImageLibraryAsync({
+    const res = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
     });
 
-    if (!result.canceled) {
-      handleChange("image", result.assets[0]);
+    if (!res.canceled) {
+      handleChange("image", res.assets[0]);
     }
   };
 
+  // 📌 SUBMIT PROFILE
   const submitProfile = async () => {
     try {
       if (!formData.fullName.trim())
-        return Alert.alert("Missing", "Please enter full name");
+        return Alert.alert("Missing", "Full name is required");
+
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-        return Alert.alert("Invalid Email", "Enter valid email");
+        return Alert.alert("Invalid Email");
+
       if (!formData.dob) return Alert.alert("Missing", "Select birth date");
+
       if (!formData.qualification)
         return Alert.alert("Missing", "Select qualification");
+
       if (!formData.domain) return Alert.alert("Missing", "Select domain");
+
       if (!formData.experience)
         return Alert.alert("Missing", "Select experience");
+
       if (!formData.cv) return Alert.alert("Missing", "Upload your CV");
 
       const token = await AsyncStorage.getItem("token");
-      if (!token)
-        return Alert.alert("Error", "Session expired. Please login again.");
+      if (!token) return Alert.alert("Login Required");
 
       // STEP 1: SET ROLE
       await axios.post(
         `${BASE_URL}/api/auth/set-role`,
         { role: role.toLowerCase() },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        },
+        { headers: { Authorization: `Bearer ${token}` } },
       );
 
       // STEP 2: SAVE PROFILE
       const form = new FormData();
+
       form.append("role", role.toLowerCase());
 
-      // ✅ Resolve "Other" fields
-      const resolvedData = {
+      // ✔ Resolve "Other" fields
+      const resolved = {
         ...formData,
         location:
           formData.location === "Other"
@@ -203,10 +210,9 @@ export default function ProfileScreen() {
             : formData.languages,
       };
 
-      // ✅ Skip cv, image, and all custom* fields (handled separately below)
-      const skipFields = [
+      const skip = [
         "cv",
-        "image", // ✅ NEW
+        "image",
         "customLocation",
         "customDomain",
         "customQualification",
@@ -214,30 +220,35 @@ export default function ProfileScreen() {
         "customLanguages",
       ];
 
-      Object.keys(resolvedData).forEach((key) => {
+      Object.keys(resolved).forEach((key) => {
         if (
-          !skipFields.includes(key) &&
-          resolvedData[key] !== null &&
-          resolvedData[key] !== ""
+          !skip.includes(key) &&
+          resolved[key] !== "" &&
+          resolved[key] !== null
         ) {
-          form.append(key, resolvedData[key]);
+          form.append(key, resolved[key]);
         }
       });
 
-      // ✅ Append CV
+      // 📌 FIXED — Proper CV Upload
       if (formData.cv) {
+        const cleanUri = formData.cv.uri.split("?")[0];
+        const ext = cleanUri.split(".").pop();
+
         form.append("cv", {
-          uri: formData.cv.uri,
-          name: formData.cv.name || "cv.pdf",
-          type: "application/pdf",
+          uri: cleanUri,
+          name: formData.cv.name || `cv.${ext}`,
+          type: ext === "pdf" ? "application/pdf" : `image/${ext}`, // handles JPG CV
         });
       }
 
-      // ✅ NEW: Append profile image
+      // 📌 FIXED — Proper Image Upload
       if (formData.image) {
-        const ext = formData.image.uri.split(".").pop();
+        const cleanUri = formData.image.uri.split("?")[0];
+        const ext = cleanUri.split(".").pop();
+
         form.append("image", {
-          uri: formData.image.uri,
+          uri: cleanUri,
           name: `profile.${ext}`,
           type: `image/${ext}`,
         });
@@ -250,17 +261,17 @@ export default function ProfileScreen() {
         },
       });
 
-      Alert.alert("Success", "Profile saved!", [
+      Alert.alert("Success", "Profile Saved", [
         {
           text: "OK",
           onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
         },
       ]);
-    } catch (error) {
-      console.log("Submit error:", error.response?.data || error.message);
+    } catch (e) {
+      console.log("Submit error:", e.response?.data || e.message);
       Alert.alert(
         "Error",
-        error.response?.data?.message || "Could not save profile",
+        e.response?.data?.message || "Could not save profile",
       );
     }
   };
@@ -269,12 +280,14 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}>
+        style={{ flex: 1 }}
+      >
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.header}>Profile Information</Text>
 
-          {/* ✅ NEW: PROFILE IMAGE */}
+          {/* IMAGE PICKER */}
           <Text style={styles.label}>Profile Image</Text>
+
           <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
             {formData.image ? (
               <Image
@@ -282,8 +295,7 @@ export default function ProfileScreen() {
                 style={styles.imagePreview}
               />
             ) : (
-              <Text
-                style={{ color: "#777", fontSize: 13, textAlign: "center" }}>
+              <Text style={{ color: "#777", textAlign: "center" }}>
                 📷{"\n"}Choose Photo
               </Text>
             )}
@@ -291,14 +303,17 @@ export default function ProfileScreen() {
 
           {/* ROLE SELECT */}
           <Text style={styles.label}>Select Role</Text>
+
           <View style={styles.roleRow}>
             {["Jobseeker", "Expert"].map((item) => (
               <TouchableOpacity
                 key={item}
                 style={[styles.roleBtn, role === item && styles.roleSelected]}
-                onPress={() => setRole(item)}>
+                onPress={() => setRole(item)}
+              >
                 <Text
-                  style={[styles.roleText, role === item && { color: "#fff" }]}>
+                  style={[styles.roleText, role === item && { color: "#fff" }]}
+                >
                   {item}
                 </Text>
               </TouchableOpacity>
@@ -322,13 +337,14 @@ export default function ProfileScreen() {
             onChangeText={(v) => handleChange("email", v)}
           />
 
-          {/* DOB */}
+          {/* DATE */}
           <Text style={styles.label}>Birth Date *</Text>
           <TouchableOpacity style={styles.input} onPress={() => setShow(true)}>
             <Text style={{ color: formData.dob ? "#000" : "#777" }}>
               {formData.dob || "Select Birth Date"}
             </Text>
           </TouchableOpacity>
+
           {show && (
             <DateTimePicker
               value={date}
@@ -352,13 +368,6 @@ export default function ProfileScreen() {
               { label: "Other", value: "Other" },
             ]}
           />
-          {formData.qualification === "Other" && (
-            <TextInput
-              style={styles.input}
-              placeholder="Enter custom qualification"
-              onChangeText={(v) => handleChange("customQualification", v)}
-            />
-          )}
 
           {/* DOMAIN */}
           <Text style={styles.label}>Domain *</Text>
@@ -374,13 +383,6 @@ export default function ProfileScreen() {
               { label: "Other", value: "Other" },
             ]}
           />
-          {formData.domain === "Other" && (
-            <TextInput
-              style={styles.input}
-              placeholder="Enter custom domain"
-              onChangeText={(v) => handleChange("customDomain", v)}
-            />
-          )}
 
           {/* EXPERIENCE */}
           <Text style={styles.label}>Experience *</Text>
@@ -396,13 +398,6 @@ export default function ProfileScreen() {
               { label: "Other", value: "Other" },
             ]}
           />
-          {formData.experience === "Other" && (
-            <TextInput
-              style={styles.input}
-              placeholder="Enter custom experience"
-              onChangeText={(v) => handleChange("customExperience", v)}
-            />
-          )}
 
           {/* CV */}
           <Text style={styles.label}>Upload CV *</Text>
@@ -412,19 +407,17 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* EXPERT ONLY FIELDS */}
+          {/* EXTRA EXPERT FIELDS */}
           {role === "Expert" && (
             <>
-              {/* CERTIFICATE */}
-              <Text style={styles.label}>Certification</Text>
+              <Text style={styles.label}>Certifications</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Enter certifications"
                 onChangeText={(v) => handleChange("certificate", v)}
               />
 
-              {/* LANGUAGES */}
-              <Text style={styles.label}>Languages Known</Text>
+              <Text style={styles.label}>Languages</Text>
               <DropdownPicker
                 label="Select Language"
                 value={formData.languages}
@@ -436,18 +429,10 @@ export default function ProfileScreen() {
                   { label: "Other", value: "Other" },
                 ]}
               />
-              {formData.languages === "Other" && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter custom language"
-                  onChangeText={(v) => handleChange("customLanguages", v)}
-                />
-              )}
 
-              {/* LOCATION */}
-              <Text style={styles.label}>Your Location</Text>
+              <Text style={styles.label}>City</Text>
               <DropdownPicker
-                label="Select City"
+                label="Select Location"
                 value={formData.location}
                 onChange={(v) => handleChange("location", v)}
                 options={[
@@ -457,26 +442,18 @@ export default function ProfileScreen() {
                   { label: "Other", value: "Other" },
                 ]}
               />
-              {formData.location === "Other" && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter custom location"
-                  onChangeText={(v) => handleChange("customLocation", v)}
-                />
-              )}
 
-              {/* BIO */}
               <Text style={styles.label}>Bio</Text>
               <TextInput
                 style={[styles.input, { height: 100 }]}
-                placeholder="Short bio"
                 multiline
+                placeholder="Short bio"
                 onChangeText={(v) => handleChange("bio", v)}
               />
             </>
           )}
 
-          {/* SUBMIT */}
+          {/* SUBMIT BUTTON */}
           <TouchableOpacity style={styles.submitBtn} onPress={submitProfile}>
             <Text style={styles.submitText}>Submit</Text>
           </TouchableOpacity>
@@ -491,10 +468,15 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 26,
     fontWeight: "700",
-    marginBottom: 7,
+    color: "#0B2D72",
+    marginBottom: 10,
+  },
+  label: {
+    marginTop: 15,
+    fontSize: 16,
+    fontWeight: "600",
     color: "#0B2D72",
   },
-  label: { marginTop: 15, fontWeight: "600", color: "#0B2D72" },
   input: {
     backgroundColor: "#f3f4f6",
     padding: 14,
@@ -508,7 +490,6 @@ const styles = StyleSheet.create({
     marginTop: 5,
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
   },
   roleRow: { flexDirection: "row", gap: 10, marginTop: 10 },
   roleBtn: {
@@ -519,8 +500,13 @@ const styles = StyleSheet.create({
     borderColor: "#0B2D72",
     alignItems: "center",
   },
-  roleSelected: { backgroundColor: "#0B2D72" },
-  roleText: { color: "#0B2D72", fontWeight: "600" },
+  roleSelected: {
+    backgroundColor: "#0B2D72",
+  },
+  roleText: {
+    color: "#0B2D72",
+    fontWeight: "600",
+  },
   uploadBtn: {
     backgroundColor: "#e5e7eb",
     padding: 14,
@@ -533,55 +519,53 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 10,
     marginTop: 30,
-    alignItems: "center",
   },
-  submitText: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
+  submitText: {
+    color: "#fff",
+    textAlign: "center",
+    fontSize: 18,
+    fontWeight: "700",
   },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   modalBox: {
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
-    maxHeight: "50%",
+    maxHeight: "55%",
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "700",
     color: "#0B2D72",
-    marginBottom: 15,
     textAlign: "center",
+    marginBottom: 15,
   },
   modalItem: {
     paddingVertical: 14,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    borderBottomColor: "#f2f2f2",
   },
   modalItemSelected: {
-    backgroundColor: "#f0f4ff",
-    borderRadius: 8,
+    backgroundColor: "#eef3ff",
   },
-  // ✅ NEW: Image picker styles
   imagePicker: {
     width: 110,
     height: 110,
     borderRadius: 55,
-    backgroundColor: "#f3f4f6",
     alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 10,
+    backgroundColor: "#f3f4f6",
+    borderStyle: "dashed",
     borderWidth: 2,
     borderColor: "#0B2D72",
-    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 10,
     overflow: "hidden",
   },
   imagePreview: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: "100%",
+    height: "100%",
   },
 });

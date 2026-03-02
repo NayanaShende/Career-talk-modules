@@ -16,7 +16,7 @@ import axiosInstance from "../../../services/api";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.3:3000";
 
 const SKILLS = [
   "All",

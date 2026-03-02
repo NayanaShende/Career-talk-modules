@@ -2,22 +2,22 @@ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
-  ScrollView,
+  ActivityIndicator,
   Image,
   Alert,
-  ActivityIndicator,
+  ScrollView,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 
-export default function EditScreen() {
-  const userEmail = "xyz@gmail.com"; // get from login session
+const BASE_URL = "http://192.168.1.3:3000";
 
+const EditProfile = () => {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -28,20 +28,31 @@ export default function EditScreen() {
     domain: "",
     qualification: "",
     experience: "",
-    birthdate: "",
-    profile_image: "",
+    dob: "",
+    image_file: null, // local uri
+    image_url: "", // server url
   });
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get(
-        `http://192.168.1.22:3000/api/profile/${userEmail}`,
-      );
-      setForm(res.data);
+      const token = await AsyncStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const user = res.data.user;
+
+      setForm({
+        full_name: user.full_name || "",
+        email: user.email || "",
+        mobile: user.mobile || "",
+        domain: user.domain || "",
+        qualification: user.qualification || "",
+        experience: user.experience || "",
+        dob: user.dob || "",
+        image_file: null,
+        image_url: user.image ? `${BASE_URL}/uploads/${user.image}` : "",
+      });
     } catch (err) {
       Alert.alert("Error", "Unable to load profile");
     } finally {
@@ -49,159 +60,135 @@ export default function EditScreen() {
     }
   };
 
-  const handleChange = (key, value) => {
-    setForm({ ...form, [key]: value });
-  };
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
       quality: 0.7,
+      allowsEditing: true,
     });
 
     if (!result.canceled) {
-      handleChange("profile_image", result.assets[0].uri);
+      setForm({
+        ...form,
+        image_file: result.assets[0].uri,
+        image_url: result.assets[0].uri, // display immediately
+      });
     }
   };
 
   const saveProfile = async () => {
     try {
       setSaving(true);
+      const token = await AsyncStorage.getItem("token");
 
-      await axios.put("http://192.168.1.22:3000/api/profile/update", form);
+      const formData = new FormData();
+      formData.append("full_name", form.full_name);
+      formData.append("email", form.email);
+      formData.append("mobile", form.mobile);
+      formData.append("domain", form.domain);
+      formData.append("qualification", form.qualification);
+      formData.append("experience", form.experience);
+      formData.append("dob", form.dob);
 
-      Alert.alert("Success", "Profile Updated Successfully");
+      if (form.image_file) {
+        formData.append("image", {
+          uri: form.image_file,
+          name: "profile.jpg",
+          type: "image/jpeg",
+        });
+      }
+
+      await axios.post(`${BASE_URL}/api/users/save-profile`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      Alert.alert("Success", "Profile Updated");
       router.back();
     } catch (err) {
-      Alert.alert("Error", "Failed to update profile");
+      console.log("UPDATE ERROR:", err.response?.data || err.message);
+      Alert.alert("Error", "Update failed");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" style={{ marginTop: 100 }} />;
-  }
+  if (loading)
+    return <ActivityIndicator size="large" style={{ marginTop: 40 }} />;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* IMAGE */}
-        <TouchableOpacity style={styles.imageWrapper} onPress={pickImage}>
-          <Image
-            source={{
-              uri: form.profile_image || "https://i.pravatar.cc/150",
+    <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <TouchableOpacity onPress={pickImage} style={{ alignSelf: "center" }}>
+        <Image
+          source={{
+            uri: form.image_url || "https://via.placeholder.com/150",
+          }}
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            marginBottom: 20,
+          }}
+        />
+        <Text style={{ textAlign: "center", color: "blue" }}>Change Photo</Text>
+      </TouchableOpacity>
+
+      {[
+        ["Full Name", "full_name"],
+        ["Email", "email"],
+        ["Mobile", "mobile"],
+        ["Domain", "domain"],
+        ["Qualification", "qualification"],
+        ["Experience", "experience"],
+        ["Date of Birth", "dob"],
+      ].map(([label, key]) => (
+        <View key={key} style={{ marginBottom: 15 }}>
+          <Text style={{ marginBottom: 5 }}>{label}</Text>
+          <TextInput
+            value={form[key]}
+            onChangeText={(text) => setForm({ ...form, [key]: text })}
+            style={{
+              borderWidth: 1,
+              borderColor: "#ccc",
+              padding: 10,
+              borderRadius: 8,
             }}
-            style={styles.avatar}
           />
-          <Text style={styles.changePhoto}>Change Photo</Text>
-        </TouchableOpacity>
+        </View>
+      ))}
 
-        {/* INPUT FIELDS */}
-        <Input
-          label="Full Name"
-          value={form.full_name}
-          onChangeText={(v) => handleChange("full_name", v)}
-        />
-        <Input label="Email" value={form.email} editable={false} />
-        <Input
-          label="Mobile"
-          value={form.mobile}
-          onChangeText={(v) => handleChange("mobile", v)}
-        />
-        <Input
-          label="Domain"
-          value={form.domain}
-          onChangeText={(v) => handleChange("domain", v)}
-        />
-        <Input
-          label="Qualification"
-          value={form.qualification}
-          onChangeText={(v) => handleChange("qualification", v)}
-        />
-        <Input
-          label="Experience"
-          value={form.experience}
-          onChangeText={(v) => handleChange("experience", v)}
-        />
-        <Input
-          label="Birth Date (YYYY-MM-DD)"
-          value={form.birthdate}
-          onChangeText={(v) => handleChange("birthdate", v)}
-        />
-
-        {/* SAVE BUTTON */}
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={saveProfile}
-          disabled={saving}
-        >
-          <Text style={styles.saveText}>
-            {saving ? "Saving..." : "Save Changes"}
+      <TouchableOpacity
+        onPress={saveProfile}
+        style={{
+          backgroundColor: "#007bff",
+          padding: 15,
+          borderRadius: 10,
+          alignItems: "center",
+          marginTop: 10,
+        }}
+        disabled={saving}
+      >
+        {saving ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>
+            Save Changes
           </Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+        )}
+      </TouchableOpacity>
+    </ScrollView>
   );
-}
+};
 
-const Input = ({ label, ...props }) => (
-  <View style={styles.inputContainer}>
-    <Text style={styles.label}>{label}</Text>
-    <TextInput style={styles.input} {...props} />
-  </View>
-);
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB", padding: 20 },
-
-  imageWrapper: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-
-  avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 60,
-  },
-
-  changePhoto: {
-    color: "#6C63FF",
-    marginTop: 8,
-    fontWeight: "600",
-  },
-
-  inputContainer: {
-    marginBottom: 16,
-  },
-
-  label: {
-    marginBottom: 6,
-    color: "#6B7280",
-    fontSize: 13,
-  },
-
-  input: {
-    backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-
-  saveButton: {
-    backgroundColor: "#6C63FF",
-    padding: 16,
-    borderRadius: 14,
-    alignItems: "center",
-    marginTop: 10,
-    marginBottom: 40,
-  },
-
-  saveText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
-  },
-});
+export default EditProfile;

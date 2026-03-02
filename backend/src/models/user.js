@@ -73,10 +73,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+      image: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       timestamps: true, // ensures createdAt & updatedAt
-    }
+    },
   );
 
   // ✅ ADDED ASSOCIATION (DO NOT REMOVE)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,39 +13,71 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import axios from "axios";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const userEmail = "xyz@gmail.com"; // from login session
-
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  const BASE_URL = "http://192.168.1.3:3000";
 
   const fetchProfile = async () => {
     try {
-      const res = await axios.get(
-        `http://192.168.1.22:3000/api/profile/${userEmail}`,
-      );
-      setProfile(res.data);
+      const token = await AsyncStorage.getItem("token");
+
+      if (!token) {
+        Alert.alert("Error", "User not logged in");
+        return;
+      }
+
+      const res = await axios.get(`${BASE_URL}/api/users/me`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log("PROFILE DATA:", res.data.user);
+      setProfile(res.data.user);
     } catch (err) {
-      console.log(err);
+      console.log("PROFILE ERROR:", err.response?.data || err.message);
       Alert.alert("Error", "Unable to load profile");
     } finally {
       setLoading(false);
     }
   };
 
+  // load first time
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  // reload when coming back from edit screen
+  useFocusEffect(
+    useCallback(() => {
+      fetchProfile();
+    }, []),
+  );
+
   const openCV = () => {
-    if (profile?.cv_file) {
-      Linking.openURL(profile.cv_file);
-    } else {
+    if (!profile?.cvFile) {
       Alert.alert("No CV uploaded");
+      return;
     }
+
+    const cvUrl = profile.cvFile.startsWith("http")
+      ? profile.cvFile
+      : `${BASE_URL}/uploads/${profile.cvFile}`;
+
+    Linking.openURL(cvUrl);
   };
+
+  const imageUrl =
+    profile?.image && profile.image.startsWith("http")
+      ? profile.image
+      : profile?.image
+        ? `${BASE_URL}/uploads/${profile.image}`
+        : "https://i.pravatar.cc/150";
 
   if (loading) {
     return <ActivityIndicator size="large" style={{ marginTop: 120 }} />;
@@ -54,36 +86,23 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* COVER AREA */}
         <View style={styles.cover} />
 
-        {/* PROFILE IMAGE */}
         <View style={styles.avatarWrapper}>
-          <Image
-            source={{
-              uri: profile?.profile_image || "https://i.pravatar.cc/150",
-            }}
-            style={styles.avatar}
-          />
+          <Image source={{ uri: imageUrl }} style={styles.avatar} />
         </View>
 
-        {/* NAME & DOMAIN */}
         <View style={styles.center}>
-          <Text style={styles.name}>{profile?.full_name || "No Name"}</Text>
+          <Text style={styles.name}>{profile?.fullName || "No Name"}</Text>
           <Text style={styles.domain}>
             {profile?.domain || "Domain not set"}
           </Text>
         </View>
 
-        {/* DETAILS CARD */}
         <View style={styles.card}>
           <InfoRow icon="mail" label="Email" value={profile?.email} />
           <InfoRow icon="call" label="Mobile" value={profile?.mobile} />
-          <InfoRow
-            icon="calendar"
-            label="Birth Date"
-            value={profile?.birthdate}
-          />
+          <InfoRow icon="calendar" label="Birth Date" value={profile?.dob} />
           <InfoRow
             icon="school"
             label="Qualification"
@@ -96,14 +115,11 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* CV BUTTON */}
         <TouchableOpacity style={styles.cvButton} onPress={openCV}>
           <Ionicons name="document-text" size={20} color="#fff" />
           <Text style={styles.cvText}>View / Download CV</Text>
         </TouchableOpacity>
 
-        {/* EDIT BUTTON */}
-        {/* EDIT BUTTON */}
         <TouchableOpacity
           style={styles.editButton}
           onPress={() => router.push("/home/edit")}
@@ -127,17 +143,8 @@ const InfoRow = ({ icon, label, value }) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
-
-  cover: {
-    height: 110,
-    backgroundColor: "#6C63FF",
-  },
-
-  avatarWrapper: {
-    alignItems: "center",
-    marginTop: -55,
-  },
-
+  cover: { height: 110, backgroundColor: "#6C63FF" },
+  avatarWrapper: { alignItems: "center", marginTop: -55 },
   avatar: {
     width: 110,
     height: 110,
@@ -145,22 +152,9 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: "#fff",
   },
-
-  center: {
-    alignItems: "center",
-    marginTop: 10,
-  },
-
-  name: {
-    fontSize: 22,
-    fontWeight: "bold",
-  },
-
-  domain: {
-    color: "#6B7280",
-    marginTop: 4,
-  },
-
+  center: { alignItems: "center", marginTop: 10 },
+  name: { fontSize: 22, fontWeight: "bold" },
+  domain: { color: "#6B7280", marginTop: 4 },
   card: {
     backgroundColor: "#fff",
     margin: 20,
@@ -168,22 +162,9 @@ const styles = StyleSheet.create({
     padding: 20,
     elevation: 3,
   },
-
-  row: {
-    flexDirection: "row",
-    marginBottom: 18,
-  },
-
-  label: {
-    color: "#9CA3AF",
-    fontSize: 12,
-  },
-
-  value: {
-    fontSize: 16,
-    fontWeight: "600",
-  },
-
+  row: { flexDirection: "row", marginBottom: 18 },
+  label: { color: "#9CA3AF", fontSize: 12 },
+  value: { fontSize: 16, fontWeight: "600" },
   cvButton: {
     backgroundColor: "#6C63FF",
     marginHorizontal: 20,
@@ -193,14 +174,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  cvText: {
-    color: "#fff",
-    marginLeft: 8,
-    fontWeight: "600",
-    fontSize: 15,
-  },
-
+  cvText: { color: "#fff", marginLeft: 8, fontWeight: "600", fontSize: 15 },
   editButton: {
     margin: 20,
     borderWidth: 1,
@@ -209,10 +183,5 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
   },
-
-  editText: {
-    color: "#6C63FF",
-    fontWeight: "600",
-    fontSize: 15,
-  },
+  editText: { color: "#6C63FF", fontWeight: "600", fontSize: 15 },
 });
