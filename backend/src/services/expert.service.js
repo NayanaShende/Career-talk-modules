@@ -11,12 +11,10 @@ const getAllExperts = async () => {
 };
 
 const createExpert = async (data) => {
-  // ✅ Prevent duplicate expert profile
   const existing = await expertRepo.findExpertByUserId(data.userId);
   if (existing) {
     throw new Error("Expert profile already exists for this user");
   }
-
   return await expertRepo.createExpert(data);
 };
 
@@ -53,10 +51,9 @@ const getOnlineExperts = async (limit = 10) => {
 };
 
 /* ===============================
-   DOMAIN SEARCH (UPDATED)
+   SEARCH
 ================================ */
 
-// 🔥 Now using domain instead of skill
 const searchExperts = async (domain) => {
   return await expertRepo.searchExpertsBySkill(domain);
 };
@@ -65,13 +62,14 @@ const searchExpertsByHeadline = async (domain) => {
   return await expertRepo.searchExpertsByHeadline(domain);
 };
 
-// ✅ Filter experts by domain
-const getExpertsBySkill = async (domain) => {
-  return await expertRepo.findExpertsBySkill(domain);
+// ✅ FIXED: filter by ExpertSkills table not domain column
+const getExpertsBySkill = async (skill) => {
+  if (!skill || skill === "All") return await expertRepo.findAllExperts();
+  return await expertRepo.findExpertsBySkillName(skill);
 };
 
 /* ===============================
-   EXPERT PROFILE (SEPARATE TABLE)
+   EXPERT PROFILE
 ================================ */
 
 const createExpertProfile = async (userId, profileData, file) => {
@@ -89,13 +87,11 @@ const createExpertProfile = async (userId, profileData, file) => {
   };
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);
-
   if (profile) {
     profile = await expertRepo.updateExpertProfile(profile, data);
   } else {
     profile = await expertRepo.createExpertProfile(data);
   }
-
   return profile;
 };
 
@@ -110,26 +106,22 @@ const getExpertById = async (id) => {
 };
 
 /* ===============================
-   RATINGS ✅ NEW
+   RATINGS
 ================================ */
 
-const submitRating = async (expertId, rating, comment, userId) => {
+const submitRating = async (expertId, rating) => {
   const { Review, Expert } = require("../models");
 
-  // 1. Save the review
+  // ✅ FIXED: only save fields that exist in DB (no comment, no user_id)
   await Review.create({
     expert_id: expertId,
     rating,
-    comment: comment || null,
-    user_id: userId,
   });
 
-  // 2. Recalculate average rating for the expert
   const reviews = await Review.findAll({ where: { expert_id: expertId } });
   const avgRating =
     reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
 
-  // 3. Update expert's rating
   await Expert.update(
     { rating: parseFloat(avgRating.toFixed(1)) },
     { where: { id: expertId } }
@@ -174,6 +166,6 @@ module.exports = {
   createExpertProfile,
   getExpertProfile,
   getExpertById,
-  submitRating, // ✅ NEW
-  getRatings,   // ✅ NEW
+  submitRating,
+  getRatings,
 };
