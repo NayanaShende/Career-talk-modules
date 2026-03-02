@@ -27,13 +27,12 @@ exports.saveProfile = async (req, res) => {
       certifiedCity,
     } = req.body;
 
-    // ✅ BASIC VALIDATION
+    // ✅ BASIC VALIDATION - removed domain from required since we now use skills
     if (
       !fullName ||
       !email ||
       !dob ||
       !qualification ||
-      !domain ||
       !experience
     ) {
       return res.status(400).json({
@@ -53,7 +52,7 @@ exports.saveProfile = async (req, res) => {
 
     // ✅ Get cv and image from req.files (updated from req.file)
     const cvFile = req.files?.cv?.[0];
-    const imageFile = req.files?.image?.[0]; // ✅ NEW
+    const imageFile = req.files?.image?.[0];
 
     // ✅ Prepare updateData
     const updateData = {
@@ -90,28 +89,38 @@ exports.saveProfile = async (req, res) => {
           experience: parseInt(experience) || 0,
           rating: 0,
           is_online: false,
-          domain: domain, // ✅ correct
-          bio: bio || null, // ✅ from form
-          location: location || null, // ✅ from form (was domain before!)
-          language_spoken: languages || null, // ✅ from form (was hardcoded "English"!)
-          certification: certificate || null, // ✅ from form
+          domain: domain || null,
+          bio: bio || null,
+          location: location || null,
+          language_spoken: languages || null,
+          certification: certificate || null,
           cv: cvFile ? cvFile.filename : null,
-          image: imageFile ? imageFile.filename : null, // ✅ NEW
+          image: imageFile ? imageFile.filename : null,
         });
       } else {
         // 3️⃣ Update existing expert
         await expert.update({
           name: fullName,
           experience: parseInt(experience) || expert.experience,
-          domain: domain, // ✅ correct
-          bio: bio || expert.bio, // ✅ from form
-          location: location || expert.location, // ✅ from form
-          language_spoken: languages || expert.language_spoken, // ✅ from form
-          certification: certificate || expert.certification, // ✅ from form
+          domain: domain || expert.domain,
+          bio: bio || expert.bio,
+          location: location || expert.location,
+          language_spoken: languages || expert.language_spoken,
+          certification: certificate || expert.certification,
           cv: cvFile ? cvFile.filename : expert.cv,
-          image: imageFile ? imageFile.filename : expert.image, // ✅ NEW
+          image: imageFile ? imageFile.filename : expert.image,
         });
       }
+
+      // ✅ NEW: Return expertId so frontend can save skills
+      return res.json({
+        success: true,
+        message: "Profile saved successfully",
+        user: req.user,
+        data: {
+          expertId: expert.id, // ✅ frontend needs this to save skills
+        },
+      });
     }
 
     return res.json({

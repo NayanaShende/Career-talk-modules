@@ -16,12 +16,37 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import * as DocumentPicker from "expo-document-picker";
-import * as ImagePicker from "expo-image-picker"; // ✅ NEW
+import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
 const BASE_URL = "http://172.20.10.3:3000";
+
+// ✅ Available skills list
+const SKILL_OPTIONS = [
+  "React",
+  "React Native",
+  "Node.js",
+  "Python",
+  "Java",
+  "Angular",
+  "Vue.js",
+  "DevOps",
+  "UI/UX Design",
+  "Data Analysis",
+  "Machine Learning",
+  "PHP",
+  "Laravel",
+  "Django",
+  "Flutter",
+  "Marathi Teacher",
+  "English Teacher",
+  "Mathematics",
+  "Science",
+  "Other",
+];
 
 // ✅ iOS-safe dropdown component
 function DropdownPicker({ label, value, options, onChange }) {
@@ -76,6 +101,157 @@ function DropdownPicker({ label, value, options, onChange }) {
   );
 }
 
+// ✅ NEW: Multi-select skills picker component
+function SkillsPicker({ selectedSkills, onChange }) {
+  const [visible, setVisible] = useState(false);
+  const [customSkill, setCustomSkill] = useState("");
+
+  const toggleSkill = (skill) => {
+    if (selectedSkills.includes(skill)) {
+      onChange(selectedSkills.filter((s) => s !== skill));
+    } else {
+      if (selectedSkills.length >= 5) {
+        Alert.alert("Max 5 skills", "You can select up to 5 skills");
+        return;
+      }
+      onChange([...selectedSkills, skill]);
+    }
+  };
+
+  const addCustomSkill = () => {
+    const trimmed = customSkill.trim();
+    if (!trimmed) return;
+    if (selectedSkills.includes(trimmed)) {
+      Alert.alert("Already added", "This skill is already selected");
+      return;
+    }
+    if (selectedSkills.length >= 5) {
+      Alert.alert("Max 5 skills", "You can select up to 5 skills");
+      return;
+    }
+    onChange([...selectedSkills, trimmed]);
+    setCustomSkill("");
+  };
+
+  return (
+    <>
+      {/* Selected skills display */}
+      <View style={styles.selectedSkillsContainer}>
+        {selectedSkills.length === 0 ? (
+          <Text style={{ color: "#777", fontSize: 13 }}>
+            No skills selected
+          </Text>
+        ) : (
+          selectedSkills.map((skill) => (
+            <TouchableOpacity
+              key={skill}
+              style={styles.skillChip}
+              onPress={() => toggleSkill(skill)}>
+              <Text style={styles.skillChipText}>{skill}</Text>
+              <Ionicons
+                name="close"
+                size={14}
+                color="#fff"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+
+      {/* Add skills button */}
+      <TouchableOpacity
+        style={styles.addSkillsBtn}
+        onPress={() => setVisible(true)}>
+        <Ionicons name="add-circle-outline" size={18} color="#0B2D72" />
+        <Text style={styles.addSkillsBtnText}>
+          {selectedSkills.length === 0 ? "Add Skills" : "Edit Skills"} (max 5)
+        </Text>
+      </TouchableOpacity>
+
+      {/* Skills modal */}
+      <Modal visible={visible} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          onPress={() => setVisible(false)}
+        />
+        <View style={[styles.modalBox, { maxHeight: "70%" }]}>
+          <Text style={styles.modalTitle}>Select Skills (max 5)</Text>
+          <Text
+            style={{
+              color: "#888",
+              textAlign: "center",
+              marginBottom: 10,
+              fontSize: 13,
+            }}>
+            {selectedSkills.length}/5 selected
+          </Text>
+
+          {/* Custom skill input */}
+          <View style={styles.customSkillRow}>
+            <TextInput
+              style={styles.customSkillInput}
+              placeholder="Add custom skill..."
+              value={customSkill}
+              onChangeText={setCustomSkill}
+            />
+            <TouchableOpacity
+              style={styles.customSkillAddBtn}
+              onPress={addCustomSkill}>
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={SKILL_OPTIONS}
+            keyExtractor={(item) => item}
+            renderItem={({ item }) => {
+              const isSelected = selectedSkills.includes(item);
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.modalItem,
+                    isSelected && styles.modalItemSelected,
+                  ]}
+                  onPress={() => toggleSkill(item)}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        color: isSelected ? "#0B2D72" : "#333",
+                        fontWeight: isSelected ? "700" : "400",
+                      }}>
+                      {item}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color="#0B2D72"
+                      />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
+
+          <TouchableOpacity
+            style={[styles.submitBtn, { marginTop: 10 }]}
+            onPress={() => setVisible(false)}>
+            <Text style={styles.submitText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
 export default function ProfileScreen() {
   const [role, setRole] = useState("Jobseeker");
   const [date, setDate] = useState(new Date());
@@ -87,12 +263,12 @@ export default function ProfileScreen() {
     dob: "",
     qualification: "",
     customQualification: "",
-    domain: "",
+    domain: "", // kept for backward compat
     customDomain: "",
     experience: "",
     customExperience: "",
     cv: null,
-    image: null, // ✅ NEW
+    image: null,
     certificate: "",
     languages: "",
     customLanguages: "",
@@ -100,6 +276,9 @@ export default function ProfileScreen() {
     customLocation: "",
     bio: "",
   });
+
+  // ✅ NEW: Separate skills state (array of strings)
+  const [selectedSkills, setSelectedSkills] = useState([]);
 
   const handleChange = (field, value) =>
     setFormData({ ...formData, [field]: value });
@@ -124,7 +303,6 @@ export default function ProfileScreen() {
     }
   };
 
-  // ✅ NEW: Pick profile image from gallery
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -155,10 +333,13 @@ export default function ProfileScreen() {
       if (!formData.dob) return Alert.alert("Missing", "Select birth date");
       if (!formData.qualification)
         return Alert.alert("Missing", "Select qualification");
-      if (!formData.domain) return Alert.alert("Missing", "Select domain");
       if (!formData.experience)
         return Alert.alert("Missing", "Select experience");
       if (!formData.cv) return Alert.alert("Missing", "Upload your CV");
+
+      // ✅ NEW: Validate skills for experts
+      if (role === "Expert" && selectedSkills.length === 0)
+        return Alert.alert("Missing", "Please select at least 1 skill");
 
       const token = await AsyncStorage.getItem("token");
       if (!token)
@@ -180,7 +361,6 @@ export default function ProfileScreen() {
       const form = new FormData();
       form.append("role", role.toLowerCase());
 
-      // ✅ Resolve "Other" fields
       const resolvedData = {
         ...formData,
         location:
@@ -203,10 +383,9 @@ export default function ProfileScreen() {
             : formData.languages,
       };
 
-      // ✅ Skip cv, image, and all custom* fields (handled separately below)
       const skipFields = [
         "cv",
-        "image", // ✅ NEW
+        "image",
         "customLocation",
         "customDomain",
         "customQualification",
@@ -233,7 +412,7 @@ export default function ProfileScreen() {
         });
       }
 
-      // ✅ NEW: Append profile image
+      // ✅ Append profile image
       if (formData.image) {
         const ext = formData.image.uri.split(".").pop();
         form.append("image", {
@@ -243,12 +422,30 @@ export default function ProfileScreen() {
         });
       }
 
-      await axios.post(`${BASE_URL}/api/users/save-profile`, form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
+      const profileRes = await axios.post(
+        `${BASE_URL}/api/users/save-profile`,
+        form,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
+      );
+
+      // ✅ STEP 3: SAVE SKILLS (only for experts)
+      if (role === "Expert" && selectedSkills.length > 0) {
+        const expertId =
+          profileRes.data?.data?.expertId || profileRes.data?.expertId;
+
+        if (expertId) {
+          await axios.post(
+            `${BASE_URL}/api/experts/${expertId}/skills`,
+            { skills: selectedSkills },
+            { headers: { Authorization: `Bearer ${token}` } },
+          );
+        }
+      }
 
       Alert.alert("Success", "Profile saved!", [
         {
@@ -273,7 +470,7 @@ export default function ProfileScreen() {
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.header}>Profile Information</Text>
 
-          {/* ✅ NEW: PROFILE IMAGE */}
+          {/* PROFILE IMAGE */}
           <Text style={styles.label}>Profile Image</Text>
           <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
             {formData.image ? (
@@ -360,28 +557,6 @@ export default function ProfileScreen() {
             />
           )}
 
-          {/* DOMAIN */}
-          <Text style={styles.label}>Domain *</Text>
-          <DropdownPicker
-            label="Select Domain"
-            value={formData.domain}
-            onChange={(v) => handleChange("domain", v)}
-            options={[
-              { label: "React Developer", value: "React" },
-              { label: "Java Developer", value: "Java" },
-              { label: "Python Developer", value: "Python" },
-              { label: "Marathi Teacher", value: "Marathi Teacher" },
-              { label: "Other", value: "Other" },
-            ]}
-          />
-          {formData.domain === "Other" && (
-            <TextInput
-              style={styles.input}
-              placeholder="Enter custom domain"
-              onChangeText={(v) => handleChange("customDomain", v)}
-            />
-          )}
-
           {/* EXPERIENCE */}
           <Text style={styles.label}>Experience *</Text>
           <DropdownPicker
@@ -389,17 +564,20 @@ export default function ProfileScreen() {
             value={formData.experience}
             onChange={(v) => handleChange("experience", v)}
             options={[
-              { label: "Fresher", value: "Fresher" },
-              { label: "1-2 Years", value: "1-2" },
-              { label: "3-5 Years", value: "3-5" },
-              { label: "5+ Years", value: "5+" },
+              { label: "Fresher", value: "0" },
+              { label: "1 Year", value: "1" },
+              { label: "2 Years", value: "2" },
+              { label: "3 Years", value: "3" },
+              { label: "5 Years", value: "5" },
+              { label: "8+ Years", value: "8" },
               { label: "Other", value: "Other" },
             ]}
           />
           {formData.experience === "Other" && (
             <TextInput
               style={styles.input}
-              placeholder="Enter custom experience"
+              placeholder="Enter years of experience"
+              keyboardType="numeric"
               onChangeText={(v) => handleChange("customExperience", v)}
             />
           )}
@@ -415,6 +593,13 @@ export default function ProfileScreen() {
           {/* EXPERT ONLY FIELDS */}
           {role === "Expert" && (
             <>
+              {/* ✅ NEW: SKILLS MULTI-SELECT */}
+              <Text style={styles.label}>Skills * (select up to 5)</Text>
+              <SkillsPicker
+                selectedSkills={selectedSkills}
+                onChange={setSelectedSkills}
+              />
+
               {/* CERTIFICATE */}
               <Text style={styles.label}>Certification</Text>
               <TextInput
@@ -536,10 +721,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   submitText: { color: "#fff", fontSize: 18, fontWeight: "700" },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   modalBox: {
     backgroundColor: "#fff",
     borderTopLeftRadius: 20,
@@ -560,11 +742,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  modalItemSelected: {
-    backgroundColor: "#f0f4ff",
-    borderRadius: 8,
-  },
-  // ✅ NEW: Image picker styles
+  modalItemSelected: { backgroundColor: "#f0f4ff", borderRadius: 8 },
   imagePicker: {
     width: 110,
     height: 110,
@@ -579,9 +757,51 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
     overflow: "hidden",
   },
-  imagePreview: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+  imagePreview: { width: 110, height: 110, borderRadius: 55 },
+  // ✅ NEW: Skills styles
+  selectedSkillsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+    minHeight: 40,
+    backgroundColor: "#f3f4f6",
+    borderRadius: 8,
+    padding: 10,
+  },
+  skillChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0B2D72",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  skillChipText: { color: "#fff", fontSize: 13, fontWeight: "600" },
+  addSkillsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginTop: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#0B2D72",
+    borderRadius: 8,
+    borderStyle: "dashed",
+    justifyContent: "center",
+  },
+  addSkillsBtnText: { color: "#0B2D72", fontWeight: "600" },
+  customSkillRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
+  customSkillInput: {
+    flex: 1,
+    backgroundColor: "#f3f4f6",
+    padding: 10,
+    borderRadius: 8,
+  },
+  customSkillAddBtn: {
+    backgroundColor: "#0B2D72",
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    justifyContent: "center",
   },
 });

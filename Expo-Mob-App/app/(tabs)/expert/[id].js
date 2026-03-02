@@ -185,10 +185,13 @@ export default function ExpertProfile() {
   const locationValue = expert?.location ?? "Java";
   const languagesValue = Array.isArray(expert?.languages)
     ? expert.languages.join(", ")
-    : (expert?.language ?? "English");
+    : (expert?.language_spoken ?? expert?.language ?? "English");
   const certificationValue = expert?.certification ?? "Not specified";
   const ratingValue = parseFloat(expert.rating) || 0.0;
   const totalReviews = expert.total_reviews || 0;
+
+  // ✅ NEW: Get skills array from expert
+  const skills = expert?.skills || [];
 
   const imageUri = expert.image
     ? `${BASE_URL}/uploads/${expert.image}`
@@ -236,6 +239,19 @@ export default function ExpertProfile() {
               {ratingData.totalReviews} Reviews
             </Text>
           </View>
+
+          {/* ✅ NEW: Skills chips */}
+          {skills.length > 0 && (
+            <View style={styles.skillsRow}>
+              {skills.map((skill, index) => (
+                <View key={index} style={styles.skillChip}>
+                  <Text style={styles.skillChipText}>
+                    {skill.skill_name}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* ACTION BUTTONS */}
           <View style={styles.actionRow}>
@@ -292,6 +308,27 @@ export default function ExpertProfile() {
               value={certificationValue}
             />
           </View>
+
+          {/* ✅ NEW: Skills section in details */}
+          {skills.length > 0 && (
+            <View style={styles.skillsSection}>
+              <Text style={styles.sectionTitle}>Skills</Text>
+              <View style={styles.skillsGrid}>
+                {skills.map((skill, index) => (
+                  <View key={index} style={styles.skillGridChip}>
+                    <MaterialCommunityIcons
+                      name="check-circle-outline"
+                      size={16}
+                      color="#C5A059"
+                    />
+                    <Text style={styles.skillGridText}>
+                      {skill.skill_name}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -352,6 +389,30 @@ const styles = StyleSheet.create({
   ratingCount: { fontSize: 13, color: "#888" },
   pillRow: { flexDirection: "row", gap: 15, marginTop: 10 },
   pillLabel: { fontSize: 13, color: "#666", fontWeight: "400" },
+
+  // ✅ NEW: Skills chips in header
+  skillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 12,
+    paddingHorizontal: 20,
+  },
+  skillChip: {
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#C5A059",
+  },
+  skillChipText: {
+    fontSize: 12,
+    color: "#0B2D72",
+    fontWeight: "600",
+  },
+
   actionRow: {
     flexDirection: "row",
     gap: 12,
@@ -440,6 +501,33 @@ const styles = StyleSheet.create({
   detailLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   detailLabel: { fontSize: 14, color: "#555" },
   detailValue: { fontSize: 14, fontWeight: "600", color: "#000" },
+
+  // ✅ NEW: Skills section in details
+  skillsSection: {
+    marginTop: 25,
+  },
+  skillsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  skillGridChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#FFF8EC",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#C5A059",
+  },
+  skillGridText: {
+    fontSize: 13,
+    color: "#0B2D72",
+    fontWeight: "600",
+  },
+
   bottomBarContainer: {
     position: "absolute",
     bottom: 0,
