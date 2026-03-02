@@ -48,6 +48,21 @@ const SKILL_OPTIONS = [
   "Other",
 ];
 
+// ✅ Available languages list
+const LANGUAGE_OPTIONS = [
+  "English",
+  "Hindi",
+  "Marathi",
+  "Gujarati",
+  "Bengali",
+  "Tamil",
+  "Telugu",
+  "Kannada",
+  "Punjabi",
+  "Urdu",
+  "Other",
+];
+
 // ✅ iOS-safe dropdown component
 function DropdownPicker({ label, value, options, onChange }) {
   const [visible, setVisible] = useState(false);
@@ -101,7 +116,7 @@ function DropdownPicker({ label, value, options, onChange }) {
   );
 }
 
-// ✅ NEW: Multi-select skills picker component
+// ✅ Multi-select skills picker component
 function SkillsPicker({ selectedSkills, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customSkill, setCustomSkill] = useState("");
@@ -135,7 +150,6 @@ function SkillsPicker({ selectedSkills, onChange }) {
 
   return (
     <>
-      {/* Selected skills display */}
       <View style={styles.selectedSkillsContainer}>
         {selectedSkills.length === 0 ? (
           <Text style={{ color: "#777", fontSize: 13 }}>
@@ -159,7 +173,6 @@ function SkillsPicker({ selectedSkills, onChange }) {
         )}
       </View>
 
-      {/* Add skills button */}
       <TouchableOpacity
         style={styles.addSkillsBtn}
         onPress={() => setVisible(true)}>
@@ -169,7 +182,6 @@ function SkillsPicker({ selectedSkills, onChange }) {
         </Text>
       </TouchableOpacity>
 
-      {/* Skills modal */}
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
           style={styles.modalOverlay}
@@ -186,8 +198,6 @@ function SkillsPicker({ selectedSkills, onChange }) {
             }}>
             {selectedSkills.length}/5 selected
           </Text>
-
-          {/* Custom skill input */}
           <View style={styles.customSkillRow}>
             <TextInput
               style={styles.customSkillInput}
@@ -201,7 +211,6 @@ function SkillsPicker({ selectedSkills, onChange }) {
               <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
             </TouchableOpacity>
           </View>
-
           <FlatList
             data={SKILL_OPTIONS}
             keyExtractor={(item) => item}
@@ -240,7 +249,155 @@ function SkillsPicker({ selectedSkills, onChange }) {
               );
             }}
           />
+          <TouchableOpacity
+            style={[styles.submitBtn, { marginTop: 10 }]}
+            onPress={() => setVisible(false)}>
+            <Text style={styles.submitText}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    </>
+  );
+}
 
+// ✅ NEW: Multi-select languages picker component (same pattern as SkillsPicker)
+function LanguagesPicker({ selectedLanguages, onChange }) {
+  const [visible, setVisible] = useState(false);
+  const [customLang, setCustomLang] = useState("");
+
+  const toggleLanguage = (lang) => {
+    if (selectedLanguages.includes(lang)) {
+      onChange(selectedLanguages.filter((l) => l !== lang));
+    } else {
+      if (selectedLanguages.length >= 5) {
+        Alert.alert("Max 5 languages", "You can select up to 5 languages");
+        return;
+      }
+      onChange([...selectedLanguages, lang]);
+    }
+  };
+
+  const addCustomLanguage = () => {
+    const trimmed = customLang.trim();
+    if (!trimmed) return;
+    if (selectedLanguages.includes(trimmed)) {
+      Alert.alert("Already added", "This language is already selected");
+      return;
+    }
+    if (selectedLanguages.length >= 5) {
+      Alert.alert("Max 5 languages", "You can select up to 5 languages");
+      return;
+    }
+    onChange([...selectedLanguages, trimmed]);
+    setCustomLang("");
+  };
+
+  return (
+    <>
+      {/* Selected languages display */}
+      <View style={styles.selectedSkillsContainer}>
+        {selectedLanguages.length === 0 ? (
+          <Text style={{ color: "#777", fontSize: 13 }}>
+            No languages selected
+          </Text>
+        ) : (
+          selectedLanguages.map((lang) => (
+            <TouchableOpacity
+              key={lang}
+              style={styles.skillChip}
+              onPress={() => toggleLanguage(lang)}>
+              <Text style={styles.skillChipText}>{lang}</Text>
+              <Ionicons
+                name="close"
+                size={14}
+                color="#fff"
+                style={{ marginLeft: 4 }}
+              />
+            </TouchableOpacity>
+          ))
+        )}
+      </View>
+
+      <TouchableOpacity
+        style={styles.addSkillsBtn}
+        onPress={() => setVisible(true)}>
+        <Ionicons name="add-circle-outline" size={18} color="#0B2D72" />
+        <Text style={styles.addSkillsBtnText}>
+          {selectedLanguages.length === 0 ? "Add Languages" : "Edit Languages"}{" "}
+          (max 5)
+        </Text>
+      </TouchableOpacity>
+
+      <Modal visible={visible} transparent animationType="slide">
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          onPress={() => setVisible(false)}
+        />
+        <View style={[styles.modalBox, { maxHeight: "70%" }]}>
+          <Text style={styles.modalTitle}>Select Languages (max 5)</Text>
+          <Text
+            style={{
+              color: "#888",
+              textAlign: "center",
+              marginBottom: 10,
+              fontSize: 13,
+            }}>
+            {selectedLanguages.length}/5 selected
+          </Text>
+
+          {/* Custom language input */}
+          <View style={styles.customSkillRow}>
+            <TextInput
+              style={styles.customSkillInput}
+              placeholder="Add custom language..."
+              value={customLang}
+              onChangeText={setCustomLang}
+            />
+            <TouchableOpacity
+              style={styles.customSkillAddBtn}
+              onPress={addCustomLanguage}>
+              <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={LANGUAGE_OPTIONS}
+            keyExtractor={(item) => item}
+            renderItem={({ item }) => {
+              const isSelected = selectedLanguages.includes(item);
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.modalItem,
+                    isSelected && styles.modalItemSelected,
+                  ]}
+                  onPress={() => toggleLanguage(item)}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}>
+                    <Text
+                      style={{
+                        fontSize: 16,
+                        color: isSelected ? "#0B2D72" : "#333",
+                        fontWeight: isSelected ? "700" : "400",
+                      }}>
+                      {item}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color="#0B2D72"
+                      />
+                    )}
+                  </View>
+                </TouchableOpacity>
+              );
+            }}
+          />
           <TouchableOpacity
             style={[styles.submitBtn, { marginTop: 10 }]}
             onPress={() => setVisible(false)}>
@@ -263,7 +420,7 @@ export default function ProfileScreen() {
     dob: "",
     qualification: "",
     customQualification: "",
-    domain: "", // kept for backward compat
+    domain: "",
     customDomain: "",
     experience: "",
     customExperience: "",
@@ -277,8 +434,8 @@ export default function ProfileScreen() {
     bio: "",
   });
 
-  // ✅ NEW: Separate skills state (array of strings)
   const [selectedSkills, setSelectedSkills] = useState([]);
+  const [selectedLanguages, setSelectedLanguages] = useState([]); // ✅ NEW
 
   const handleChange = (field, value) =>
     setFormData({ ...formData, [field]: value });
@@ -311,14 +468,12 @@ export default function ProfileScreen() {
         "Please allow access to your photo library",
       );
     }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
     });
-
     if (!result.canceled) {
       handleChange("image", result.assets[0]);
     }
@@ -336,8 +491,6 @@ export default function ProfileScreen() {
       if (!formData.experience)
         return Alert.alert("Missing", "Select experience");
       if (!formData.cv) return Alert.alert("Missing", "Upload your CV");
-
-      // ✅ NEW: Validate skills for experts
       if (role === "Expert" && selectedSkills.length === 0)
         return Alert.alert("Missing", "Please select at least 1 skill");
 
@@ -377,10 +530,13 @@ export default function ProfileScreen() {
           formData.experience === "Other"
             ? formData.customExperience
             : formData.experience,
+        // ✅ NEW: join selected languages array as comma-separated string
         languages:
-          formData.languages === "Other"
-            ? formData.customLanguages
-            : formData.languages,
+          selectedLanguages.length > 0
+            ? selectedLanguages.join(", ")
+            : formData.languages === "Other"
+              ? formData.customLanguages
+              : formData.languages,
       };
 
       const skipFields = [
@@ -403,7 +559,6 @@ export default function ProfileScreen() {
         }
       });
 
-      // ✅ Append CV
       if (formData.cv) {
         form.append("cv", {
           uri: formData.cv.uri,
@@ -412,7 +567,6 @@ export default function ProfileScreen() {
         });
       }
 
-      // ✅ Append profile image
       if (formData.image) {
         const ext = formData.image.uri.split(".").pop();
         form.append("image", {
@@ -433,11 +587,10 @@ export default function ProfileScreen() {
         },
       );
 
-      // ✅ STEP 3: SAVE SKILLS (only for experts)
+      // STEP 3: SAVE SKILLS
       if (role === "Expert" && selectedSkills.length > 0) {
         const expertId =
           profileRes.data?.data?.expertId || profileRes.data?.expertId;
-
         if (expertId) {
           await axios.post(
             `${BASE_URL}/api/experts/${expertId}/skills`,
@@ -593,7 +746,7 @@ export default function ProfileScreen() {
           {/* EXPERT ONLY FIELDS */}
           {role === "Expert" && (
             <>
-              {/* ✅ NEW: SKILLS MULTI-SELECT */}
+              {/* SKILLS MULTI-SELECT */}
               <Text style={styles.label}>Skills * (select up to 5)</Text>
               <SkillsPicker
                 selectedSkills={selectedSkills}
@@ -608,26 +761,12 @@ export default function ProfileScreen() {
                 onChangeText={(v) => handleChange("certificate", v)}
               />
 
-              {/* LANGUAGES */}
+              {/* ✅ NEW: LANGUAGES MULTI-SELECT */}
               <Text style={styles.label}>Languages Known</Text>
-              <DropdownPicker
-                label="Select Language"
-                value={formData.languages}
-                onChange={(v) => handleChange("languages", v)}
-                options={[
-                  { label: "English", value: "English" },
-                  { label: "Hindi", value: "Hindi" },
-                  { label: "Marathi", value: "Marathi" },
-                  { label: "Other", value: "Other" },
-                ]}
+              <LanguagesPicker
+                selectedLanguages={selectedLanguages}
+                onChange={setSelectedLanguages}
               />
-              {formData.languages === "Other" && (
-                <TextInput
-                  style={styles.input}
-                  placeholder="Enter custom language"
-                  onChangeText={(v) => handleChange("customLanguages", v)}
-                />
-              )}
 
               {/* LOCATION */}
               <Text style={styles.label}>Your Location</Text>
@@ -758,7 +897,6 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   imagePreview: { width: 110, height: 110, borderRadius: 55 },
-  // ✅ NEW: Skills styles
   selectedSkillsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",

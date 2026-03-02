@@ -79,6 +79,24 @@ const bulkCreateSkills = async (skillRows) => {
   return await ExpertSkill.bulkCreate(skillRows);
 };
 
+// ✅ NEW: Filter experts by skill_name in ExpertSkills table
+const findExpertsBySkillName = async (skillName) => {
+  return await Expert.findAll({
+    include: [
+      {
+        model: ExpertSkill,
+        as: "skills",
+        where: { skill_name: { [Op.iLike]: `%${skillName}%` } },
+        required: true, // INNER JOIN — only experts who have this skill
+      },
+    ],
+    order: [
+      ["rating", "DESC"],
+      ["experience", "DESC"],
+    ],
+  });
+};
+
 /* ===============================
    DOMAIN SEARCH (UPDATED)
 ================================ */
@@ -184,6 +202,7 @@ module.exports = {
   findRecommendedExperts,
   findOnlineExperts,
   bulkCreateSkills,
+  findExpertsBySkillName,   // ✅ NEW
   searchExpertsBySkill,
   searchExpertsByHeadline,
   findExpertsBySkill,

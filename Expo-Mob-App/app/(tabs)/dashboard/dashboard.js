@@ -153,8 +153,14 @@ export default function Dashboard() {
       setLoadingTop(true);
       const res = await axiosInstance.get("/experts");
       const list = res?.data?.data || [];
-      list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-      setTopExperts(list.slice(0, 10));
+      // ✅ FIXED: normalize rating as float for correct sorting
+      const normalized = list.map((e) => ({
+        ...e,
+        rating: parseFloat(e.rating) || 0,
+        experience: parseInt(e.experience) || 0,
+      }));
+      normalized.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      setTopExperts(normalized.slice(0, 10));
     } catch {
       setTopExperts([]);
     } finally {
@@ -167,7 +173,15 @@ export default function Dashboard() {
       setLoadingFiltered(true);
       const url = skill === "All" ? "/experts" : `/experts?skill=${skill}`;
       const res = await axiosInstance.get(url);
-      setFilteredExperts(res?.data?.data || []);
+      const list = res?.data?.data || [];
+      // ✅ FIXED: normalize rating and experience as numbers
+      const normalized = list.map((e) => ({
+        ...e,
+        rating: parseFloat(e.rating) || 0,
+        experience: parseInt(e.experience) || 0,
+      }));
+      normalized.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+      setFilteredExperts(normalized);
     } catch {
       setFilteredExperts([]);
     } finally {
@@ -277,16 +291,19 @@ export default function Dashboard() {
                   {e.name}
                 </Text>
 
-                {/* ✅ NEW: Real stars from rating */}
+                {/* ✅ FIXED: Real stars using normalized float rating */}
                 <View style={styles.starRow}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Ionicons
-                      key={s}
-                      name={s <= Math.round(parseFloat(e.rating) || 0) ? "star" : "star-outline"}
-                      size={14}
-                      color="#FBBF24"
-                    />
-                  ))}
+                  {[1, 2, 3, 4, 5].map((s) => {
+                    const ratingVal = Math.round(e.rating || 0);
+                    return (
+                      <Ionicons
+                        key={s}
+                        name={s <= ratingVal ? "star" : "star-outline"}
+                        size={14}
+                        color="#FBBF24"
+                      />
+                    );
+                  })}
                 </View>
 
                 {/* ✅ NEW: Experience */}
@@ -377,7 +394,7 @@ export default function Dashboard() {
               <LiveExpert
                 key={e.id}
                 name={e.name || ""}
-                title={getFirstSkill(e)} // ✅ NEW: show skill instead of role
+                title={getFirstSkill(e)}
                 image={getImageUri(e.image, e.name)}
                 onPress={() => router.push(`/expert/${e.id}`)}
               />
@@ -504,9 +521,7 @@ const styles = StyleSheet.create({
   expertInitialText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
   expertCardName: { fontSize: 13, fontWeight: "700", color: "#333", marginBottom: 4 },
   starRow: { flexDirection: "row", marginBottom: 4 },
-  // ✅ NEW: experience text
   expText: { fontSize: 11, color: "#666", marginBottom: 6 },
-  // ✅ NEW: skills chips row
   skillChipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, justifyContent: "center" },
   expertSkillBadge: {
     backgroundColor: "#0B2D72",
@@ -537,7 +552,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   circleInitial: { fontSize: 18, fontWeight: "600", color: "#f2f6fb" },
-  // ✅ NEW: name and skill below circle
   circleExpertName: { fontSize: 11, fontWeight: "700", color: "#333", marginTop: 5, textAlign: "center" },
   circleExpertSkill: { fontSize: 10, color: "#888", textAlign: "center" },
   liveScrollContainer: { paddingLeft: 16 },
