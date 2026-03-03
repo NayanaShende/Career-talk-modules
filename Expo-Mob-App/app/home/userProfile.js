@@ -260,7 +260,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
   );
 }
 
-// ✅ NEW: Multi-select languages picker component (same pattern as SkillsPicker)
+// ✅ Multi-select languages picker component
 function LanguagesPicker({ selectedLanguages, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customLang, setCustomLang] = useState("");
@@ -294,7 +294,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
 
   return (
     <>
-      {/* Selected languages display */}
       <View style={styles.selectedSkillsContainer}>
         {selectedLanguages.length === 0 ? (
           <Text style={{ color: "#777", fontSize: 13 }}>
@@ -344,8 +343,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
             }}>
             {selectedLanguages.length}/5 selected
           </Text>
-
-          {/* Custom language input */}
           <View style={styles.customSkillRow}>
             <TextInput
               style={styles.customSkillInput}
@@ -359,7 +356,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
               <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
             </TouchableOpacity>
           </View>
-
           <FlatList
             data={LANGUAGE_OPTIONS}
             keyExtractor={(item) => item}
@@ -414,14 +410,13 @@ export default function ProfileScreen() {
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
 
+  // ✅ FIXED: Removed domain and customDomain from formData
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     dob: "",
     qualification: "",
     customQualification: "",
-    domain: "",
-    customDomain: "",
     experience: "",
     customExperience: "",
     cv: null,
@@ -435,7 +430,7 @@ export default function ProfileScreen() {
   });
 
   const [selectedSkills, setSelectedSkills] = useState([]);
-  const [selectedLanguages, setSelectedLanguages] = useState([]); // ✅ NEW
+  const [selectedLanguages, setSelectedLanguages] = useState([]);
 
   const handleChange = (field, value) =>
     setFormData({ ...formData, [field]: value });
@@ -514,14 +509,13 @@ export default function ProfileScreen() {
       const form = new FormData();
       form.append("role", role.toLowerCase());
 
+      // ✅ FIXED: Removed domain from resolvedData
       const resolvedData = {
         ...formData,
         location:
           formData.location === "Other"
             ? formData.customLocation
             : formData.location,
-        domain:
-          formData.domain === "Other" ? formData.customDomain : formData.domain,
         qualification:
           formData.qualification === "Other"
             ? formData.customQualification
@@ -530,7 +524,6 @@ export default function ProfileScreen() {
           formData.experience === "Other"
             ? formData.customExperience
             : formData.experience,
-        // ✅ NEW: join selected languages array as comma-separated string
         languages:
           selectedLanguages.length > 0
             ? selectedLanguages.join(", ")
@@ -539,11 +532,11 @@ export default function ProfileScreen() {
               : formData.languages,
       };
 
+      // ✅ FIXED: Removed customDomain from skipFields
       const skipFields = [
         "cv",
         "image",
         "customLocation",
-        "customDomain",
         "customQualification",
         "customExperience",
         "customLanguages",
@@ -558,6 +551,11 @@ export default function ProfileScreen() {
           form.append(key, resolvedData[key]);
         }
       });
+
+      // ✅ NEW: Append skills as comma-separated string to save in Users table
+      if (selectedSkills.length > 0) {
+        form.append("skills", selectedSkills.join(", "));
+      }
 
       if (formData.cv) {
         form.append("cv", {
@@ -576,7 +574,7 @@ export default function ProfileScreen() {
         });
       }
 
-      const profileRes = await axios.post(
+      await axios.post(
         `${BASE_URL}/api/users/save-profile`,
         form,
         {
@@ -587,18 +585,14 @@ export default function ProfileScreen() {
         },
       );
 
-      // STEP 3: SAVE SKILLS
-      if (role === "Expert" && selectedSkills.length > 0) {
-        const expertId =
-          profileRes.data?.data?.expertId || profileRes.data?.expertId;
-        if (expertId) {
-          await axios.post(
-            `${BASE_URL}/api/experts/${expertId}/skills`,
-            { skills: selectedSkills },
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
-        }
-      }
+      // ✅ FIXED: Update AsyncStorage with new role so Live Expert socket works
+      const userStr = await AsyncStorage.getItem("user");
+      const existingUser = userStr ? JSON.parse(userStr) : {};
+      await AsyncStorage.setItem("user", JSON.stringify({
+        ...existingUser,
+        role: role.toLowerCase(),
+        hasProfile: true,
+      }));
 
       Alert.alert("Success", "Profile saved!", [
         {
@@ -761,7 +755,7 @@ export default function ProfileScreen() {
                 onChangeText={(v) => handleChange("certificate", v)}
               />
 
-              {/* ✅ NEW: LANGUAGES MULTI-SELECT */}
+              {/* LANGUAGES MULTI-SELECT */}
               <Text style={styles.label}>Languages Known</Text>
               <LanguagesPicker
                 selectedLanguages={selectedLanguages}

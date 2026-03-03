@@ -25,6 +25,45 @@ exports.createExpertProfile = async (req, res) => {
   }
 };
 
+// ================= SUBMIT EXPERT PROFILE FORM =================
+// ✅ NEW: called when expert fills out the profile form
+// saves to Experts table using userId from JWT token
+exports.submitExpertProfileForm = async (req, res) => {
+  try {
+    const userId = req.user.id; // ✅ from auth middleware (JWT)
+    const file = req.file; // ✅ CV file from multer (optional)
+
+    const expert = await expertService.createExpertProfile(
+      userId,
+      req.body,
+      file,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Expert profile saved successfully",
+      data: expert,
+    });
+  } catch (error) {
+    console.error("submitExpertProfileForm error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ================= GET MY PROFILE =================
+// ✅ NEW: expert views their own profile using JWT userId
+exports.getMyExpertProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // ✅ from auth middleware (JWT)
+    const profile = await expertService.getExpertProfile(userId);
+
+    res.status(200).json({ success: true, data: profile });
+  } catch (error) {
+    console.error("getMyExpertProfile error:", error.message);
+    res.status(404).json({ success: false, message: error.message });
+  }
+};
+
 // ================= UPDATE =================
 exports.updateExpertProfile = async (req, res) => {
   try {
@@ -95,6 +134,31 @@ exports.getExpertById = async (req, res) => {
     }
 
     res.status(200).json({ success: true, data: expert });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ================= GET DOMAINS LIST =================
+// ✅ NEW: returns 10 domains for frontend dropdown
+// No auth required — public route
+exports.getDomainsList = async (req, res) => {
+  try {
+    const domains = [
+      "Career Counseling",
+      "Software Engineering",
+      "Data Science & AI",
+      "Finance & Investment",
+      "Marketing & Branding",
+      "Health & Wellness",
+      "Legal Advisory",
+      "Business Strategy",
+      "Education & Tutoring",
+      "Human Resources",
+    ];
+
+    res.status(200).json({ success: true, data: domains });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });

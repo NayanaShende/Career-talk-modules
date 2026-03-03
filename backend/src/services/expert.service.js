@@ -73,17 +73,18 @@ const getExpertsBySkill = async (skill) => {
 ================================ */
 
 const createExpertProfile = async (userId, profileData, file) => {
+  // ✅ FIXED: field names now match Experts table columns (not Users table)
   const data = {
-    fullName: profileData.fullName || null,
-    email: profileData.email || null,
-    dob: profileData.dob || null,
-    qualification: profileData.qualification || null,
-    experience: profileData.experience || null,
-    domain: profileData.domain || null,
-    certifications: profileData.certifications || null,
-    linkedIn: profileData.linkedIn || null,
-    cvFile: file ? file.filename : null,
-    userId,
+    name:            profileData.fullName       || null,  // ✅ Expert.name
+    email:           profileData.email          || null,  // ✅ via User, kept for reference
+    bio:             profileData.bio            || null,  // ✅ Expert.bio
+    experience:      profileData.experience     || null,  // ✅ Expert.experience
+    domain:          profileData.domain         || null,  // ✅ Expert.domain
+    certification:   profileData.certifications || null,  // ✅ Expert.certification
+    location:        profileData.location       || null,  // ✅ Expert.location
+    language_spoken: profileData.language_spoken|| null,  // ✅ Expert.language_spoken
+    cv:              file ? file.filename        : null,  // ✅ Expert.cv (was cvFile)
+    userId,                                               // ✅ FK link to Users table
   };
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);

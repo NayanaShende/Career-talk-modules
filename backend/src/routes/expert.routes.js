@@ -3,6 +3,7 @@ const router = express.Router();
 const expertController = require("../controllers/expert.controller");
 const ratingController = require("../controllers/rating.controller"); // ✅ NEW
 const protect = require("../middleware/protect"); // ✅ NEW
+const { uploadFields } = require("../middleware/upload"); // ✅ NEW: for cv + image upload
 
 // GET ALL EXPERTS
 router.get("/", expertController.getAllExperts);
@@ -16,6 +17,16 @@ router.get("/recommended", expertController.getRecommendedExperts);
 // GET ONLINE
 router.get("/online", expertController.getOnlineExperts);
 
+// ✅ NEW: GET DOMAINS LIST (public — no auth needed)
+// Call this from frontend to populate domain dropdown
+router.get("/domains", expertController.getDomainsList);
+
+// ✅ NEW: SUBMIT EXPERT PROFILE FORM (protected + file upload)
+router.post("/profile", protect, uploadFields, expertController.submitExpertProfileForm);
+
+// ✅ NEW: GET MY EXPERT PROFILE (protected)
+router.get("/profile/me", protect, expertController.getMyExpertProfile);
+
 // ADD SKILLS
 router.post("/:expertId/skills", expertController.addSkills);
 
@@ -28,7 +39,7 @@ router.post("/:id/rate", protect, ratingController.submitRating);
 // ✅ NEW: GET RATINGS for an expert
 router.get("/:id/ratings", ratingController.getRatings);
 
-// GET BY ID  (keep last)
+// GET BY ID  (keep last — /:id must always be last)
 router.get("/:id", expertController.getExpertById);
 
 module.exports = router;
