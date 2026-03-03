@@ -2,11 +2,19 @@
 
 const expertRepo = require("../repositories/expert.repository");
 
+/* ===============================
+   BASIC CRUD
+================================ */
+
 const getAllExperts = async () => {
   return await expertRepo.findAllExperts();
 };
 
 const createExpert = async (data) => {
+  const existing = await expertRepo.findExpertByUserId(data.userId);
+  if (existing) {
+    throw new Error("Expert profile already exists for this user");
+  }
   return await expertRepo.createExpert(data);
 };
 
@@ -15,13 +23,24 @@ const updateExpert = async (id, data) => {
   return await expertRepo.findExpertById(id);
 };
 
+/* ===============================
+   SKILLS
+================================ */
+
 const addSkills = async (expertId, skills) => {
+  if (!skills || !skills.length) return [];
+
   const skillRows = skills.map((skill) => ({
     expert_id: expertId,
     skill_name: skill,
   }));
+
   return await expertRepo.bulkCreateSkills(skillRows);
 };
+
+/* ===============================
+   LISTING
+================================ */
 
 const getRecommendedExperts = async (limit = 10) => {
   return await expertRepo.findRecommendedExperts(limit);
@@ -31,18 +50,27 @@ const getOnlineExperts = async (limit = 10) => {
   return await expertRepo.findOnlineExperts(limit);
 };
 
-const searchExperts = async (skill) => {
-  return await expertRepo.searchExpertsBySkill(skill);
+/* ===============================
+   SEARCH
+================================ */
+
+const searchExperts = async (domain) => {
+  return await expertRepo.searchExpertsBySkill(domain);
 };
 
-const searchExpertsByHeadline = async (skill) => {
-  return await expertRepo.searchExpertsByHeadline(skill);
+const searchExpertsByHeadline = async (domain) => {
+  return await expertRepo.searchExpertsByHeadline(domain);
 };
 
-// ✅ NEW: Get experts filtered by skill column
+// ✅ FIXED: filter by ExpertSkills table not domain column
 const getExpertsBySkill = async (skill) => {
-  return await expertRepo.findExpertsBySkill(skill);
+  if (!skill || skill === "All") return await expertRepo.findAllExperts();
+  return await expertRepo.findExpertsBySkillName(skill);
 };
+
+/* ===============================
+   EXPERT PROFILE
+================================ */
 
 const createExpertProfile = async (userId, profileData, file) => {
   const data = {
@@ -59,13 +87,11 @@ const createExpertProfile = async (userId, profileData, file) => {
   };
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);
-
   if (profile) {
     profile = await expertRepo.updateExpertProfile(profile, data);
   } else {
     profile = await expertRepo.createExpertProfile(data);
   }
-
   return profile;
 };
 
@@ -79,6 +105,54 @@ const getExpertById = async (id) => {
   return await expertRepo.findExpertById(id);
 };
 
+/* ===============================
+   RATINGS
+================================ */
+
+const submitRating = async (expertId, rating) => {
+  const { Review, Expert } = require("../models");
+
+  // ✅ FIXED: only save fields that exist in DB (no comment, no user_id)
+  await Review.create({
+    expert_id: expertId,
+    rating,
+  });
+
+  const reviews = await Review.findAll({ where: { expert_id: expertId } });
+  const avgRating =
+    reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+
+  await Expert.update(
+    { rating: parseFloat(avgRating.toFixed(1)) },
+    { where: { id: expertId } }
+  );
+
+  return {
+    avgRating: parseFloat(avgRating.toFixed(1)),
+    totalReviews: reviews.length,
+  };
+};
+
+const getRatings = async (expertId) => {
+  const { Review } = require("../models");
+
+  const reviews = await Review.findAll({
+    where: { expert_id: expertId },
+    order: [["createdAt", "DESC"]],
+  });
+
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : 0;
+
+  return {
+    avgRating: parseFloat(avgRating.toFixed(1)),
+    totalReviews: reviews.length,
+    reviews,
+  };
+};
+
 module.exports = {
   getAllExperts,
   createExpert,
@@ -88,8 +162,10 @@ module.exports = {
   getOnlineExperts,
   searchExperts,
   searchExpertsByHeadline,
-  getExpertsBySkill, // ✅ NEW
+  getExpertsBySkill,
   createExpertProfile,
   getExpertProfile,
   getExpertById,
+  submitRating,
+  getRatings,
 };

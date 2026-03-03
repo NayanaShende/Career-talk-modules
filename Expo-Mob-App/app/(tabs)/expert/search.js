@@ -14,6 +14,8 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
+const BASE_URL = "http://10.89.141.9:3000"; // ✅ NEW
+
 export default function Home() {
   const router = useRouter();
 
@@ -36,10 +38,17 @@ export default function Home() {
     }
   };
 
+  // ✅ NEW: Build full image URL
+  const getImageUri = (image, name) => {
+    if (image) return `${BASE_URL}/uploads/${image}`;
+    return null; // null = show placeholder with initial
+  };
+
   // Logic to filter experts based on search input
-  const filteredExperts = experts.filter((e) =>
-    e?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    e?.role?.toLowerCase().includes(search.toLowerCase())
+  const filteredExperts = experts.filter(
+    (e) =>
+      e?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      e?.role?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -47,7 +56,7 @@ export default function Home() {
       {/* --- HEADER --- */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>
-                  <Ionicons name="chevron-back" size={24} color="#fff" />
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Experts Search </Text>
         <Ionicons name="notifications-outline" size={24} color="#fff" />
@@ -56,7 +65,12 @@ export default function Home() {
       {/* --- SEARCH BAR SECTION --- */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#0B2D72" style={styles.searchIcon} />
+          <Ionicons
+            name="search"
+            size={20}
+            color="#0B2D72"
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for an expert..."
@@ -87,51 +101,57 @@ export default function Home() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={() => (
             <View style={styles.center}>
-              <Text style={{ marginTop: 50, color: '#999' }}>No experts found.</Text>
+              <Text style={{ marginTop: 50, color: "#999" }}>
+                No experts found.
+              </Text>
             </View>
           )}
-          renderItem={({ item }) => (
-            <Pressable
-              style={styles.card}
-              onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
-            >
-              <View style={styles.imageContainer}>
-                {item?.profile_image ? (
-                  <Image source={{ uri: item.profile_image }} style={styles.image} />
-                ) : (
-                  <View style={[styles.image, styles.placeholderImg]}>
-                    <Text style={styles.avatarText}>
-                      {item?.name?.charAt(0).toUpperCase()}
+          renderItem={({ item }) => {
+            const imageUri = getImageUri(item.image, item.name); // ✅ FIXED: was item.profile_image
+            return (
+              <Pressable
+                style={styles.card}
+                onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
+              >
+                <View style={styles.imageContainer}>
+                  {imageUri ? (
+                    // ✅ FIXED: Show actual profile image
+                    <Image source={{ uri: imageUri }} style={styles.image} />
+                  ) : (
+                    <View style={[styles.image, styles.placeholderImg]}>
+                      <Text style={styles.avatarText}>
+                        {item?.name?.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.infoContainer}>
+                  <Text style={styles.name}>{item?.name}</Text>
+                  <Text style={styles.role}>{item?.role || "UI Designer"}</Text>
+
+                  <View style={styles.ratingRow}>
+                    <Ionicons name="star" size={16} color="#FFD700" />
+                    <Text style={styles.ratingText}>
+                      {item?.rating || "4.9"}({item?.reviews || "234"})
+                    </Text>
+                    <Text style={styles.expText}>
+                      {item?.experience || 8} years exp
                     </Text>
                   </View>
-                )}
-              </View>
 
-              <View style={styles.infoContainer}>
-                <Text style={styles.name}>{item?.name}</Text>
-                <Text style={styles.role}>{item?.role || "UI Designer"}</Text>
-
-                <View style={styles.ratingRow}>
-                  <Ionicons name="star" size={16} color="#FFD700" />
-                  <Text style={styles.ratingText}>
-                    {item?.rating || "4.9"}({item?.reviews || "234"})
-                  </Text>
-                  <Text style={styles.expText}>
-                    {item?.experience || 8} years exp
-                  </Text>
+                  <View style={styles.badge}>
+                    <View style={styles.greenDot} />
+                    <Text style={styles.badgeText}>Available Now</Text>
+                  </View>
                 </View>
 
-                <View style={styles.badge}>
-                  <View style={styles.greenDot} />
-                  <Text style={styles.badgeText}>Available Now</Text>
+                <View style={styles.viewBtn}>
+                  <Text style={styles.viewBtnText}>View</Text>
                 </View>
-              </View>
-
-              <View style={styles.viewBtn}>
-                <Text style={styles.viewBtnText}>View</Text>
-              </View>
-            </Pressable>
-          )}
+              </Pressable>
+            );
+          }}
         />
       )}
     </SafeAreaView>
@@ -187,12 +207,12 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   /* CARD LIST */
-card: {
+  card: {
     flexDirection: "row",
     paddingHorizontal: 15,
     paddingVertical: 15,
     backgroundColor: "#fff",
-    alignItems: 'center', // This ensures all items in the row are centered vertically
+    alignItems: "center",
   },
   separator: {
     height: 1,
@@ -219,7 +239,7 @@ card: {
   infoContainer: {
     flex: 1,
     paddingHorizontal: 10,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   name: {
     fontSize: 17,

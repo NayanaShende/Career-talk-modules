@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 
 const expertController = require("../controllers/expert.controller");
+const ratingController = require("../controllers/rating.controller"); // ✅ NEW
+const protect = require("../middleware/protect"); // ✅ NEW
 
 // ============================
 // GET ALL EXPERTS
@@ -33,9 +35,13 @@ router.post("/:expertId/skills", expertController.addSkills);
 // ============================
 router.put("/:id", expertController.updateExpertProfile);
 
-// ============================
-// GET EXPERT BY ID (KEEP LAST)
-// ============================
+// ✅ NEW: SUBMIT RATING (protected - must be logged in)
+router.post("/:id/rate", protect, ratingController.submitRating);
+
+// ✅ NEW: GET RATINGS for an expert
+router.get("/:id/ratings", ratingController.getRatings);
+
+// GET BY ID  (keep last)
 router.get("/:id", expertController.getExpertById);
 
 module.exports = router;

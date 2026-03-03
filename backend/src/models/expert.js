@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         autoIncrement: true,
       },
 
-      // ✅ ADDED: Link Expert to User
+      // ✅ Link Expert to User
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
           key: "id",
         },
         onDelete: "CASCADE",
+        onUpdate: "CASCADE",
       },
 
       name: {
@@ -32,20 +33,14 @@ module.exports = (sequelize, DataTypes) => {
       rating: {
         type: DataTypes.FLOAT,
         defaultValue: 0,
-      },
-
-      role: {
-        type: DataTypes.STRING,
-        allowNull: true,
+        validate: {
+          min: 0,
+          max: 5,
+        },
       },
 
       image: {
         type: DataTypes.TEXT,
-        allowNull: true,
-      },
-
-      headline: {
-        type: DataTypes.STRING,
         allowNull: true,
       },
 
@@ -65,8 +60,8 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
-      // ✅ KEEP ONLY ONE skill FIELD
-      skill: {
+      // ✅ NEW DOMAIN FIELD (replaces skill/headline/role usage)
+      domain: {
         type: DataTypes.STRING,
         allowNull: true,
       },
@@ -97,18 +92,17 @@ module.exports = (sequelize, DataTypes) => {
     },
   );
 
-  // ✅ SAFE ASSOCIATIONS (NO CRASH)
+  // ✅ SAFE ASSOCIATIONS
   Expert.associate = (models) => {
-   
-    // ✅ ADDED: Expert belongs to User
+
     if (models.User) {
       Expert.belongsTo(models.User, {
         foreignKey: "userId",
         as: "user",
+        onDelete: "CASCADE",
       });
     }
 
-    // hasOne Profile
     if (models.ExpertProfile) {
       Expert.hasOne(models.ExpertProfile, {
         foreignKey: "expertId",
@@ -116,7 +110,6 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    // hasMany Skills
     if (models.ExpertSkill) {
       Expert.hasMany(models.ExpertSkill, {
         foreignKey: "expert_id",

@@ -148,7 +148,17 @@ export default function LoginOtpScreen() {
         await AsyncStorage.setItem("token", res.data.token);
       }
 
-      router.replace("/home/userProfile");
+      // ✅ FIXED: Save full user object so dashboard can get userId/role
+      if (res.data.user) {
+        await AsyncStorage.setItem("user", JSON.stringify(res.data.user));
+      }
+
+      // ✅ Redirect based on profile status
+      if (res.data.redirectTo === "/dashboard") {
+        router.replace("/(tabs)/dashboard/dashboard");
+      } else {
+        router.replace("/home/userProfile");
+      }
     } catch {
       setError("OTP verification failed");
     }
@@ -200,7 +210,6 @@ export default function LoginOtpScreen() {
                     />
                   </View>
 
-                  {/* FLAG PICKER FIXED – BEAUTIFUL */}
                   <Modal visible={showPicker} transparent animationType="fade">
                     <View style={styles.modalOverlay}>
                       <View style={styles.flagModal}>
@@ -252,7 +261,6 @@ export default function LoginOtpScreen() {
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Beautiful bottom info */}
                   <Text style={styles.infoText}>
                     By continuing, you agree to our{" "}
                     <Text style={styles.link}>Terms</Text> &{" "}
@@ -348,7 +356,6 @@ const styles = StyleSheet.create({
   codeText: { marginLeft: 8, fontSize: 16 },
   mobileInput: { flex: 1, fontSize: 16 },
 
-  /** FLAG MODAL FIXED & BEAUTIFUL */
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

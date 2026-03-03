@@ -12,7 +12,7 @@ const sequelize = new Sequelize(
     port: config.port || 5432,
     dialect: config.dialect || "postgres",
     logging: false,
-  },
+  }
 );
 
 const db = {};
@@ -20,24 +20,60 @@ const db = {};
 db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
-// ✅ MODELS
-db.Expert = require("./expert")(sequelize, DataTypes);
-db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
+/* =========================
+   LOAD MODELS (ORDER SAFE)
+========================= */
+
+// Load User FIRST (since Expert depends on it)
 db.User = require("./user")(sequelize, DataTypes);
 db.Chat = require('./chat')(sequelize, DataTypes);
 db.Call = require('./call')(sequelize, DataTypes);
 
+// Load Expert (depends on User)
+db.Expert = require("./expert")(sequelize, DataTypes);
+
+// Load Review ✅ NEW
+db.Review = require("./review")(sequelize, DataTypes);
+
+// Load ExpertSkill (if exists)
+try {
+  db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
+} catch (err) {
+  console.warn("⚠️ ExpertSkill model not found, skipping...");
+}
+
+/* =========================
+   AUTO ASSOCIATE (SAFE)
+========================= */
+
 Object.keys(db).forEach((modelName) => {
-  if (db[modelName].associate) {
+  if (db[modelName] && db[modelName].associate) {
     db[modelName].associate(db);
   }
 });
 
-/* ✅ Database Sync */
-db.sequelize
-  .sync({ alter: true })
+/* =========================
+   TEST CONNECTION
+========================= */
+
+sequelize
+  .authenticate()
   .then(() => {
-    console.log("✅ Database synced safely");
+    console.log("✅ Database connection successful");
+  })
+  .catch((err) => {
+    console.error("❌ Unable to connect to database:", err);
+  });
+
+/* =========================
+   SYNC DATABASE
+========================= */
+
+// ✅ Safe sync - never deletes or overwrites existing data
+db.sequelize
+  .sync({})
+  .then(() => {
+    console.log("✅ Database synced successfully");
   })
   .catch((err) => {
     console.error("❌ Database sync error:", err);

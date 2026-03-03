@@ -5,6 +5,7 @@ var logger = require("morgan");
 const cors = require("cors");
 const { Server } = require("socket.io"); // ✅ IMPORTANT
 const initSocket = require("./socket");
+const path = require("path"); // ✅ NEW
 
 const routes = require("./routes");
 const { sequelize } = require("./models");
@@ -27,6 +28,9 @@ app.use(
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// ✅ Serve uploaded files (cv, images) as static
+app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // ✅ FIXED PATH
 
 // ------------------------------------------------------
 // ROUTES
