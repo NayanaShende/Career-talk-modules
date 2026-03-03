@@ -25,6 +25,7 @@ db.Expert = require("./expert")(sequelize, DataTypes);
 db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
 db.User = require("./user")(sequelize, DataTypes);
 db.Chat = require('./chat')(sequelize, DataTypes);
+db.Call = require('./call')(sequelize, DataTypes);
 
 Object.keys(db).forEach((modelName) => {
   if (db[modelName].associate) {

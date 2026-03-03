@@ -11,11 +11,12 @@ import {
   Dimensions,
   StatusBar,
   Alert,
+  handleCallPress,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { getExpertById } from "../../../services/expertService";
-
+import { initiateCall } from "../../../services/callService";
 const { width } = Dimensions.get("window");
 
 export default function ExpertProfile() {
@@ -40,6 +41,22 @@ export default function ExpertProfile() {
       console.log("Profile error:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+    const handleCallPress = async () => {
+    try {
+      const callerId = 1; // ⚠️ Replace with logged-in user ID
+      const receiverId = id;
+
+      const response = await initiateCall(callerId, receiverId);
+
+      console.log("Call initiated:", response.data);
+
+      Alert.alert("Success", "Call initiated successfully!");
+    } catch (error) {
+      console.log("Call error:", error.response?.data || error.message);
+      Alert.alert("Error", "Failed to initiate call");
     }
   };
 
@@ -160,6 +177,7 @@ export default function ExpertProfile() {
       </ScrollView>
 
       {/* FIXED BOTTOM BAR */}
+      {/* ✅ ONLY CHANGE: added onPress */}
       <View style={styles.bottomBarContainer}>
         <Pressable style={styles.chatAction} onPress={handleChatPress}>
           <MaterialCommunityIcons
@@ -170,7 +188,7 @@ export default function ExpertProfile() {
           <Text style={styles.chatActionText}>Chat</Text>
         </Pressable>
 
-        <Pressable style={styles.callAction}>
+        <Pressable style={styles.callAction} onPress={handleCallPress}>
           <Ionicons name="call" size={18} color="#fff" />
           <Text style={styles.callActionText}>Call</Text>
         </Pressable>
