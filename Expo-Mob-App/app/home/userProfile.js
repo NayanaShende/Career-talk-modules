@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.17:3000";
 
 // ✅ Available skills list
 const SKILL_OPTIONS = [
@@ -61,6 +61,20 @@ const LANGUAGE_OPTIONS = [
   "Punjabi",
   "Urdu",
   "Other",
+];
+
+// ✅ Domain options list (10 domains)
+const DOMAIN_OPTIONS = [
+  { label: "Career Counseling",    value: "Career Counseling" },
+  { label: "Software Engineering", value: "Software Engineering" },
+  { label: "Data Science & AI",    value: "Data Science & AI" },
+  { label: "Finance & Investment", value: "Finance & Investment" },
+  { label: "Marketing & Branding", value: "Marketing & Branding" },
+  { label: "Health & Wellness",    value: "Health & Wellness" },
+  { label: "Legal Advisory",       value: "Legal Advisory" },
+  { label: "Business Strategy",    value: "Business Strategy" },
+  { label: "Education & Tutoring", value: "Education & Tutoring" },
+  { label: "Human Resources",      value: "Human Resources" },
 ];
 
 // ✅ iOS-safe dropdown component
@@ -410,7 +424,7 @@ export default function ProfileScreen() {
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
 
-  // ✅ FIXED: Removed domain and customDomain from formData
+  // ✅ FIXED: Added domain back to formData
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -427,6 +441,7 @@ export default function ProfileScreen() {
     location: "",
     customLocation: "",
     bio: "",
+    domain: "",           // ✅ ADDED
   });
 
   const [selectedSkills, setSelectedSkills] = useState([]);
@@ -488,6 +503,9 @@ export default function ProfileScreen() {
       if (!formData.cv) return Alert.alert("Missing", "Upload your CV");
       if (role === "Expert" && selectedSkills.length === 0)
         return Alert.alert("Missing", "Please select at least 1 skill");
+      // ✅ ADDED: domain required for Expert
+      if (role === "Expert" && !formData.domain)
+        return Alert.alert("Missing", "Please select your domain");
 
       const token = await AsyncStorage.getItem("token");
       if (!token)
@@ -509,7 +527,6 @@ export default function ProfileScreen() {
       const form = new FormData();
       form.append("role", role.toLowerCase());
 
-      // ✅ FIXED: Removed domain from resolvedData
       const resolvedData = {
         ...formData,
         location:
@@ -530,9 +547,10 @@ export default function ProfileScreen() {
             : formData.languages === "Other"
               ? formData.customLanguages
               : formData.languages,
+        // ✅ ADDED: domain passed through resolvedData
+        domain: formData.domain || null,
       };
 
-      // ✅ FIXED: Removed customDomain from skipFields
       const skipFields = [
         "cv",
         "image",
@@ -740,6 +758,15 @@ export default function ProfileScreen() {
           {/* EXPERT ONLY FIELDS */}
           {role === "Expert" && (
             <>
+              {/* ✅ ADDED: DOMAIN DROPDOWN */}
+              <Text style={styles.label}>Domain * (Your Expertise Area)</Text>
+              <DropdownPicker
+                label="Select Domain"
+                value={formData.domain}
+                onChange={(v) => handleChange("domain", v)}
+                options={DOMAIN_OPTIONS}
+              />
+
               {/* SKILLS MULTI-SELECT */}
               <Text style={styles.label}>Skills * (select up to 5)</Text>
               <SkillsPicker

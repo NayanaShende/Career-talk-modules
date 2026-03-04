@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const BASE_URL = "http://172.20.10.3:3000"; // ✅ NEW
+const BASE_URL = "http://192.168.1.17:3000"; // ✅ NEW
 
 export default function Home() {
   const router = useRouter();
