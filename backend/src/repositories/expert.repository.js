@@ -1,6 +1,7 @@
 // src/repositories/expert.repository.js
 
-const { Expert, ExpertSkill, ExpertProfile, sequelize } = require("../models");
+// ✅ REMOVED ExpertProfile — model does not exist
+const { Expert, ExpertSkill, User } = require("../models");
 const { Op } = require("sequelize");
 
 /* ===============================
@@ -77,6 +78,11 @@ const bulkCreateSkills = async (skillRows) => {
     await ExpertSkill.destroy({ where: { expert_id: skillRows[0].expert_id } });
   }
   return await ExpertSkill.bulkCreate(skillRows);
+};
+
+// ✅ NEW: delete all skills for an expert before re-saving
+const deleteSkillsByExpertId = async (expertId) => {
+  return await ExpertSkill.destroy({ where: { expert_id: expertId } });
 };
 
 // ✅ NEW: Filter experts by skill_name in ExpertSkills table
@@ -167,19 +173,26 @@ const findExpertsBySkill = async (domain) => {
 };
 
 /* ===============================
-   PROFILE
+   PROFILE — ✅ FIXED: now uses Expert table via userId FK
 ================================ */
 
+// ✅ FIXED: search in Expert table, not ExpertProfile
+// ✅ Returns null instead of throwing if not found
 const findExpertProfileByUserId = async (userId) => {
-  return await ExpertProfile.findOne({ where: { userId } });
+  return await Expert.findOne({
+    where: { userId },
+    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
+  });
 };
 
+// ✅ FIXED: create row in Expert table
 const createExpertProfile = async (data) => {
-  return await ExpertProfile.create(data);
+  return await Expert.create(data);
 };
 
-const updateExpertProfile = async (profile, data) => {
-  return await profile.update(data);
+// ✅ FIXED: update the expert instance directly
+const updateExpertProfile = async (expert, data) => {
+  return await expert.update(data);
 };
 
 /* ===============================
@@ -202,12 +215,13 @@ module.exports = {
   findRecommendedExperts,
   findOnlineExperts,
   bulkCreateSkills,
-  findExpertsBySkillName,   // ✅ NEW
+  deleteSkillsByExpertId,     // ✅ NEW: used in user.controller saveProfile
+  findExpertsBySkillName,     // ✅ NEW
   searchExpertsBySkill,
   searchExpertsByHeadline,
   findExpertsBySkill,
-  findExpertProfileByUserId,
-  createExpertProfile,
-  updateExpertProfile,
+  findExpertProfileByUserId,  // ✅ now queries Expert table
+  createExpertProfile,        // ✅ now creates in Expert table
+  updateExpertProfile,        // ✅ now updates Expert instance
   deleteExpert,
 };

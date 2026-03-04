@@ -1,13 +1,24 @@
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API = axios.create({
-  baseURL: "http://192.168.1.3:3000/api",
+  baseURL: "http://192.168.1.17:3000/api",
   timeout: 10000,
-
 });
 
-API.interceptors.response.use(
+// ✅ FIXED: Attach token to every request automatically
+API.interceptors.request.use(
+  async (config) => {
+    const token = await AsyncStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
+API.interceptors.response.use(
   (response) => response,
   (error) => {
     console.log("API ERROR:", error?.response?.data || error.message);

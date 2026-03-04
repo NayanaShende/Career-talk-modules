@@ -22,9 +22,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.3:3000"; // ✅ FIXED
+const BASE_URL = "http://192.168.1.17:3000";
 
-// ✅ Available skills list
 const SKILL_OPTIONS = [
   "React",
   "React Native",
@@ -48,7 +47,6 @@ const SKILL_OPTIONS = [
   "Other",
 ];
 
-// ✅ Available languages list
 const LANGUAGE_OPTIONS = [
   "English",
   "Hindi",
@@ -63,7 +61,19 @@ const LANGUAGE_OPTIONS = [
   "Other",
 ];
 
-// ✅ iOS-safe dropdown component
+const DOMAIN_OPTIONS = [
+  { label: "Career Counseling", value: "Career Counseling" },
+  { label: "Software Engineering", value: "Software Engineering" },
+  { label: "Data Science & AI", value: "Data Science & AI" },
+  { label: "Finance & Investment", value: "Finance & Investment" },
+  { label: "Marketing & Branding", value: "Marketing & Branding" },
+  { label: "Health & Wellness", value: "Health & Wellness" },
+  { label: "Legal Advisory", value: "Legal Advisory" },
+  { label: "Business Strategy", value: "Business Strategy" },
+  { label: "Education & Tutoring", value: "Education & Tutoring" },
+  { label: "Human Resources", value: "Human Resources" },
+];
+
 function DropdownPicker({ label, value, options, onChange }) {
   const [visible, setVisible] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -72,8 +82,7 @@ function DropdownPicker({ label, value, options, onChange }) {
     <>
       <TouchableOpacity
         style={styles.dropdownBox}
-        onPress={() => setVisible(true)}
-      >
+        onPress={() => setVisible(true)}>
         <Text style={{ color: selected ? "#000" : "#777", fontSize: 15 }}>
           {selected ? selected.label : label}
         </Text>
@@ -85,10 +94,8 @@ function DropdownPicker({ label, value, options, onChange }) {
           style={styles.modalOverlay}
           onPress={() => setVisible(false)}
         />
-
         <View style={styles.modalBox}>
           <Text style={styles.modalTitle}>{label}</Text>
-
           <FlatList
             data={options}
             keyExtractor={(item) => item.value}
@@ -101,15 +108,13 @@ function DropdownPicker({ label, value, options, onChange }) {
                 onPress={() => {
                   onChange(item.value);
                   setVisible(false);
-                }}
-              >
+                }}>
                 <Text
                   style={{
                     fontSize: 16,
                     fontWeight: item.value === value ? "700" : "400",
                     color: item.value === value ? "#0B2D72" : "#333",
-                  }}
-                >
+                  }}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -121,7 +126,6 @@ function DropdownPicker({ label, value, options, onChange }) {
   );
 }
 
-// ✅ Multi-select skills picker component
 function SkillsPicker({ selectedSkills, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customSkill, setCustomSkill] = useState("");
@@ -265,7 +269,6 @@ function SkillsPicker({ selectedSkills, onChange }) {
   );
 }
 
-// ✅ NEW: Multi-select languages picker component (same pattern as SkillsPicker)
 function LanguagesPicker({ selectedLanguages, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customLang, setCustomLang] = useState("");
@@ -299,7 +302,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
 
   return (
     <>
-      {/* Selected languages display */}
       <View style={styles.selectedSkillsContainer}>
         {selectedLanguages.length === 0 ? (
           <Text style={{ color: "#777", fontSize: 13 }}>
@@ -349,8 +351,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
             }}>
             {selectedLanguages.length}/5 selected
           </Text>
-
-          {/* Custom language input */}
           <View style={styles.customSkillRow}>
             <TextInput
               style={styles.customSkillInput}
@@ -364,7 +364,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
               <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
             </TouchableOpacity>
           </View>
-
           <FlatList
             data={LANGUAGE_OPTIONS}
             keyExtractor={(item) => item}
@@ -425,8 +424,6 @@ export default function ProfileScreen() {
     dob: "",
     qualification: "",
     customQualification: "",
-    domain: "",
-    customDomain: "",
     experience: "",
     customExperience: "",
     cv: null,
@@ -437,31 +434,28 @@ export default function ProfileScreen() {
     location: "",
     customLocation: "",
     bio: "",
+    domain: "",
   });
 
   const [selectedSkills, setSelectedSkills] = useState([]);
-  const [selectedLanguages, setSelectedLanguages] = useState([]); // ✅ NEW
+  const [selectedLanguages, setSelectedLanguages] = useState([]);
 
   const handleChange = (field, value) =>
     setFormData({ ...formData, [field]: value });
 
-  // 📌 DATE PICKER
   const onChangeDate = (event, selectedDate) => {
     const current = selectedDate || date;
     setShow(false);
     setDate(current);
-
     const formatted =
       current.getFullYear() +
       "-" +
       String(current.getMonth() + 1).padStart(2, "0") +
       "-" +
       String(current.getDate()).padStart(2, "0");
-
     handleChange("dob", formatted);
   };
 
-  // 📌 PICK CV
   const pickCV = async () => {
     const result = await DocumentPicker.getDocumentAsync({});
     if (!result.canceled) {
@@ -485,25 +479,22 @@ export default function ProfileScreen() {
     }
   };
 
-  // 📌 SUBMIT PROFILE
   const submitProfile = async () => {
     try {
       if (!formData.fullName.trim())
         return Alert.alert("Missing", "Full name is required");
-
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
         return Alert.alert("Invalid Email");
-
       if (!formData.dob) return Alert.alert("Missing", "Select birth date");
-
       if (!formData.qualification)
         return Alert.alert("Missing", "Select qualification");
       if (!formData.experience)
         return Alert.alert("Missing", "Select experience");
-
       if (!formData.cv) return Alert.alert("Missing", "Upload your CV");
       if (role === "Expert" && selectedSkills.length === 0)
         return Alert.alert("Missing", "Please select at least 1 skill");
+      if (role === "Expert" && !formData.domain)
+        return Alert.alert("Missing", "Please select your domain");
 
       const token = await AsyncStorage.getItem("token");
       if (!token) return Alert.alert("Login Required");
@@ -515,19 +506,17 @@ export default function ProfileScreen() {
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      // STEP 2: SAVE PROFILE
+      // STEP 2: BUILD FORM DATA
       const form = new FormData();
-
       form.append("role", role.toLowerCase());
 
+      // ✅ FIXED: renamed resolved → resolvedData, skip → skipFields
       const resolvedData = {
         ...formData,
         location:
           formData.location === "Other"
             ? formData.customLocation
             : formData.location,
-        domain:
-          formData.domain === "Other" ? formData.customDomain : formData.domain,
         qualification:
           formData.qualification === "Other"
             ? formData.customQualification
@@ -536,50 +525,53 @@ export default function ProfileScreen() {
           formData.experience === "Other"
             ? formData.customExperience
             : formData.experience,
-        // ✅ NEW: join selected languages array as comma-separated string
         languages:
           selectedLanguages.length > 0
             ? selectedLanguages.join(", ")
             : formData.languages === "Other"
               ? formData.customLanguages
               : formData.languages,
+        domain: formData.domain || null,
       };
 
       const skipFields = [
         "cv",
         "image",
         "customLocation",
-        "customDomain",
         "customQualification",
         "customExperience",
         "customLanguages",
       ];
 
-      Object.keys(resolved).forEach((key) => {
+      // ✅ FIXED: was Object.keys(resolved) → now Object.keys(resolvedData)
+      Object.keys(resolvedData).forEach((key) => {
         if (
-          !skip.includes(key) &&
-          resolved[key] !== "" &&
-          resolved[key] !== null
+          !skipFields.includes(key) &&
+          resolvedData[key] !== "" &&
+          resolvedData[key] !== null
         ) {
-          form.append(key, resolved[key]);
+          form.append(key, resolvedData[key]);
         }
       });
+
+      // ✅ Append skills
+      if (selectedSkills.length > 0) {
+        form.append("skills", selectedSkills.join(", "));
+      }
 
       if (formData.cv) {
         const cleanUri = formData.cv.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
-
         form.append("cv", {
           uri: cleanUri,
           name: formData.cv.name || `cv.${ext}`,
-          type: ext === "pdf" ? "application/pdf" : `image/${ext}`, // handles JPG CV
+          type: ext === "pdf" ? "application/pdf" : `image/${ext}`,
         });
       }
 
       if (formData.image) {
         const cleanUri = formData.image.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
-
         form.append("image", {
           uri: cleanUri,
           name: `profile.${ext}`,
@@ -587,29 +579,24 @@ export default function ProfileScreen() {
         });
       }
 
-      const profileRes = await axios.post(
-        `${BASE_URL}/api/users/save-profile`,
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      await axios.post(`${BASE_URL}/api/users/save-profile`, form, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
 
-      // STEP 3: SAVE SKILLS
-      if (role === "Expert" && selectedSkills.length > 0) {
-        const expertId =
-          profileRes.data?.data?.expertId || profileRes.data?.expertId;
-        if (expertId) {
-          await axios.post(
-            `${BASE_URL}/api/experts/${expertId}/skills`,
-            { skills: selectedSkills },
-            { headers: { Authorization: `Bearer ${token}` } },
-          );
-        }
-      }
+      // ✅ Update AsyncStorage with new role so socket works
+      const userStr = await AsyncStorage.getItem("user");
+      const existingUser = userStr ? JSON.parse(userStr) : {};
+      await AsyncStorage.setItem(
+        "user",
+        JSON.stringify({
+          ...existingUser,
+          role: role.toLowerCase(),
+          hasProfile: true,
+        }),
+      );
 
       Alert.alert("Success", "Profile Saved", [
         {
@@ -630,14 +617,12 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}
-      >
+        style={{ flex: 1 }}>
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.header}>Profile Information</Text>
 
           {/* PROFILE IMAGE */}
           <Text style={styles.label}>Profile Image</Text>
-
           <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
             {formData.image ? (
               <Image
@@ -653,17 +638,14 @@ export default function ProfileScreen() {
 
           {/* ROLE SELECT */}
           <Text style={styles.label}>Select Role</Text>
-
           <View style={styles.roleRow}>
             {["Jobseeker", "Expert"].map((item) => (
               <TouchableOpacity
                 key={item}
                 style={[styles.roleBtn, role === item && styles.roleSelected]}
-                onPress={() => setRole(item)}
-              >
+                onPress={() => setRole(item)}>
                 <Text
-                  style={[styles.roleText, role === item && { color: "#fff" }]}
-                >
+                  style={[styles.roleText, role === item && { color: "#fff" }]}>
                   {item}
                 </Text>
               </TouchableOpacity>
@@ -694,7 +676,6 @@ export default function ProfileScreen() {
               {formData.dob || "Select Birth Date"}
             </Text>
           </TouchableOpacity>
-
           {show && (
             <DateTimePicker
               value={date}
@@ -752,10 +733,19 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
 
-          {/* EXTRA EXPERT FIELDS */}
+          {/* EXPERT ONLY FIELDS */}
           {role === "Expert" && (
             <>
-              {/* SKILLS MULTI-SELECT */}
+              {/* DOMAIN */}
+              <Text style={styles.label}>Domain * (Your Expertise Area)</Text>
+              <DropdownPicker
+                label="Select Domain"
+                value={formData.domain}
+                onChange={(v) => handleChange("domain", v)}
+                options={DOMAIN_OPTIONS}
+              />
+
+              {/* SKILLS */}
               <Text style={styles.label}>Skills * (select up to 5)</Text>
               <SkillsPicker
                 selectedSkills={selectedSkills}
@@ -770,13 +760,14 @@ export default function ProfileScreen() {
                 onChangeText={(v) => handleChange("certificate", v)}
               />
 
-              {/* ✅ NEW: LANGUAGES MULTI-SELECT */}
+              {/* LANGUAGES */}
               <Text style={styles.label}>Languages Known</Text>
               <LanguagesPicker
                 selectedLanguages={selectedLanguages}
                 onChange={setSelectedLanguages}
               />
 
+              {/* LOCATION */}
               <Text style={styles.label}>City</Text>
               <DropdownPicker
                 label="Select Location"
@@ -790,6 +781,7 @@ export default function ProfileScreen() {
                 ]}
               />
 
+              {/* BIO */}
               <Text style={styles.label}>Bio</Text>
               <TextInput
                 style={[styles.input, { height: 100 }]}
@@ -800,7 +792,7 @@ export default function ProfileScreen() {
             </>
           )}
 
-          {/* SUBMIT BUTTON */}
+          {/* SUBMIT */}
           <TouchableOpacity style={styles.submitBtn} onPress={submitProfile}>
             <Text style={styles.submitText}>Submit</Text>
           </TouchableOpacity>
@@ -818,12 +810,7 @@ const styles = StyleSheet.create({
     color: "#0B2D72",
     marginBottom: 10,
   },
-  label: {
-    marginTop: 15,
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#0B2D72",
-  },
+  label: { marginTop: 15, fontSize: 16, fontWeight: "600", color: "#0B2D72" },
   input: {
     backgroundColor: "#f3f4f6",
     padding: 14,
@@ -847,13 +834,8 @@ const styles = StyleSheet.create({
     borderColor: "#0B2D72",
     alignItems: "center",
   },
-  roleSelected: {
-    backgroundColor: "#0B2D72",
-  },
-  roleText: {
-    color: "#0B2D72",
-    fontWeight: "600",
-  },
+  roleSelected: { backgroundColor: "#0B2D72" },
+  roleText: { color: "#0B2D72", fontWeight: "600" },
   uploadBtn: {
     backgroundColor: "#e5e7eb",
     padding: 14,
@@ -867,7 +849,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginTop: 30,
   },
-  submitText: { color: "#fff", fontSize: 18, fontWeight: "700" },
+  submitText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+  },
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   modalBox: {
     backgroundColor: "#fff",
