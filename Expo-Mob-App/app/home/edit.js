@@ -1,106 +1,194 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
-  SafeAreaView,
-  Pressable,
-  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+  Image,
   Alert,
+  ScrollView,
 } from "react-native";
+import * as ImagePicker from "expo-image-picker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { router } from "expo-router";
+import axios from "axios";
+import { useRouter } from "expo-router";
 
-export default function EditProfile() {
-  const [profile, setProfile] = useState({
-    name: "",
+const BASE_URL = "http://192.168.1.3:3000";
+
+const EditProfile = () => {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [form, setForm] = useState({
+    full_name: "",
     email: "",
-    phone: "",
-    address: "",
+    mobile: "",
+    domain: "",
+    qualification: "",
+    experience: "",
+    dob: "",
+    image_file: null, // local uri
+    image_url: "", // server url
   });
 
+  const fetchProfile = async () => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      const res = await axios.get(`${BASE_URL}/api/users/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const user = res.data.user;
+
+      setForm({
+        full_name: user.full_name || "",
+        email: user.email || "",
+        mobile: user.mobile || "",
+        domain: user.domain || "",
+        qualification: user.qualification || "",
+        experience: user.experience || "",
+        dob: user.dob || "",
+        image_file: null,
+        image_url: user.image ? `${BASE_URL}/uploads/${user.image}` : "",
+      });
+    } catch (err) {
+      Alert.alert("Error", "Unable to load profile");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    loadProfile();
+    fetchProfile();
   }, []);
 
-  const loadProfile = async () => {
-    const data = await AsyncStorage.getItem("profile");
-    if (data) setProfile(JSON.parse(data));
+  const pickImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("Permission required");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      quality: 0.7,
+      allowsEditing: true,
+    });
+
+    if (!result.canceled) {
+      setForm({
+        ...form,
+        image_file: result.assets[0].uri,
+        image_url: result.assets[0].uri, // display immediately
+      });
+    }
   };
 
   const saveProfile = async () => {
-    await AsyncStorage.setItem("profile", JSON.stringify(profile));
-    Alert.alert("Saved!", "Profile updated successfully");
-router.back();  };
+    try {
+      setSaving(true);
+      const token = await AsyncStorage.getItem("token");
+
+      const formData = new FormData();
+      formData.append("full_name", form.full_name);
+      formData.append("email", form.email);
+      formData.append("mobile", form.mobile);
+      formData.append("domain", form.domain);
+      formData.append("qualification", form.qualification);
+      formData.append("experience", form.experience);
+      formData.append("dob", form.dob);
+
+      if (form.image_file) {
+        formData.append("image", {
+          uri: form.image_file,
+          name: "profile.jpg",
+          type: "image/jpeg",
+        });
+      }
+
+      await axios.post(`${BASE_URL}/api/users/save-profile`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
+        },
+      });
+
+      Alert.alert("Success", "Profile Updated");
+      router.back();
+    } catch (err) {
+      console.log("UPDATE ERROR:", err.response?.data || err.message);
+      Alert.alert("Error", "Update failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading)
+    return <ActivityIndicator size="large" style={{ marginTop: 40 }} />;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.form}>
-          <Input
-            label="Full Name"
-            value={profile.name}
-            onChangeText={(text) => setProfile({ ...profile, name: text })}
-          />
+    <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <TouchableOpacity onPress={pickImage} style={{ alignSelf: "center" }}>
+        <Image
+          source={{
+            uri: form.image_url || "https://via.placeholder.com/150",
+          }}
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: 60,
+            marginBottom: 20,
+          }}
+        />
+        <Text style={{ textAlign: "center", color: "blue" }}>Change Photo</Text>
+      </TouchableOpacity>
 
-          <Input
-            label="Email"
-            value={profile.email}
-            onChangeText={(text) => setProfile({ ...profile, email: text })}
+      {[
+        ["Full Name", "full_name"],
+        ["Email", "email"],
+        ["Mobile", "mobile"],
+        ["Domain", "domain"],
+        ["Qualification", "qualification"],
+        ["Experience", "experience"],
+        ["Date of Birth", "dob"],
+      ].map(([label, key]) => (
+        <View key={key} style={{ marginBottom: 15 }}>
+          <Text style={{ marginBottom: 5 }}>{label}</Text>
+          <TextInput
+            value={form[key]}
+            onChangeText={(text) => setForm({ ...form, [key]: text })}
+            style={{
+              borderWidth: 1,
+              borderColor: "#ccc",
+              padding: 10,
+              borderRadius: 8,
+            }}
           />
-
-          <Input
-            label="Phone"
-            value={profile.phone}
-            onChangeText={(text) => setProfile({ ...profile, phone: text })}
-          />
-
-          <Input
-            label="Address"
-            value={profile.address}
-            onChangeText={(text) => setProfile({ ...profile, address: text })}
-          />
-
-          <Pressable style={styles.button} onPress={saveProfile}>
-            <Text style={styles.buttonText}>SAVE</Text>
-          </Pressable>
         </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+      ))}
 
-function Input({ label, value, onChangeText }) {
-  return (
-    <View style={{ marginBottom: 18 }}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput
-        value={value}
-        onChangeText={onChangeText}
-        style={styles.input}
-      />
-    </View>
+      <TouchableOpacity
+        onPress={saveProfile}
+        style={{
+          backgroundColor: "#007bff",
+          padding: 15,
+          borderRadius: 10,
+          alignItems: "center",
+          marginTop: 10,
+        }}
+        disabled={saving}
+      >
+        {saving ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={{ color: "#fff", fontWeight: "bold" }}>
+            Save Changes
+          </Text>
+        )}
+      </TouchableOpacity>
+    </ScrollView>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
-  form: { backgroundColor: "#fff", margin: 16, padding: 20, borderRadius: 16 },
-  label: { marginBottom: 6, color: "#6B7280" },
-  input: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 10,
-    padding: 12,
-    backgroundColor: "#F9FAFB",
-  },
-  button: {
-    backgroundColor: "#8B5CF6",
-    padding: 16,
-    borderRadius: 12,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
-});
+export default EditProfile;

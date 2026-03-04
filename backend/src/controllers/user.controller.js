@@ -1,8 +1,11 @@
 const { User } = require("../models");
-const authService = require("../services/auth.service");
-const expertRepository = require("../repositories/expert.repository");
+const authService = require("../services/auth.service"); 
+const expertRepository = require("../repositories/expert.repository"); 
 
-exports.saveProfile = async (req, res) => {
+/* =========================================
+   SAVE PROFILE
+========================================= */
+const saveProfile = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
@@ -24,83 +27,98 @@ exports.saveProfile = async (req, res) => {
       skills,
     } = req.body;
 
-    if (!fullName || !email || !dob || !qualification || !experience) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Please fill all required fields" });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res
-        .status(400)
-        .json({ success: false, message: "Invalid email format" });
-    }
+    console.log("📥 SAVE PROFILE body:", req.body);
+    console.log("📥 SAVE PROFILE files:", req.files);
+    console.log("📥 domain received:", domain);           // ✅ NEW debug log
+    console.log("📥 qualification received:", qualification); // ✅ NEW debug log
 
     const cvFile = req.files?.cv?.[0];
     const imageFile = req.files?.image?.[0];
 
-    // ✅ Users table — basic fields only
     const updateData = {
-      fullName,
-      email,
-      dob,
-      role: role || req.user.role,
       hasProfile: true,
       skills: skills || null,
     };
 
-    await req.user.update(updateData);
+    if (fullName !== undefined) updateData.fullName = fullName;
+    if (email !== undefined) updateData.email = email;
+    if (dob !== undefined) updateData.dob = dob;
+    // ✅ FIXED: only save if not empty string
+    if (qualification !== undefined && qualification !== "") updateData.qualification = qualification;
+    if (experience !== undefined) updateData.experience = experience;
+    // ✅ FIXED: only save if not empty string
+    if (domain !== undefined && domain !== "") updateData.domain = domain;
+    if (role !== undefined) updateData.role = role;
 
-    // ✅ If role = expert → create or update Experts table
-    if (role === "expert") {
-      await authService.setRole(req.user, role);
+    if (cvFile) updateData.cvFile = cvFile.filename;
+    if (imageFile) updateData.image = imageFile.filename;
+
+    // ✅ Update user
+    await req.user.update(updateData);
+    await req.user.reload();
+
+    // ✅ FIX: Always use latest role safely
+    const currentRole = role || req.user.role;
+
+    /* ===============================
+       EXPERT ROLE HANDLING
+    =============================== */
+    if (currentRole === "expert") {
 
       let expert = await expertRepository.findExpertByUserId(req.user.id);
 
+      const expertData = {
+        name: fullName || req.user.fullName,
+        experience: parseInt(experience) || 0,
+        domain: domain || null,           // ✅ domain saved to Expert table
+        bio: bio || null,
+        location: location || null,
+        language_spoken: languages || null,
+        certification: certificate || null,
+        certified_city: certifiedCity || null,
+      };
+
+      if (cvFile) expertData.cv = cvFile.filename;
+      if (imageFile) expertData.image = imageFile.filename;
+
+      console.log("📥 expertData to save:", expertData); // ✅ NEW debug log
+
       if (!expert) {
+        console.log("🔥 Creating expert with full data...");
         expert = await expertRepository.createExpert({
           userId: req.user.id,
-          name: fullName,
-          experience: parseInt(experience) || 0,
           rating: 0,
           is_online: false,
-          domain: domain || null, // ✅ FIXED: was saving null before
-          bio: bio || null,
-          location: location || null,
-          language_spoken: languages || null,
-          certification: certificate || null,
-          cv: cvFile ? cvFile.filename : null,
-          image: imageFile ? imageFile.filename : null,
+          ...expertData,
         });
+        console.log("✅ Expert created:", expert.id);
       } else {
-        await expert.update({
-          name: fullName,
-          experience: parseInt(experience) || expert.experience,
-          domain: domain !== undefined ? domain : expert.domain, // ✅ FIXED: was overwriting with null if domain not sent
-          bio: bio !== undefined ? bio : expert.bio,
-          location: location !== undefined ? location : expert.location,
-          language_spoken:
-            languages !== undefined ? languages : expert.language_spoken,
-          certification:
-            certificate !== undefined ? certificate : expert.certification,
-          cv: cvFile ? cvFile.filename : expert.cv,
-          image: imageFile ? imageFile.filename : expert.image,
-        });
+        console.log("🔥 Updating expert:", expert.id);
+        await expert.update(expertData);
+        console.log("✅ Expert updated with domain:", expertData.domain); // ✅ NEW debug log
       }
 
-      // ✅ Save skills to ExpertSkills table
-      if (skills) {
+      // ✅ Save skills properly (delete old skills first to avoid duplicate)
+      if (skills && expert?.id) {
         const skillsArray = skills
           .split(",")
           .map((s) => s.trim())
           .filter(Boolean);
+
         if (skillsArray.length > 0) {
+          console.log("🔥 Saving skills:", skillsArray);
+
+          if (expertRepository.deleteSkillsByExpertId) {
+            await expertRepository.deleteSkillsByExpertId(expert.id);
+          }
+
           const skillRows = skillsArray.map((skill_name) => ({
             expert_id: expert.id,
             skill_name,
           }));
+
           await expertRepository.bulkCreateSkills(skillRows);
+          console.log("✅ Skills saved");
         }
       }
 
@@ -112,8 +130,10 @@ exports.saveProfile = async (req, res) => {
       });
     }
 
-    // ✅ For jobseeker: save qualification, experience, cv to user table
-    if (role === "jobseeker") {
+    /* ===============================
+       JOBSEEKER HANDLING
+    =============================== */
+    if (currentRole === "jobseeker") {
       await req.user.update({
         qualification,
         experience,
@@ -126,22 +146,82 @@ exports.saveProfile = async (req, res) => {
       message: "Profile saved successfully",
       user: req.user,
     });
+
   } catch (err) {
-    console.error("SAVE PROFILE ERROR:", err);
+    console.error("❌ SAVE PROFILE ERROR:", err);
     return res
       .status(500)
       .json({ success: false, message: err.message || "Server error" });
   }
 };
 
-exports.getProfile = async (req, res) => {
+/* =========================================
+   GET PROFILE (logged-in user)
+========================================= */
+const getProfile = async (req, res) => {
   try {
     if (!req.user) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
     return res.json({ success: true, user: req.user });
   } catch (err) {
-    console.error("GET PROFILE ERROR:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("❌ GET PROFILE ERROR:", err);
+    return res.status(500).json({ success: false, message: err.message || "Server error" });
   }
+};
+
+/* =========================================
+   GET USER BY EMAIL
+========================================= */
+const getUserByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    return res.json({ success: true, user });
+  } catch (err) {
+    console.error("❌ GET USER BY EMAIL ERROR:", err);
+    return res.status(500).json({ success: false, message: err.message || "Server error" });
+  }
+};
+
+/* =========================================
+   UPDATE PROFILE
+========================================= */
+const updateProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
+    }
+
+    const cvFile = req.files?.cv?.[0];
+    const imageFile = req.files?.image?.[0];
+
+    const updateData = { ...req.body };
+
+    if (cvFile) updateData.cvFile = cvFile.filename;
+    if (imageFile) updateData.image = imageFile.filename;
+
+    await req.user.update(updateData);
+    await req.user.reload();
+
+    return res.json({ success: true, message: "Profile updated successfully", user: req.user });
+  } catch (err) {
+    console.error("❌ UPDATE PROFILE ERROR:", err);
+    return res.status(500).json({ success: false, message: err.message || "Server error" });
+  }
+};
+
+/* =========================================
+   EXPORTS
+========================================= */
+module.exports = {
+  saveProfile,
+  getProfile,
+  getUserByEmail,
+  updateProfile,
 };

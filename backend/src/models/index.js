@@ -26,7 +26,6 @@ db.sequelize = sequelize;
 
 // Load User FIRST (since Expert depends on it)
 db.User = require("./user")(sequelize, DataTypes);
-<<<<<<< HEAD
 
 // Load Expert (depends on User)
 db.Expert = require("./expert")(sequelize, DataTypes);
@@ -44,10 +43,6 @@ try {
 /* =========================
    AUTO ASSOCIATE (SAFE)
 ========================= */
-=======
-db.Chat = require('./chat')(sequelize, DataTypes);
-db.Call = require('./call')(sequelize, DataTypes);
->>>>>>> 64bf132691d8a383b535079466a78f2adf1b450d
 
 Object.keys(db).forEach((modelName) => {
   if (db[modelName] && db[modelName].associate) {

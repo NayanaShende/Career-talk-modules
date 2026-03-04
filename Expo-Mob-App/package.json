@@ -3,11 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-<<<<<<< HEAD
     "start": "set REACT_NATIVE_PACKAGER_HOSTNAME= 192.168.1.17 && expo start",
-=======
-    "start": "set REACT_NATIVE_PACKAGER_HOSTNAME=10.89.141.9 && expo start",
->>>>>>> 64bf132691d8a383b535079466a78f2adf1b450d
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -49,10 +45,6 @@
     "react-native-screens": "~4.16.0",
     "react-native-svg": "15.12.1",
     "react-native-web": "~0.21.0",
-<<<<<<< HEAD
-=======
-    "react-native-webrtc": "^124.0.7",
->>>>>>> 64bf132691d8a383b535079466a78f2adf1b450d
     "socket.io-client": "^4.8.3"
   },
   "devDependencies": {

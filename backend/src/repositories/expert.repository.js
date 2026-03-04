@@ -80,6 +80,11 @@ const bulkCreateSkills = async (skillRows) => {
   return await ExpertSkill.bulkCreate(skillRows);
 };
 
+// ✅ NEW: delete all skills for an expert before re-saving
+const deleteSkillsByExpertId = async (expertId) => {
+  return await ExpertSkill.destroy({ where: { expert_id: expertId } });
+};
+
 // ✅ NEW: Filter experts by skill_name in ExpertSkills table
 const findExpertsBySkillName = async (skillName) => {
   return await Expert.findAll({
@@ -172,8 +177,12 @@ const findExpertsBySkill = async (domain) => {
 ================================ */
 
 // ✅ FIXED: search in Expert table, not ExpertProfile
+// ✅ Returns null instead of throwing if not found
 const findExpertProfileByUserId = async (userId) => {
-  return await Expert.findOne({ where: { userId } });
+  return await Expert.findOne({
+    where: { userId },
+    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
+  });
 };
 
 // ✅ FIXED: create row in Expert table
@@ -206,7 +215,8 @@ module.exports = {
   findRecommendedExperts,
   findOnlineExperts,
   bulkCreateSkills,
-  findExpertsBySkillName,   // ✅ NEW
+  deleteSkillsByExpertId,     // ✅ NEW: used in user.controller saveProfile
+  findExpertsBySkillName,     // ✅ NEW
   searchExpertsBySkill,
   searchExpertsByHeadline,
   findExpertsBySkill,

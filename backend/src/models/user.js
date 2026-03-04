@@ -54,15 +54,33 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
 
-      // ❌ REMOVED: qualification  → now lives in Experts table
-      // ❌ REMOVED: experience     → now lives in Experts table
-      // ❌ REMOVED: domain         → now lives in Experts table
-      // ❌ REMOVED: cvFile         → now lives in Experts table
-      // ❌ REMOVED: skills         → now lives in Experts table
+      qualification: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      experience: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      domain: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      cvFile: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      image: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
       timestamps: true, // ensures createdAt & updatedAt
-    }
+    },
   );
 
   // ✅ ADDED ASSOCIATION (DO NOT REMOVE)

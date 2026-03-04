@@ -3,15 +3,16 @@ var express = require("express");
 const http = require("http");
 var logger = require("morgan");
 const cors = require("cors");
-<<<<<<< HEAD
-const path = require("path"); // ✅ NEW
-=======
 const { Server } = require("socket.io"); // ✅ IMPORTANT
-const initSocket = require("./socket");
->>>>>>> 64bf132691d8a383b535079466a78f2adf1b450d
+const {initSocket }= require("./socket");
+const path = require("path");
 
 const routes = require("./routes");
 const { sequelize } = require("./models");
+
+sequelize.sync({ alter: true })
+  .then(() => console.log("✅ Database synced"))
+  .catch(err => console.log("❌ Sync error:", err));
 
 var app = express();
 

@@ -1,10 +1,22 @@
 const express = require("express");
 const router = express.Router();
 
+// Controllers
 const expertController = require("../controllers/expert.controller");
-const ratingController = require("../controllers/rating.controller"); // ✅ NEW
-const protect = require("../middleware/protect"); // ✅ NEW
-const { uploadFields } = require("../middleware/upload"); // ✅ NEW: for cv + image upload
+const ratingController = require("../controllers/rating.controller");
+
+// ✅ SAFE middleware imports (works for both export styles)
+const protectMiddleware = require("../middleware/protect");
+const uploadMiddleware = require("../middleware/upload");
+
+// Handle both: module.exports = protect  OR  module.exports = { protect }
+const protect =
+  protectMiddleware.protect || protectMiddleware;
+
+// Handle both: module.exports = uploadFields OR module.exports = { uploadFields }
+const uploadFields =
+  uploadMiddleware.uploadFields || uploadMiddleware;
+
 
 // ============================
 // GET ALL EXPERTS
@@ -26,23 +38,33 @@ router.get("/recommended", expertController.getRecommendedExperts);
 // ============================
 router.get("/online", expertController.getOnlineExperts);
 
-<<<<<<< HEAD
-// ✅ NEW: GET DOMAINS LIST (public — no auth needed)
-// Call this from frontend to populate domain dropdown
+// ============================
+// GET DOMAINS LIST (PUBLIC)
+// ============================
 router.get("/domains", expertController.getDomainsList);
 
-// ✅ NEW: SUBMIT EXPERT PROFILE FORM (protected + file upload)
-router.post("/profile", protect, uploadFields, expertController.submitExpertProfileForm);
+// ============================
+// SUBMIT EXPERT PROFILE FORM (Protected + Upload)
+// ============================
+router.post(
+  "/profile",
+  protect,
+  uploadFields,
+  expertController.submitExpertProfileForm
+);
 
-// ✅ NEW: GET MY EXPERT PROFILE (protected)
-router.get("/profile/me", protect, expertController.getMyExpertProfile);
+// ============================
+// GET MY EXPERT PROFILE (Protected)
+// ============================
+router.get(
+  "/profile/me",
+  protect,
+  expertController.getMyExpertProfile
+);
 
+// ============================
 // ADD SKILLS
-=======
 // ============================
-// ADD SKILLS TO EXPERT
-// ============================
->>>>>>> 64bf132691d8a383b535079466a78f2adf1b450d
 router.post("/:expertId/skills", expertController.addSkills);
 
 // ============================
@@ -50,19 +72,23 @@ router.post("/:expertId/skills", expertController.addSkills);
 // ============================
 router.put("/:id", expertController.updateExpertProfile);
 
-<<<<<<< HEAD
-// ✅ NEW: SUBMIT RATING (protected - must be logged in)
-router.post("/:id/rate", protect, ratingController.submitRating);
+// ============================
+// SUBMIT RATING (Protected)
+// ============================
+router.post(
+  "/:id/rate",
+  protect,
+  ratingController.submitRating
+);
 
-// ✅ NEW: GET RATINGS for an expert
+// ============================
+// GET RATINGS
+// ============================
 router.get("/:id/ratings", ratingController.getRatings);
 
-// GET BY ID  (keep last — /:id must always be last)
-=======
 // ============================
-// GET EXPERT BY ID (KEEP LAST)
+// GET EXPERT BY ID  (Keep Last)
 // ============================
->>>>>>> 64bf132691d8a383b535079466a78f2adf1b450d
 router.get("/:id", expertController.getExpertById);
 
 module.exports = router;

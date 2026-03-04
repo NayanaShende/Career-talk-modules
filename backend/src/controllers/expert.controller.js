@@ -51,16 +51,25 @@ exports.submitExpertProfileForm = async (req, res) => {
 };
 
 // ================= GET MY PROFILE =================
-// ✅ NEW: expert views their own profile using JWT userId
+// ✅ FIXED: returns empty profile instead of 404 error when no profile exists yet
 exports.getMyExpertProfile = async (req, res) => {
   try {
     const userId = req.user.id; // ✅ from auth middleware (JWT)
     const profile = await expertService.getExpertProfile(userId);
 
+    if (!profile) {
+      // ✅ Return empty profile instead of throwing error
+      return res.status(200).json({
+        success: true,
+        data: null,
+        message: "No expert profile found. Please complete your profile.",
+      });
+    }
+
     res.status(200).json({ success: true, data: profile });
   } catch (error) {
     console.error("getMyExpertProfile error:", error.message);
-    res.status(404).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -168,7 +177,6 @@ exports.getExpertById = async (req, res) => {
     console.error(err);
     res.status(500).json({ success: false, message: err.message });
   }
-<<<<<<< HEAD
 };
 
 // ================= GET DOMAINS LIST =================
@@ -195,6 +203,3 @@ exports.getDomainsList = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
-=======
-};
->>>>>>> 64bf132691d8a383b535079466a78f2adf1b450d

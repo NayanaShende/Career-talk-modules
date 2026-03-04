@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import API from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { LinearGradient } from "expo-linear-gradient";
 
 export default function LoginOtpScreen() {
   const slideAnim = useRef(new Animated.Value(120)).current;
@@ -172,6 +173,7 @@ export default function LoginOtpScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
+        
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={{ flex: 1 }}>
             <View style={styles.topSection}>
@@ -315,6 +317,51 @@ export default function LoginOtpScreen() {
                   </TouchableOpacity>
                 </Animated.View>
               )}
+              {/* SOCIAL LOGIN SECTION */}
+              <View style={{ marginTop: 25 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginVertical: 10,
+                  }}
+                >
+                  <View
+                    style={{ flex: 1, height: 1, backgroundColor: "#ddd" }}
+                  />
+                  <Text style={{ marginHorizontal: 10, color: "gray" }}>
+                    OR
+                  </Text>
+                  <View
+                    style={{ flex: 1, height: 1, backgroundColor: "#ddd" }}
+                  />
+                </View>
+
+                {/* GOOGLE LOGIN */}
+                <TouchableOpacity style={styles.socialButton}>
+                  <Image
+                    source={require("../assets/google.png")}
+                    style={styles.socialIcon}
+                  />
+                  <Text style={styles.socialText}>Continue with Google</Text>
+                </TouchableOpacity>
+
+                {/* FACEBOOK LOGIN */}
+                <TouchableOpacity
+                  style={[styles.socialButton, { marginTop: 12 }]}
+                >
+                  <Image
+                    source={require("../assets/facebook.png")}
+                    style={styles.socialIcon}
+                  />
+                  <Text style={styles.socialText}>Continue with Facebook</Text>
+                </TouchableOpacity>
+
+                {/* GUEST / OTHER */}
+                {/* <TouchableOpacity style={styles.otherButton}>
+                  <Text style={styles.otherText}>Continue as Guest</Text>
+                </TouchableOpacity> */}
+              </View>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -447,5 +494,39 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#0B2D72",
     fontWeight: "600",
+  },
+  socialButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F5F6F8",
+    height: 50,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e3e3e3",
+  },
+
+  socialIcon: {
+    width: 22,
+    height: 22,
+    marginRight: 10,
+  },
+
+  socialText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#333",
+  },
+
+  otherButton: {
+    marginTop: 15,
+    alignSelf: "center",
+  },
+
+  otherText: {
+    color: "#0B2D72",
+    fontSize: 15,
+    fontWeight: "700",
+    textDecorationLine: "underline",
   },
 });
