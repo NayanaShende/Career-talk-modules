@@ -3,7 +3,7 @@
 /**
  * Module dependencies
  */
-require("dotenv").config(); // Load .env first
+require("dotenv").config();
 var app = require("../src/app");
 var http = require("http");
 const { initSocket } = require("../src/socket"); // ✅ Socket.io
@@ -23,7 +23,71 @@ var server = http.createServer(app);
 initSocket(server);
 
 /**
- * Listen on provided port, on all network interfaces.
+ * Attach Socket.io to server
+ */
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:8081", // change in production
+    methods: ["GET", "POST"],
+  },
+});
+
+/**
+ * Make io accessible inside controllers
+ */
+app.set("io", io);
+
+/**
+ * ------------------------------------------------------
+ * SOCKET CONNECTION
+ * ------------------------------------------------------
+ */
+
+// 🔥 Store online users
+const onlineUsers = new Map();
+
+io.on("connection", (socket) => {
+  console.log("🔥 User connected:", socket.id);
+
+  /**
+   * Join personal room (private chat system)
+   */
+  socket.on("join", (userId) => {
+    const roomName = `user_${userId}`;
+    socket.join(roomName);
+
+    // ✅ Mark user as online
+    onlineUsers.set(userId, socket.id);
+
+    console.log(`✅ User ${userId} joined ${roomName}`);
+
+    // 🔥 Notify all users that this user is online
+    io.emit("user_online", userId);
+  });
+
+  /**
+   * Handle disconnect
+   */
+  socket.on("disconnect", () => {
+    console.log("❌ User disconnected:", socket.id);
+
+    // 🔍 Find which user disconnected
+    for (let [userId, socketId] of onlineUsers.entries()) {
+      if (socketId === socket.id) {
+        onlineUsers.delete(userId);
+
+        console.log(`🚫 User ${userId} went offline`);
+
+        // 🔥 Notify all users that this user is offline
+        io.emit("user_offline", userId);
+        break;
+      }
+    }
+  });
+});
+
+/**
+ * Listen on provided port
  */
 server.listen(port);
 server.on("error", onError);
@@ -35,15 +99,8 @@ server.on("listening", onListening);
 function normalizePort(val) {
   var port = parseInt(val, 10);
 
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
+  if (isNaN(port)) return val;
+  if (port >= 0) return port;
 
   return false;
 }
@@ -52,13 +109,10 @@ function normalizePort(val) {
  * Event listener for HTTP server "error" event.
  */
 function onError(error) {
-  if (error.syscall !== "listen") {
-    throw error;
-  }
+  if (error.syscall !== "listen") throw error;
 
   var bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
 
-  // handle specific listen errors with friendly messages
   switch (error.code) {
     case "EACCES":
       console.error(bind + " requires elevated privileges");

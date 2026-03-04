@@ -713,7 +713,7 @@ export default function Dashboard() {
           </ScrollView>
         )}
 
-        {/* LIVE EXPERTS SECTION */}
+        {/* LIVE EXPERTS */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Live Experts</Text>
           <View style={styles.liveIndicator}>
