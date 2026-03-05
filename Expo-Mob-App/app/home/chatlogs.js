@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   },
 
   activeTab: {
-    backgroundColor: "#F3A847",
+    backgroundColor: "#0B2D72",
   },
 
   tabText: {

@@ -16,7 +16,7 @@ import axiosInstance from "../../../services/api";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.20:3000";
 
 const SKILLS = [
   "All",
@@ -421,44 +421,75 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarInitial}>C</Text>
+        </View>
+        <Text style={styles.headerTitle}>Career-Talk</Text>
+        <TouchableOpacity style={styles.addCashBtn}>
+          <Text style={styles.addCashText}>Add Cash +</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* SEARCH */}
+      <Pressable
+        style={styles.searchBar}
+        onPress={() => router.push("/expert/search")}
+      >
+        <Ionicons name="search" size={20} color="#C4C4C4" />
+        <Text style={styles.searchText}>Search</Text>
+      </Pressable>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* HEADER */}
-        <View style={styles.header}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitial}>C</Text>
-          </View>
-          <Text style={styles.headerTitle}>Career-Talk</Text>
-          <TouchableOpacity style={styles.addCashBtn}>
-            <Text style={styles.addCashText}>Add Cash +</Text>
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+      {/* BANNER */}
+      <View style={styles.promoBanner}>
+        <View style={styles.promoTextContainer}>
+          <Text style={styles.promoTitle}>
+            What will my future be{"\n"}in the next 5 years?
+          </Text>
+          <Text style={styles.promoSub}>Ask Expert</Text>
+          <TouchableOpacity style={styles.askExpertBtn}>
+            <Text style={styles.askExpertBtnText}>Ask Expert</Text>
           </TouchableOpacity>
         </View>
-
-        {/* SEARCH */}
-        <Pressable
-          style={styles.searchBar}
-          onPress={() => router.push("/expert/search")}>
-          <Ionicons name="search" size={20} color="#C4C4C4" />
-          <Text style={styles.searchText}>Search</Text>
-        </Pressable>
-
-        {/* BANNER */}
-        <View style={styles.promoBanner}>
-          <View style={styles.promoTextContainer}>
-            <Text style={styles.promoTitle}>
-              What will my future be{"\n"}in the next 5 years?
-            </Text>
-            <Text style={styles.promoSub}>Ask Expert</Text>
-            <TouchableOpacity style={styles.askExpertBtn}>
-              <Text style={styles.askExpertBtnText}>Ask Expert</Text>
-            </TouchableOpacity>
+        <Image
+          source={require("../../../assets/banner.png")}
+          style={styles.promoImage}
+        />
+      </View>
+        {/* LIVE EXPERTS */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Live Experts</Text>
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveIndicatorText}>Live</Text>
           </View>
-          <Image
-            source={require("../../../assets/banner.png")}
-            style={styles.promoImage}
-          />
         </View>
+        {loadingOnline ? (
+          <ActivityIndicator color="#0B2D72" />
+        ) : onlineExperts.length === 0 ? (
+          <Text style={styles.noExpertsText}>No experts online right now</Text>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.liveScrollContainer}
+          >
+            {onlineExperts.map((e) => (
+              <LiveExpert
+                key={e.id}
+                name={e.name || ""}
+                title={getFirstSkill(e)}
+                image={getImageUri(e.image, e.name)}
+                onPress={() => router.push(`/expert/${e.id}`)}
+              />
+            ))}
+          </ScrollView>
+        )}
 
         {/* ✅ SECTION 1: BROWSE BY SKILL — visible */}
         <View style={styles.sectionHeader}>
@@ -467,7 +498,8 @@ export default function Dashboard() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}>
+          contentContainerStyle={styles.filterList}
+        >
           {SKILL_FILTERS.map((skill) => (
             <TouchableOpacity
               key={skill}
@@ -475,12 +507,14 @@ export default function Dashboard() {
                 styles.filterChip,
                 activeSkillFilter === skill && styles.filterChipActive,
               ]}
-              onPress={() => setActiveSkillFilter(skill)}>
+              onPress={() => setActiveSkillFilter(skill)}
+            >
               <Text
                 style={[
                   styles.filterChipText,
                   activeSkillFilter === skill && styles.filterChipTextActive,
-                ]}>
+                ]}
+              >
                 {skill}
               </Text>
             </TouchableOpacity>
@@ -496,7 +530,8 @@ export default function Dashboard() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}>
+            contentContainerStyle={styles.expertBySkillList}
+          >
             {skillFilteredExperts.map((e) => (
               <ExpertCard key={e.id} e={e} />
             ))}
@@ -512,7 +547,8 @@ export default function Dashboard() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterList}>
+              contentContainerStyle={styles.filterList}
+            >
               {LANGUAGE_FILTERS.map((lang) => (
                 <TouchableOpacity
                   key={lang}
@@ -521,12 +557,14 @@ export default function Dashboard() {
                     styles.filterChipGreen,
                     activeLanguage === lang && styles.filterChipGreenActive,
                   ]}
-                  onPress={() => setActiveLanguage(lang)}>
+                  onPress={() => setActiveLanguage(lang)}
+                >
                   <Text
                     style={[
                       styles.filterChipText,
                       { color: activeLanguage === lang ? "#fff" : "#1a7a4a" },
-                    ]}>
+                    ]}
+                  >
                     {lang}
                   </Text>
                 </TouchableOpacity>
@@ -545,7 +583,8 @@ export default function Dashboard() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.expertBySkillList}>
+                contentContainerStyle={styles.expertBySkillList}
+              >
                 {languageExperts.map((e) => (
                   <ExpertCard key={e.id} e={e} />
                 ))}
@@ -563,7 +602,8 @@ export default function Dashboard() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterList}>
+              contentContainerStyle={styles.filterList}
+            >
               {CERTIFICATION_FILTERS.map((cert) => (
                 <TouchableOpacity
                   key={cert}
@@ -573,7 +613,8 @@ export default function Dashboard() {
                     activeCertification === cert &&
                       styles.filterChipOrangeActive,
                   ]}
-                  onPress={() => setActiveCertification(cert)}>
+                  onPress={() => setActiveCertification(cert)}
+                >
                   <Text
                     style={[
                       styles.filterChipText,
@@ -581,7 +622,8 @@ export default function Dashboard() {
                         color:
                           activeCertification === cert ? "#fff" : "#b45309",
                       },
-                    ]}>
+                    ]}
+                  >
                     {cert}
                   </Text>
                 </TouchableOpacity>
@@ -600,7 +642,8 @@ export default function Dashboard() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.expertBySkillList}>
+                contentContainerStyle={styles.expertBySkillList}
+              >
                 {certificationExperts.map((e) => (
                   <ExpertCard key={e.id} e={e} />
                 ))}
@@ -621,13 +664,15 @@ export default function Dashboard() {
         ) : (
           <ScrollView
             horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}>
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContainer}
+          >
             {filteredExperts.map((e) => (
               <Pressable
                 key={e.id}
                 style={styles.skillExpertCard}
-                onPress={() => router.push(`/expert/${e.id}`)}>
+                onPress={() => router.push(`/expert/${e.id}`)}
+              >
                 {e.image ? (
                   <Image
                     source={{ uri: getImageUri(e.image, e.name) }}
@@ -682,12 +727,14 @@ export default function Dashboard() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.topExpertsList}>
+            contentContainerStyle={styles.topExpertsList}
+          >
             {topExperts.map((e) => (
               <TouchableOpacity
                 key={e.id}
                 style={styles.circularExpertContainer}
-                onPress={() => router.push(`/expert/${e.id}`)}>
+                onPress={() => router.push(`/expert/${e.id}`)}
+              >
                 <View style={styles.goldBorder}>
                   {e.image ? (
                     <Image
@@ -712,38 +759,10 @@ export default function Dashboard() {
             ))}
           </ScrollView>
         )}
-
-        {/* LIVE EXPERTS */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Live Experts</Text>
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveIndicatorText}>Live</Text>
-          </View>
-        </View>
-        {loadingOnline ? (
-          <ActivityIndicator color="#0B2D72" />
-        ) : onlineExperts.length === 0 ? (
-          <Text style={styles.noExpertsText}>No experts online right now</Text>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.liveScrollContainer}>
-            {onlineExperts.map((e) => (
-              <LiveExpert
-                key={e.id}
-                name={e.name || ""}
-                title={getFirstSkill(e)}
-                image={getImageUri(e.image, e.name)}
-                onPress={() => router.push(`/expert/${e.id}`)}
-              />
-            ))}
-          </ScrollView>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
+
 }
 
 const LiveExpert = ({ name, title, image, onPress }) => (
@@ -760,14 +779,25 @@ const LiveExpert = ({ name, title, image, onPress }) => (
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginTop: 20,
+  container: {
+    flex: 1,
+    backgroundColor: "#FFF",
   },
+
+  /* HEADER */
+header: {
+  flexDirection: "row",
+  alignItems: "center",
+  paddingHorizontal: 16,
+  paddingVertical: 12,
+  backgroundColor: "#FFF",
+  elevation: 4, // Android shadow
+  shadowColor: "#000", // iOS shadow
+  shadowOpacity: 0.1,
+  marginTop:10,
+  shadowRadius: 4,
+},
+
   avatarCircle: {
     width: 36,
     height: 36,
@@ -776,13 +806,20 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarInitial: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
+
+  avatarInitial: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
   headerTitle: {
     fontSize: 18,
     fontWeight: "700",
     marginLeft: 12,
     color: "#333",
   },
+
   addCashBtn: {
     marginLeft: "auto",
     backgroundColor: "#0B2D72",
@@ -790,18 +827,35 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
   },
-  addCashText: { color: "#FFF", fontWeight: "600", fontSize: 13 },
+
+  addCashText: {
+    color: "#FFF",
+    fontWeight: "600",
+    fontSize: 13,
+  },
+
+  /* FIXED SEARCH BAR */
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F2F2F2",
-    marginHorizontal: 16,
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 45,
-    marginBottom: 20,
+    marginHorizontal: 16,
+    marginBottom: 15,
   },
-  searchText: { color: "#0B2D72", marginLeft: 8, fontSize: 16 },
+  searchText: {
+    color: "#0B2D72",
+    marginLeft: 8,
+    fontSize: 16,
+  },
+
+  /* SCROLL CONTENT */
+  scrollContainer: {
+    paddingBottom: 40,
+  },
+
   promoBanner: {
     backgroundColor: "#ffeda6",
     marginHorizontal: 16,
@@ -810,7 +864,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 25,
   },
-  promoTextContainer: { flex: 1 },
+
+  promoTextContainer: {
+    flex: 1,
+  },
+
   promoTitle: {
     fontSize: 16,
     fontWeight: "700",
@@ -916,10 +974,12 @@ const styles = StyleSheet.create({
     height: 66,
     borderRadius: 33,
     borderWidth: 2,
-    borderColor: "#FBBF24",
+    borderColor: "#FFD700",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#fff",
   },
+
   innerCircle: {
     width: 58,
     height: 58,
@@ -928,44 +988,79 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  circleInitial: { fontSize: 18, fontWeight: "600", color: "#f2f6fb" },
+
+  circleInitial: {
+    color: "#FFF",
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+
   circleExpertName: {
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "600",
     color: "#333",
-    marginTop: 5,
+    marginTop: 6,
     textAlign: "center",
   },
-  circleExpertSkill: { fontSize: 10, color: "#888", textAlign: "center" },
-  liveScrollContainer: { paddingLeft: 16 },
-  liveCard: {
-    width: 130,
-    height: 170,
-    borderRadius: 18,
-    marginRight: 15,
-    overflow: "hidden",
+
+  circleExpertSkill: {
+    fontSize: 10,
+    color: "#666",
+    textAlign: "center",
   },
-  liveImage: { width: "100%", height: "100%" },
+  liveScrollContainer: {
+    paddingLeft: 16,
+    paddingBottom: 10,
+  },
+
+  liveCard: {
+    width: 150,
+    height: 180,
+    borderRadius: 20,
+    overflow: "hidden",
+    marginRight: 12,
+    backgroundColor: "#eee",
+  },
+
+  liveImage: {
+    width: "100%",
+    height: "100%",
+  },
+
   liveBadge: {
     position: "absolute",
     top: 8,
     left: 8,
     backgroundColor: "red",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 6,
   },
-  liveText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
+
+  liveText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "700",
+  },
+
   liveOverlay: {
     position: "absolute",
     bottom: 0,
     width: "100%",
     padding: 8,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
-  liveName: { color: "#fff", fontWeight: "bold" },
-  liveTitle: { color: "#ddd", fontSize: 11 },
 
+  liveName: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+
+  liveTitle: {
+    color: "#fff",
+    fontSize: 10,
+  },
   // ✅ ADDED: Shared filter chip styles
   filterList: { paddingLeft: 16, paddingBottom: 12 },
   filterChip: {
