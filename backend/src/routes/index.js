@@ -9,6 +9,8 @@ const userRoutes = require("./user.routes");
 const expertsRoutes = require("./expert.routes");
 const chatRoutes = require('./chat.routes');
 const callRoutes = require('./call.routes');
+const walletRoutes = require("./wallet.routes");
+
 
 
 
@@ -28,6 +30,7 @@ router.use("/users", userRoutes);
 // Expert routes
 // Example: /api/experts
 router.use("/experts", expertsRoutes);
+router.use("/wallet", walletRoutes);
 
 
 // Chat routes

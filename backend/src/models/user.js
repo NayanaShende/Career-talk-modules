@@ -26,7 +26,7 @@ module.exports = (sequelize, DataTypes) => {
       role: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: "user", // user | jobseeker | expert
+        defaultValue: "user",
       },
 
       hasProfile: {
@@ -34,7 +34,6 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
-      // BASIC PROFILE
       fullName: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -77,70 +76,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
-
-      // =========================
-      // JOBSEEKER FIELDS
-      // =========================
-
-      skills: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      jobPreference: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      currentLocation: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      portfolio: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      // =========================
-      // EXPERT FIELDS
-      // =========================
-
-      expertise: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      company: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      linkedin: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-
-      hourlyRate: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
     },
     {
       timestamps: true,
     },
   );
-
-  // ASSOCIATION
-  User.associate = (models) => {
-    if (models.Expert) {
-      User.hasOne(models.Expert, {
-        foreignKey: "userId",
-        as: "expert",
-        onDelete: "CASCADE",
-      });
-    }
-  };
 
   return User;
 };

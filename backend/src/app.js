@@ -10,9 +10,10 @@ const path = require("path");
 const routes = require("./routes");
 const { sequelize } = require("./models");
 
-sequelize.sync({ alter: true })
-  .then(() => console.log("✅ Database synced"))
-  .catch(err => console.log("❌ Sync error:", err));
+
+sequelize.authenticate()
+  .then(() => console.log("✅ Database connection successful"))
+  .catch(err => console.log("❌ Database connection error:", err));
 
 var app = express();
 

@@ -32,7 +32,7 @@ db.Expert = require("./expert")(sequelize, DataTypes);
 
 // Load Review ✅ NEW
 db.Review = require("./review")(sequelize, DataTypes);
-
+db.WalletTransaction = require("./walletTransaction")(sequelize, DataTypes);
 // Load ExpertSkill (if exists)
 try {
   db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
