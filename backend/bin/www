@@ -1,17 +1,14 @@
 #!/usr/bin/env node
 
 require("dotenv").config();
-var app = require("../src/app");
+const { server } = require("../src/app"); // ✅ UPDATED: import server directly (no duplicate server creation)
 var http = require("http");
-const { initSocket } = require("../src/socket"); // ✅ only this
+// ✅ REMOVED: initSocket import — already called inside app.js
 
 var port = normalizePort(process.env.PORT || "3000");
-app.set("port", port);
-
-var server = http.createServer(app);
-
-// ✅ Initialize Socket.io ONLY ONCE
-initSocket(server);
+// ✅ REMOVED: app.set("port", port) — not needed, server comes from app.js
+// ✅ REMOVED: http.createServer(app) — already created in app.js
+// ✅ REMOVED: initSocket(server) — already initialized in app.js
 
 server.listen(port);
 server.on("error", onError);

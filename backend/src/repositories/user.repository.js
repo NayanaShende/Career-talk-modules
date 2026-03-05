@@ -14,6 +14,10 @@ const saveUser = async (user) => {
   return await user.save();
 };
 
+const findUserById = async (id) => {
+  return await User.findByPk(id);
+};
+
 const findProfileByUserId = async (userId) => {
   return await UserProfile.findOne({ where: { userId } });
 };
@@ -30,6 +34,7 @@ module.exports = {
   findUserByMobile,
   createUser,
   saveUser,
+  findUserById,
   findProfileByUserId,
   createProfile,
   updateProfile,

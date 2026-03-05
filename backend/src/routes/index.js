@@ -13,7 +13,11 @@ const walletRoutes = require("./wallet.routes");
 
 
 
+const chatRoutes = require("./chat.routes");
+const callRoutes = require("./call.routes");
 
+// ✅ Razorpay Payment Routes
+const paymentRoutes = require("./payment.routes");
 
 // --------------------------------------
 // MOUNT ROUTES
@@ -32,10 +36,14 @@ router.use("/users", userRoutes);
 router.use("/experts", expertsRoutes);
 router.use("/wallet", walletRoutes);
 
-
 // Chat routes
-router.use('/chat', chatRoutes);
-router.use('/calls', callRoutes);
+router.use("/chat", chatRoutes);
+router.use("/calls", callRoutes);
+
+// ✅ Payment routes
+// Example: /api/payment/create-order
+router.use("/payment", paymentRoutes);
+
 // --------------------------------------
 // HEALTH CHECK ROUTE
 // --------------------------------------

@@ -33,6 +33,10 @@ db.Expert = require("./expert")(sequelize, DataTypes);
 // Load Review ✅ NEW
 db.Review = require("./review")(sequelize, DataTypes);
 db.WalletTransaction = require("./walletTransaction")(sequelize, DataTypes);
+
+// ✅ Load Payment
+db.Payment = require("./payment")(sequelize, DataTypes);
+
 // Load ExpertSkill (if exists)
 try {
   db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
@@ -51,7 +55,8 @@ Object.keys(db).forEach((modelName) => {
 });
 
 /* =========================
-   TEST CONNECTION
+   TEST CONNECTION ONLY
+   ✅ Sync is handled in app.js — removed from here to avoid duplicate
 ========================= */
 
 sequelize
@@ -63,18 +68,6 @@ sequelize
     console.error("❌ Unable to connect to database:", err);
   });
 
-/* =========================
-   SYNC DATABASE
-========================= */
-
-// ✅ Safe sync - never deletes or overwrites existing data
-db.sequelize
-  .sync({})
-  .then(() => {
-    console.log("✅ Database synced successfully");
-  })
-  .catch((err) => {
-    console.error("❌ Database sync error:", err);
-  });
+// ✅ REMOVED db.sequelize.sync() from here — already done in app.js
 
 module.exports = db;
