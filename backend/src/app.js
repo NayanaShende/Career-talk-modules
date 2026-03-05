@@ -4,15 +4,16 @@ const http = require("http");
 var logger = require("morgan");
 const cors = require("cors");
 const { Server } = require("socket.io"); // ✅ IMPORTANT
-const {initSocket }= require("./socket");
+const { initSocket } = require("./socket");
 const path = require("path");
 
 const routes = require("./routes");
 const { sequelize } = require("./models");
 
-sequelize.sync({ alter: true })
+sequelize
+  .sync({ alter: true })
   .then(() => console.log("✅ Database synced"))
-  .catch(err => console.log("❌ Sync error:", err));
+  .catch((err) => console.log("❌ Sync error:", err));
 
 var app = express();
 
@@ -46,7 +47,9 @@ app.use("/api", routes);
 // ------------------------------------------------------
 const server = http.createServer(app);
 
-// ✅ Create socket server
+// ------------------------------------------------------
+// SOCKET.IO
+// ------------------------------------------------------
 const io = new Server(server, {
   cors: {
     origin: "*",
@@ -63,5 +66,8 @@ app.use(function (req, res, next) {
   res.status(404).json({ error: "Not Found" });
 });
 
+// ------------------------------------------------------
+// ✅ REMOVED server.listen() from here — now handled in bin/www
+// ------------------------------------------------------
 
-module.exports = app;
+module.exports = { app, server }; // ✅ Export both app and server
