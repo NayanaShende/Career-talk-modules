@@ -31,11 +31,17 @@ app.use(
 // MIDDLEWARE
 // ------------------------------------------------------
 app.use(logger("dev"));
+
+// ✅ CHANGE 1: Webhook route needs raw body — register BEFORE express.json()
+// This captures raw body only for /api/payments/webhook
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
+
+// ✅ All other routes use normal JSON parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ✅ Serve uploaded files (cv, images) as static
-app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // ✅ FIXED PATH
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ------------------------------------------------------
 // ROUTES

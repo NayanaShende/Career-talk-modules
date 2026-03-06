@@ -15,7 +15,7 @@ import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.20:3000";
+const BASE_URL = "http://10.89.141.25:3000";
 
 export default function Recommended() {
   const [experts, setExperts] = useState([]);
