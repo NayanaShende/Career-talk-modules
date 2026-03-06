@@ -12,10 +12,6 @@ const callRoutes = require('./call.routes');
 const walletRoutes = require("./wallet.routes");
 
 
-
-const chatRoutes = require("./chat.routes");
-const callRoutes = require("./call.routes");
-
 // ✅ Razorpay Payment Routes
 const paymentRoutes = require("./payment.routes");
 
