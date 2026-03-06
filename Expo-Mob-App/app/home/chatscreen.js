@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -18,9 +19,11 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const { width } = Dimensions.get("window");
 const BASE_URL = "http://10.89.141.9:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
+// ── helpers ──────────────────────────────────────────────
 const sortMessages = (msgs) =>
   [...msgs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -48,15 +51,23 @@ const groupByDate = (msgs) => {
   return groups;
 };
 
+const formatTime = (date) =>
+  date
+    ? new Date(date).toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : "";
+
+// ─────────────────────────────────────────────────────────
 export default function ChatScreen() {
   const { expertId, name, avatar } = useLocalSearchParams();
   const RECEIVER_ID = Number(expertId);
 
-  // ✅ Use expert name — never show phone number
+  // ── unchanged logic from previous version ────────────
   const expertName =
     name && name !== "undefined" && name !== "null" ? name : "Expert";
 
-  // ✅ Build avatar URL correctly
   const expertAvatarUrl =
     avatar && avatar !== "undefined" && avatar !== "null" && avatar !== ""
       ? `${BASE_URL}/uploads/${avatar}`
@@ -71,7 +82,6 @@ export default function ChatScreen() {
   const flatListRef = useRef(null);
   const socketRef = useRef(null);
 
-  // ✅ Load real userId from AsyncStorage
   useEffect(() => {
     AsyncStorage.getItem("user").then((str) => {
       if (str) {
@@ -102,7 +112,6 @@ export default function ChatScreen() {
     const messageToSend = textMessage;
     setTextMessage("");
     const tempId = `temp_${Date.now()}`;
-
     setMessages((prev) =>
       sortMessages([
         ...prev,
@@ -116,14 +125,13 @@ export default function ChatScreen() {
       ]),
     );
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
-
     try {
       await API.post("/chat/send", {
         sender_id: currentUserId,
         receiver_id: RECEIVER_ID,
         message: messageToSend,
       });
-    } catch (error) {
+    } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
     }
   };
@@ -131,21 +139,17 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
     loadChats();
-
     socketRef.current = io(BASE_URL, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
     });
-
     socketRef.current.on("connect", () => {
       setIsOnline(true);
       socketRef.current.emit("joinRoom", { userId: currentUserId });
     });
-
     socketRef.current.on("disconnect", () => setIsOnline(false));
-
     socketRef.current.on("receiveMessage", (newMessage) => {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
         setMessages((prev) => sortMessages([...prev, newMessage]));
@@ -155,7 +159,6 @@ export default function ChatScreen() {
         );
       }
     });
-
     return () => {
       socketRef.current.off("receiveMessage");
       socketRef.current.off("connect");
@@ -164,21 +167,13 @@ export default function ChatScreen() {
     };
   }, [currentUserId, RECEIVER_ID]);
 
-  const formatTime = (date) =>
-    date
-      ? new Date(date).toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
-        })
-      : "";
-
+  // ── render ────────────────────────────────────────────
   const renderItem = ({ item }) => {
+    // Date separator
     if (item.type === "date") {
       return (
-        <View style={styles.dateSeparatorWrap}>
-          <View style={styles.dateSeparator}>
-            <Text style={styles.dateSeparatorText}>{item.label}</Text>
-          </View>
+        <View style={styles.dateSepWrap}>
+          <Text style={styles.dateSepText}>{item.label}</Text>
         </View>
       );
     }
@@ -186,79 +181,102 @@ export default function ChatScreen() {
     const isUser = Number(item.sender_id) === Number(currentUserId);
 
     return (
-      <View
-        style={[
-          styles.messageRow,
-          isUser ? styles.messageRowRight : styles.messageRowLeft,
-        ]}
-      >
-        {/* ✅ Show expert avatar ONCE on left - same for all received messages */}
+      <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
+        {/* Receiver avatar */}
         {!isUser && (
           <Image source={{ uri: expertAvatarUrl }} style={styles.msgAvatar} />
         )}
 
+        {/* Bubble */}
         <View
           style={[
             styles.bubble,
-            isUser ? styles.bubbleUser : styles.bubbleExpert,
+            isUser ? styles.bubbleMine : styles.bubbleTheirs,
           ]}
         >
-          <Text style={styles.bubbleText}>{item.message}</Text>
           <Text
             style={[
-              styles.bubbleTime,
-              isUser ? styles.bubbleTimeUser : styles.bubbleTimeExpert,
+              styles.msgText,
+              isUser ? styles.msgTextMine : styles.msgTextTheirs,
             ]}
           >
-            {formatTime(item.created_at)}
-            {isUser && <Text style={styles.tick}> ✓✓</Text>}
+            {item.message}
           </Text>
+          <View style={styles.metaRow}>
+            <Text
+              style={[
+                styles.timeText,
+                isUser ? styles.timeMine : styles.timeTheirs,
+              ]}
+            >
+              {formatTime(item.created_at)}
+            </Text>
+            {isUser && <Text style={styles.ticks}> ✓✓</Text>}
+          </View>
         </View>
 
-        {!isUser && <View style={{ width: 40 }} />}
+        {/* Spacer so receiver bubbles don't stretch full width */}
+        {!isUser && <View style={{ width: 48 }} />}
       </View>
     );
   };
 
   if (!currentUserId) {
     return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#ECE5DD",
-        }}
-      >
-        <ActivityIndicator size="large" color="#075E54" />
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color="#4A6CF7" />
       </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar backgroundColor="#075E54" barStyle="light-content" />
+      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* ✅ HEADER - shows real expert name + avatar */}
+      {/* ── HEADER (iMessage / reference UI style) ── */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>←</Text>
+          <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>
-        <Image source={{ uri: expertAvatarUrl }} style={styles.headerAvatar} />
+
+        <View style={styles.headerCenter}>
+          <Image
+            source={{ uri: expertAvatarUrl }}
+            style={styles.headerAvatar}
+          />
+          <View style={styles.onlineDot} />
+        </View>
+
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{expertName}</Text>
-          <Text style={styles.headerStatus}>
-            {isOnline ? "online" : "offline"}
+          <Text style={styles.headerName} numberOfLines={1}>
+            {expertName}
           </Text>
+          <Text
+            style={[
+              styles.headerStatus,
+              { color: isOnline ? "#34C759" : "#8E8E93" },
+            ]}
+          >
+            {isOnline ? "Active now" : "Offline"}
+          </Text>
+        </View>
+
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.iconBtn}>
+            <Text style={styles.iconText}>📹</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.iconBtn}>
+            <Text style={styles.iconText}>📞</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
-      {/* CHAT AREA */}
+      {/* ── MESSAGES ── */}
       <View style={styles.chatBg}>
         {loading && messages.length === 0 ? (
           <ActivityIndicator
-            style={{ marginTop: 30 }}
-            color="#075E54"
+            style={{ marginTop: 40 }}
+            color="#4A6CF7"
             size="large"
           />
         ) : (
@@ -267,7 +285,7 @@ export default function ChatScreen() {
             data={groupByDate(messages)}
             renderItem={renderItem}
             keyExtractor={(item) => String(item.id)}
-            contentContainerStyle={{ padding: 10, paddingBottom: 16 }}
+            contentContainerStyle={styles.listContent}
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: false })
             }
@@ -276,21 +294,33 @@ export default function ChatScreen() {
         )}
       </View>
 
-      {/* INPUT */}
+      {/* ── INPUT BAR ── */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.inputBar}>
+          <TouchableOpacity style={styles.plusBtn}>
+            <Text style={styles.plusText}>＋</Text>
+          </TouchableOpacity>
+
           <View style={styles.inputWrap}>
             <TextInput
-              placeholder="Type a message"
-              placeholderTextColor="#999"
+              placeholder="Message..."
+              placeholderTextColor="#C7C7CC"
               style={styles.input}
               value={textMessage}
               onChangeText={setTextMessage}
               multiline
             />
+            {/* mic icon when empty */}
+            {!textMessage.trim() && (
+              <TouchableOpacity style={styles.micBtn}>
+                <Text style={styles.micText}>🎤</Text>
+              </TouchableOpacity>
+            )}
           </View>
+
+          {/* send button */}
           <TouchableOpacity
             style={[
               styles.sendBtn,
@@ -299,7 +329,7 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!textMessage.trim()}
           >
-            <Text style={styles.sendBtnText}>➤</Text>
+            <Text style={styles.sendArrow}>›</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -307,90 +337,183 @@ export default function ChatScreen() {
   );
 }
 
+// ── STYLES ───────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#075E54" },
+  container: { flex: 1, backgroundColor: "#F2F2F7" },
+  loadingScreen: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F2F2F7",
+  },
+
+  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#075E54",
-    paddingHorizontal: 10,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
     paddingVertical: 10,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#E5E5EA",
   },
-  backBtn: { paddingRight: 6 },
-  backArrow: { fontSize: 22, color: "#fff", fontWeight: "bold" },
-  headerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-    borderWidth: 1.5,
+  backBtn: { paddingRight: 4 },
+  backArrow: {
+    fontSize: 34,
+    color: "#4A6CF7",
+    lineHeight: 38,
+    fontWeight: "300",
+  },
+
+  headerCenter: { position: "relative", marginRight: 10 },
+  headerAvatar: { width: 42, height: 42, borderRadius: 21 },
+  onlineDot: {
+    position: "absolute",
+    bottom: 1,
+    right: 1,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: "#34C759",
+    borderWidth: 2,
     borderColor: "#fff",
   },
+
   headerInfo: { flex: 1 },
-  headerName: { fontSize: 16, fontWeight: "700", color: "#fff" },
-  headerStatus: { fontSize: 12, color: "#c8e6c9", marginTop: 1 },
-  chatBg: { flex: 1, backgroundColor: "#ECE5DD" },
-  dateSeparatorWrap: { alignItems: "center", marginVertical: 10 },
-  dateSeparator: {
-    backgroundColor: "#DCF8C6",
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 10,
+  headerName: { fontSize: 16, fontWeight: "600", color: "#000" },
+  headerStatus: { fontSize: 12, marginTop: 1 },
+
+  headerActions: { flexDirection: "row", gap: 4 },
+  iconBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F2F2F7",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  dateSeparatorText: { fontSize: 12, color: "#555", fontWeight: "500" },
-  messageRow: { flexDirection: "row", marginBottom: 4, alignItems: "flex-end" },
-  messageRowRight: { justifyContent: "flex-end" },
-  messageRowLeft: { justifyContent: "flex-start" },
+  iconText: { fontSize: 16 },
+
+  // Chat background
+  chatBg: { flex: 1, backgroundColor: "#F2F2F7" },
+  listContent: { paddingHorizontal: 12, paddingVertical: 12, paddingBottom: 8 },
+
+  // Date separator
+  dateSepWrap: { alignItems: "center", marginVertical: 14 },
+  dateSepText: {
+    fontSize: 12,
+    color: "#8E8E93",
+    backgroundColor: "transparent",
+    fontWeight: "500",
+  },
+
+  // Message rows
+  row: { flexDirection: "row", marginBottom: 6, alignItems: "flex-end" },
+  rowRight: { justifyContent: "flex-end" },
+  rowLeft: { justifyContent: "flex-start" },
+
   msgAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     marginRight: 6,
     marginBottom: 2,
   },
+
+  // Bubbles — iMessage style
   bubble: {
-    maxWidth: "72%",
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 6,
-    borderRadius: 8,
-    elevation: 1,
+    maxWidth: width * 0.68,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 8,
+    borderRadius: 20,
   },
-  bubbleUser: { backgroundColor: "#DCF8C6", borderTopRightRadius: 0 },
-  bubbleExpert: { backgroundColor: "#ffffff", borderTopLeftRadius: 0 },
-  bubbleText: { fontSize: 15, lineHeight: 20, color: "#111" },
-  bubbleTime: { fontSize: 10, marginTop: 4, alignSelf: "flex-end" },
-  bubbleTimeUser: { color: "#7a9e7a" },
-  bubbleTimeExpert: { color: "#aaa" },
-  tick: { color: "#53bdeb", fontSize: 10 },
+  bubbleMine: {
+    backgroundColor: "#4A6CF7", // blue for sender
+    borderBottomRightRadius: 4,
+  },
+  bubbleTheirs: {
+    backgroundColor: "#FFFFFF", // white for receiver
+    borderBottomLeftRadius: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+
+  msgText: { fontSize: 15, lineHeight: 21 },
+  msgTextMine: { color: "#FFFFFF" },
+  msgTextTheirs: { color: "#1C1C1E" },
+
+  metaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    marginTop: 3,
+  },
+  timeText: { fontSize: 10 },
+  timeMine: { color: "rgba(255,255,255,0.65)" },
+  timeTheirs: { color: "#8E8E93" },
+  ticks: { fontSize: 10, color: "rgba(255,255,255,0.65)" },
+
+  // Input bar
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    backgroundColor: "#f0f0f0",
+    paddingHorizontal: 10,
+    paddingVertical: 10,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 0.5,
+    borderTopColor: "#E5E5EA",
     gap: 8,
   },
-  inputWrap: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minHeight: 44,
-    justifyContent: "center",
-    elevation: 1,
-  },
-  input: { fontSize: 15, color: "#111", maxHeight: 100 },
-  sendBtn: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: "#075E54",
+  plusBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "#F2F2F7",
     alignItems: "center",
     justifyContent: "center",
-    elevation: 2,
+    marginBottom: 3,
   },
-  sendBtnDisabled: { backgroundColor: "#aaa" },
-  sendBtnText: { fontSize: 18, color: "#fff" },
+  plusText: { fontSize: 20, color: "#4A6CF7", lineHeight: 24 },
+
+  inputWrap: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "flex-end",
+    backgroundColor: "#F2F2F7",
+    borderRadius: 22,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 40,
+  },
+  input: {
+    flex: 1,
+    fontSize: 15,
+    color: "#1C1C1E",
+    maxHeight: 100,
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  micBtn: { marginLeft: 6, marginBottom: 1 },
+  micText: { fontSize: 16 },
+
+  sendBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#4A6CF7",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 2,
+  },
+  sendBtnDisabled: { backgroundColor: "#C7C7CC" },
+  sendArrow: {
+    fontSize: 24,
+    color: "#fff",
+    fontWeight: "bold",
+    lineHeight: 28,
+    marginLeft: 3,
+  },
 });
