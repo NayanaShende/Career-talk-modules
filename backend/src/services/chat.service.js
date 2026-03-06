@@ -65,17 +65,20 @@ const getConversations = async (userId) => {
     if (!seen.has(otherUserId)) {
       seen.add(otherUserId);
 
-      // ✅ Find expert by userId to get real name + image
+      // ✅ FIXED: Always fetch BOTH expert AND user
+      // (expert may exist but have empty name)
       const expert = await Expert.findOne({ where: { userId: otherUserId } });
+      const user   = await User.findOne({ where: { id: otherUserId } });
 
-      // ✅ Only use User as last fallback
-      const user = !expert
-        ? await User.findOne({ where: { id: otherUserId } })
-        : null;
+      // ✅ FIXED: Check all possible name fields, never show mobile number
+      const name =
+        (expert?.name        && expert.name.trim()        !== "") ? expert.name        :
+        (user?.fullName      && user.fullName.trim()      !== "") ? user.fullName      :
+        (user?.name          && user.name.trim()          !== "") ? user.name          :
+        "Unknown User";
 
-      // ✅ Priority: expert.name > user.name > "User"  (never show mobile)
-      const name = expert?.name || user?.name || "User";
-      const avatar = expert?.image || null;
+      // ✅ FIXED: Check both expert and user image
+      const avatar = expert?.image || user?.image || null;
 
       uniqueConversations.push({
         id: String(otherUserId),
