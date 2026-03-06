@@ -36,6 +36,7 @@ db.Review = require("./review")(sequelize, DataTypes);
 // ✅ Load Payment
 db.Payment = require("./payment")(sequelize, DataTypes);
 
+db.WalletTransaction = require("./walletTransaction")(sequelize, DataTypes);
 // Load ExpertSkill (if exists)
 try {
   db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);

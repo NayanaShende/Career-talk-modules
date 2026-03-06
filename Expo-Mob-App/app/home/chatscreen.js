@@ -9,79 +9,115 @@ import {
   FlatList,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons, Feather } from "@expo/vector-icons";
 
 const messages = [
   {
     id: "1",
-    text: "👋 Hi! I'm aiii, your personal screen time companion.\n\nLet's take a closer look at your phone habits and triggers together. I'll ask you some questions to help you understand yourself better and take the next step towards healthier usage.",
+    text: "Hi Jay, let's plan our trip to Toronto this week.",
     sender: "bot",
-    time: "Oct 17, 18:00",
+    time: "9:35 AM",
   },
   {
     id: "2",
-    text: "When was the last time you felt unhappy with your phone usage?",
+    text: "Voice call",
     sender: "bot",
-    time: "Oct 17, 18:00",
+    type: "call",
+    time: "9:35 AM",
   },
   {
     id: "3",
-    text: "This morning",
+    text: "Video call",
     sender: "user",
-    time: "Oct 17, 18:00",
+    type: "video",
+    time: "10:00 AM",
   },
   {
     id: "4",
-    text: "What do you think made you feel unhappy about your phone use today?",
-    sender: "bot",
-    time: "Oct 17, 18:00",
+    text: "Missed call",
+    sender: "user",
+    type: "video",
+    time: "10:00 AM",
   },
   {
     id: "5",
-    text: "I feel it's because I know I have a lot to do",
+    text: "30:48",
     sender: "user",
-    time: "Oct 17, 18:00",
+    type: "video",
+    time: "10:30 AM",
   },
 ];
 
-export default function App() {
+export default function ChatScreen() {
   const renderItem = ({ item }) => (
     <View
       style={[
-        styles.messageContainer,
-        item.sender === "user" ? styles.userAlign : styles.botAlign,
+        styles.messageRow,
+        item.sender === "user" ? styles.rightAlign : styles.leftAlign,
       ]}
     >
+      {item.sender === "bot" && (
+        <Image
+          source={{ uri: "https://i.pravatar.cc/100" }}
+          style={styles.messageAvatar}
+        />
+      )}
+
       <View
         style={[
           styles.bubble,
           item.sender === "user" ? styles.userBubble : styles.botBubble,
         ]}
       >
-        <Text style={styles.messageText}>{item.text}</Text>
+        {item.type === "video" && (
+          <Ionicons name="videocam" size={18} color="#fff" />
+        )}
+
+        {item.type === "call" && (
+          <Ionicons name="call" size={18} color="#000" />
+        )}
+
+        <Text
+          style={[
+            styles.messageText,
+            item.sender === "user" && { color: "#fff" },
+          ]}
+        >
+          {item.text}
+        </Text>
       </View>
+
       <Text style={styles.time}>{item.time}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* HEADER */}
+
       <View style={styles.header}>
+        <Ionicons name="arrow-back" size={24} color="#0B2D72" />
+
         <Image
-          source={{
-            uri: "https://i.pravatar.cc/100",
-          }}
+          source={{ uri: "https://i.pravatar.cc/100" }}
           style={styles.avatar}
         />
-        <View>
-          <Text style={styles.name}>aiii</Text>
-          <Text style={styles.status}>Online</Text>
+
+        <Text style={styles.name}>Jasmine</Text>
+
+        <View style={styles.headerIcons}>
+          <Ionicons name="videocam" size={22} color="#0B2D72" />
+          <Ionicons name="call" size={22} color="#0B2D72" />
+          <Ionicons
+            name="information-circle-outline"
+            size={22}
+            color="#0B2D72"
+          />
         </View>
       </View>
 
-      <Text style={styles.today}>Today</Text>
+      {/* CHAT */}
 
-      {/* Messages */}
       <FlatList
         data={messages}
         renderItem={renderItem}
@@ -89,12 +125,14 @@ export default function App() {
         contentContainerStyle={{ padding: 15 }}
       />
 
-      {/* Input */}
+      {/* INPUT */}
+
       <View style={styles.inputContainer}>
-        <TextInput placeholder="Write your thoughts..." style={styles.input} />
-        <TouchableOpacity style={styles.sendButton}>
-          <Text style={{ fontSize: 18 }}>➤</Text>
+        <TouchableOpacity style={styles.plusButton}>
+          <Feather name="plus" size={20} color="#6C3CF0" />
         </TouchableOpacity>
+
+        <TextInput placeholder="Enter message" style={styles.input} />
       </View>
     </SafeAreaView>
   );
@@ -103,68 +141,73 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#F2F2F2",
   },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 15,
-    paddingVertical: 10,
+    padding: 15,
     backgroundColor: "#fff",
   },
 
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginLeft: 10,
   },
 
   name: {
     fontSize: 16,
     fontWeight: "600",
+    marginLeft: 10,
+    flex: 1,
   },
 
-  status: {
-    fontSize: 12,
-    color: "green",
+  headerIcons: {
+    flexDirection: "row",
+    gap: 15,
   },
 
-  today: {
-    textAlign: "center",
-    marginTop: 10,
-    color: "#888",
+  messageRow: {
+    marginBottom: 12,
   },
 
-  messageContainer: {
-    marginBottom: 10,
-  },
-
-  botAlign: {
+  leftAlign: {
     alignItems: "flex-start",
   },
 
-  userAlign: {
+  rightAlign: {
     alignItems: "flex-end",
   },
 
+  messageAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginBottom: 5,
+  },
+
   bubble: {
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
-    borderRadius: 12,
-    maxWidth: "80%",
+    borderRadius: 20,
+    maxWidth: "75%",
   },
 
   botBubble: {
-    backgroundColor: "#5B7FFF",
+    backgroundColor: "#E5E5E5",
   },
 
   userBubble: {
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#0B2D72",
   },
 
   messageText: {
-    color: "#000",
+    marginLeft: 6,
+    fontSize: 14,
   },
 
   time: {
@@ -180,21 +223,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  input: {
-    flex: 1,
-    backgroundColor: "#f1f1f1",
-    borderRadius: 20,
-    paddingHorizontal: 15,
-    height: 45,
-  },
-
-  sendButton: {
-    marginLeft: 10,
-    backgroundColor: "#e5e7eb",
-    width: 45,
-    height: 45,
-    borderRadius: 22,
+  plusButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#0B2D72",
     alignItems: "center",
     justifyContent: "center",
+    marginRight: 10,
+  },
+
+  input: {
+    flex: 1,
+    backgroundColor: "#F1F1F1",
+    borderRadius: 20,
+    paddingHorizontal: 15,
+    height: 40,
   },
 });

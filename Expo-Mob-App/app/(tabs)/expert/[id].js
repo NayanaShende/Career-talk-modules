@@ -22,7 +22,7 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.20:3000";
 
 // ✅ FIXED: parse float before rounding so "3" shows 3 stars not 2
 function StarRating({ rating, size = 20 }) {
@@ -368,10 +368,6 @@ export default function ExpertProfile() {
           <Text style={styles.chatActionText}>Chat</Text>
         </Pressable>
 
-        <Pressable style={styles.callAction} onPress={handleCallPress}>
-          <Ionicons name="call" size={18} color="#fff" />
-          <Text style={styles.callActionText}>Call</Text>
-        </Pressable>
       </View>
     </SafeAreaView>
   );

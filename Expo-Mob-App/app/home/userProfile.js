@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.20:3000";
 
 const SKILL_OPTIONS = [
   "React",
@@ -617,7 +617,8 @@ export default function ProfileScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={{ flex: 1 }}>
+        style={{ flex: 1 }}
+      >
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.header}>Profile Information</Text>
 
@@ -643,9 +644,11 @@ export default function ProfileScreen() {
               <TouchableOpacity
                 key={item}
                 style={[styles.roleBtn, role === item && styles.roleSelected]}
-                onPress={() => setRole(item)}>
+                onPress={() => setRole(item)}
+              >
                 <Text
-                  style={[styles.roleText, role === item && { color: "#fff" }]}>
+                  style={[styles.roleText, role === item && { color: "#fff" }]}
+                >
                   {item}
                 </Text>
               </TouchableOpacity>
@@ -684,6 +687,14 @@ export default function ProfileScreen() {
               onChange={onChangeDate}
             />
           )}
+          {/* DOMAIN */}
+          <Text style={styles.label}>Domain * (Your Expertise Area)</Text>
+          <DropdownPicker
+            label="Select Domain"
+            value={formData.domain}
+            onChange={(v) => handleChange("domain", v)}
+            options={DOMAIN_OPTIONS}
+          />
 
           {/* QUALIFICATION */}
           <Text style={styles.label}>Qualification *</Text>
@@ -736,15 +747,6 @@ export default function ProfileScreen() {
           {/* EXPERT ONLY FIELDS */}
           {role === "Expert" && (
             <>
-              {/* DOMAIN */}
-              <Text style={styles.label}>Domain * (Your Expertise Area)</Text>
-              <DropdownPicker
-                label="Select Domain"
-                value={formData.domain}
-                onChange={(v) => handleChange("domain", v)}
-                options={DOMAIN_OPTIONS}
-              />
-
               {/* SKILLS */}
               <Text style={styles.label}>Skills * (select up to 5)</Text>
               <SkillsPicker
