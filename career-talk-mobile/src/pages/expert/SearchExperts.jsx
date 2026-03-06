@@ -2,8 +2,11 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import "./SearchExperts.css";
 
-// ✅ only correct service path (mobile app services)
-import { getAllExperts } from "../../services/expertService";
+// ✅ MERGED ALL DUPLICATE IMPORTS INTO ONE (FIX)
+import {
+  getRecommendedExperts,
+  getAllExperts,
+} from "../../services/expertService";
 
 export default function SearchExperts() {
   const [experts, setExperts] = useState([]);
@@ -16,7 +19,7 @@ export default function SearchExperts() {
         const response = await getAllExperts();
 
         // backend returns { success: true, data: [...] }
-        setExperts(response.data || []);
+        setExperts(response?.data || []);
       } catch (error) {
         console.error("Error fetching experts:", error);
       } finally {

@@ -1,34 +1,50 @@
 const express = require("express");
 const router = express.Router();
 
-// Experts routes
-const expertsRoutes = require("./experts");
+// --------------------------------------
+// IMPORT ROUTES
+// --------------------------------------
+const authRoutes = require("./auth.routes");
+const userRoutes = require("./user.routes");
+const expertsRoutes = require("./expert.routes");
+const chatRoutes = require("./chat.routes");
+const callRoutes = require("./call.routes");
 
-// Mount experts routes
+// ✅ Razorpay Payment Routes
+const paymentRoutes = require("./payment.routes");
+
+// --------------------------------------
+// MOUNT ROUTES
+// --------------------------------------
+
+// Auth routes
+// Example: /api/auth/send-otp
+router.use("/auth", authRoutes);
+
+// User routes
+// Example: /api/users/save-profile
+router.use("/users", userRoutes);
+
+// Expert routes
+// Example: /api/experts
 router.use("/experts", expertsRoutes);
 
-// Health check route
+// Chat routes
+router.use("/chat", chatRoutes);
+router.use("/calls", callRoutes);
+
+// ✅ Payment routes
+// Example: /api/payment/create-order
+router.use("/payment", paymentRoutes);
+
+// --------------------------------------
+// HEALTH CHECK ROUTE
+// --------------------------------------
 router.get("/", (req, res) => {
   res.status(200).json({
     success: true,
-    message: "Career Talk API running successfully"
+    message: "Career Talk API running successfully",
   });
 });
-
-// router.get("/recommended", async (req, res) => {
-//   try {
-//     const result = await pool.query(
-//       "SELECT id, name, role, experience, rating, image FROM experts"
-//     );
-
-//     res.json({
-//       success: true,
-//       data: result.rows
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ success: false });
-//   }
-// });
 
 module.exports = router;

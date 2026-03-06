@@ -1,45 +1,94 @@
 const express = require("express");
 const router = express.Router();
-const { Expert } = require("../models");
-const { Op } = require("sequelize");
+
+// Controllers
+const expertController = require("../controllers/expert.controller");
+const ratingController = require("../controllers/rating.controller");
+
+// ✅ SAFE middleware imports (works for both export styles)
+const protectMiddleware = require("../middleware/protect");
+const uploadMiddleware = require("../middleware/upload");
+
+// Handle both: module.exports = protect  OR  module.exports = { protect }
+const protect =
+  protectMiddleware.protect || protectMiddleware;
+
+// Handle both: module.exports = uploadFields OR module.exports = { uploadFields }
+const uploadFields =
+  uploadMiddleware.uploadFields || uploadMiddleware;
 
 
-// ===============================
-// SEARCH experts
-// GET /api/experts/search?skill=Node
-// ===============================
-router.get("/search", async (req, res) => {
-  try {
-    const { skill } = req.query;
+// ============================
+// GET ALL EXPERTS
+// ============================
+router.get("/", expertController.getAllExperts);
 
-    if (!skill) {
-      return res.status(400).json({
-        success: false,
-        message: "Skill is required"
-      });
-    }
+// ============================
+// CREATE EXPERT PROFILE
+// ============================
+router.post("/", expertController.createExpertProfile);
 
-    const experts = await Expert.findAll({
-      where: {
-        headline: {
-          [Op.iLike]: `%${skill}%`
-        }
-      }
-    });
+// ============================
+// GET RECOMMENDED EXPERTS
+// ============================
+router.get("/recommended", expertController.getRecommendedExperts);
 
-    res.json({
-      success: true,
-      data: experts
-    });
+// ============================
+// GET ONLINE EXPERTS
+// ============================
+router.get("/online", expertController.getOnlineExperts);
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
-  }
-});
+// ============================
+// GET DOMAINS LIST (PUBLIC)
+// ============================
+router.get("/domains", expertController.getDomainsList);
 
+// ============================
+// SUBMIT EXPERT PROFILE FORM (Protected + Upload)
+// ============================
+router.post(
+  "/profile",
+  protect,
+  uploadFields,
+  expertController.submitExpertProfileForm
+);
+
+// ============================
+// GET MY EXPERT PROFILE (Protected)
+// ============================
+router.get(
+  "/profile/me",
+  protect,
+  expertController.getMyExpertProfile
+);
+
+// ============================
+// ADD SKILLS
+// ============================
+router.post("/:expertId/skills", expertController.addSkills);
+
+// ============================
+// UPDATE EXPERT PROFILE
+// ============================
+router.put("/:id", expertController.updateExpertProfile);
+
+// ============================
+// SUBMIT RATING (Protected)
+// ============================
+router.post(
+  "/:id/rate",
+  protect,
+  ratingController.submitRating
+);
+
+// ============================
+// GET RATINGS
+// ============================
+router.get("/:id/ratings", ratingController.getRatings);
+
+// ============================
+// GET EXPERT BY ID  (Keep Last)
+// ============================
+router.get("/:id", expertController.getExpertById);
 
 module.exports = router;

@@ -1,127 +1,94 @@
-
-/* ---------------------------------------------------
-   Background (Simple gradient, no animation)
---------------------------------------------------- */
-
+/* ===========================
+   WRAPPER
+=========================== */
 .login-wrapper {
   width: 100%;
   height: 100vh;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
   align-items: center;
-  background: linear-gradient(135deg, #3395c9, #0B1D51, #428ae9, #152893);
-  background-size: cover;
+  background: white url(../../assets/home/home.png) no-repeat left;
+  background-size: 55%;
+  padding-right: 140px;
+  font-family: 'Lucida Sans', sans-serif;
 }
 
-/* ---------------------------------------------------
-   Card (Static, no animation)
---------------------------------------------------- */
-
+/* ===========================
+   CARD
+=========================== */
 .login-card {
   width: 550px;
-  height: 450px;
   padding: 40px;
-
   background: white;
   border-radius: 22px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.35);
-
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  box-shadow: 40px 30px 40px rgba(9, 63, 213, 0.35);
+  text-align: center;
 }
 
-/* ---------------------------------------------------
-   Headers (Static)
---------------------------------------------------- */
-
+/* ===========================
+   TITLES
+=========================== */
 .welcome-text {
   font-size: 3rem;
-  padding-bottom: 1.3rem;
-  font-weight: bold;
-  margin-bottom: 8px;
   color: #024CAA;
-  font-family: 'Lucida Sans', sans-serif;
+  font-weight: bold;
 }
 
 .log {
-  padding-bottom: 2rem;
   font-size: 2rem;
-  font-family: 'Lucida Sans', sans-serif;
+  margin-bottom: 20px;
 }
 
-/* ---------------------------------------------------
-   Inputs
---------------------------------------------------- */
+/* ===========================
+   FIX: intl-tel-input
+=========================== */
 
+/* Remove your custom input styling */
 .mobile-input {
-  text-align: center;
   width: 100%;
-  padding: 14px;
-  margin-top: 16px;
-  background: white;
-  color: black;
+  height: 48px;
   border-radius: 10px;
-  font-family: 'Lucida Sans', sans-serif;
-  font-size: 1rem;
-  border: none;
-  outline: none;
-}
-
-/* intl-tel-input customization */
-.iti input.mobile-input {
-  width: 100% !important;
-  height: 48px;
-  border-radius: 8px;
-  border: none;
-  box-shadow: 0 0 2px gray;
-  padding-left: 50px !important;
+  border: 1px solid #ccc;
   font-size: 16px;
+  padding-left: 80px !important; /* ensures dial code never overlaps */
 }
 
-.iti--allow-dropdown .iti__flag-container {
-  height: 48px;
-  border-radius: 8px 0 0 8px;
-  background: white;
-}
-
+/* Force plugin full width */
 .iti {
   width: 100% !important;
 }
 
-/* ---------------------------------------------------
-   Button (No animation)
---------------------------------------------------- */
+/* Flag box fix */
+.iti__flag-container {
+  height: 48px;
+  border-radius: 10px 0 0 10px;
+}
 
+/* Country list dropdown fix */
+.iti__country-list {
+  z-index: 99999 !important;
+}
+
+/* ===========================
+   BUTTON
+=========================== */
 .send-btn {
   width: 100%;
   margin-top: 24px;
   padding: 15px;
-
+  font-size: 20px;
   background: #024CAA;
+  color: white;
   border: none;
   border-radius: 10px;
   cursor: pointer;
-
-  color: white;
-  font-weight: bold;
-  font-size: 20px;
 }
-
-/* ---------------------------------------------------
-   Register Text
---------------------------------------------------- */
+.send-btn:hover {
+  background: #0582c1;
+}
 
 .register-text {
   margin-top: 18px;
-  color: black;
-  font-weight: 500;
-  cursor: pointer;
   text-decoration: underline;
-  font-family: 'Lucida Sans', sans-serif;
-}
-
-.register-text:hover {
-  color: red;
+  cursor: pointer;
 }
