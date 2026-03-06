@@ -17,7 +17,7 @@ import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // ✅ Single consistent BASE_URL
-const BASE_URL = "http://192.168.1.20:3000";
+const BASE_URL = "http://10.89.141.9:3000";
 
 export default function ProfileScreen() {
   const [profile, setProfile] = useState(null);
@@ -44,14 +44,20 @@ export default function ProfileScreen() {
       // STEP 2: If expert, fetch expert profile
       if (user?.role === "expert") {
         try {
-          const expertRes = await axios.get(`${BASE_URL}/api/experts/profile/me`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
+          const expertRes = await axios.get(
+            `${BASE_URL}/api/experts/profile/me`,
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
+          );
           const ep = expertRes.data.data;
           console.log("✅ EXPERT:", JSON.stringify(ep));
           setExpertProfile(ep);
         } catch (expertErr) {
-          console.log("Expert fetch error:", expertErr.response?.data || expertErr.message);
+          console.log(
+            "Expert fetch error:",
+            expertErr.response?.data || expertErr.message,
+          );
         }
       }
     } catch (err) {
@@ -62,35 +68,50 @@ export default function ProfileScreen() {
     }
   };
 
-  useEffect(() => { fetchProfile(); }, []);
+  useEffect(() => {
+    fetchProfile();
+  }, []);
 
   useFocusEffect(
-    useCallback(() => { fetchProfile(); }, [])
+    useCallback(() => {
+      fetchProfile();
+    }, []),
   );
 
   const openCV = () => {
     const cvFile = expertProfile?.cv || profile?.cvFile;
-    if (!cvFile) { Alert.alert("No CV uploaded"); return; }
-    const cvUrl = cvFile.startsWith("http") ? cvFile : `${BASE_URL}/uploads/${cvFile}`;
+    if (!cvFile) {
+      Alert.alert("No CV uploaded");
+      return;
+    }
+    const cvUrl = cvFile.startsWith("http")
+      ? cvFile
+      : `${BASE_URL}/uploads/${cvFile}`;
     Linking.openURL(cvUrl);
   };
 
   // ✅ FIXED: check expertProfile image first, then user image
   const rawImage = expertProfile?.image || profile?.image;
   const imageUrl = rawImage
-    ? rawImage.startsWith("http") ? rawImage : `${BASE_URL}/uploads/${rawImage}`
+    ? rawImage.startsWith("http")
+      ? rawImage
+      : `${BASE_URL}/uploads/${rawImage}`
     : "https://i.pravatar.cc/150";
 
-  if (loading) return <ActivityIndicator size="large" style={{ marginTop: 120 }} />;
+  if (loading)
+    return <ActivityIndicator size="large" style={{ marginTop: 120 }} />;
 
   const isExpert = profile?.role === "expert";
 
   // ✅ FIXED: pull domain, qualification from correct source
   const displayDomain = expertProfile?.domain || profile?.domain;
   const displayQualification = profile?.qualification;
-  const displayExperience = expertProfile?.experience != null
-    ? `${expertProfile.experience} ${expertProfile.experience == 1 ? "year" : "years"}`
-    : profile?.experience ? `${profile.experience} years` : null;
+  const displayExperience =
+    expertProfile?.experience != null
+      ? `${expertProfile.experience} ${expertProfile.experience == 1 ? "year" : "years"}`
+      : profile?.experience
+        ? `${profile.experience} years`
+        : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -106,9 +127,7 @@ export default function ProfileScreen() {
             {expertProfile?.name || profile?.fullName || "No Name"}
           </Text>
           {/* ✅ FIXED: show domain under name */}
-          <Text style={styles.domain}>
-            {displayDomain || "Domain not set"}
-          </Text>
+          <Text style={styles.domain}>{displayDomain || "Domain not set"}</Text>
           {profile?.role && (
             <View style={styles.roleBadge}>
               <Text style={styles.roleText}>
@@ -124,8 +143,16 @@ export default function ProfileScreen() {
           <InfoRow icon="call" label="Mobile" value={profile?.mobile} />
           <InfoRow icon="calendar" label="Birth Date" value={profile?.dob} />
           {/* ✅ FIXED: qualification from user profile */}
-          <InfoRow icon="school" label="Qualification" value={displayQualification} />
-          <InfoRow icon="briefcase" label="Experience" value={displayExperience} />
+          <InfoRow
+            icon="school"
+            label="Qualification"
+            value={displayQualification}
+          />
+          <InfoRow
+            icon="briefcase"
+            label="Experience"
+            value={displayExperience}
+          />
         </View>
 
         {/* Expert Details Card */}
@@ -134,12 +161,28 @@ export default function ProfileScreen() {
             <Text style={styles.cardTitle}>Expert Details</Text>
             {/* ✅ FIXED: domain shown here too */}
             <InfoRow icon="tv-outline" label="Domain" value={displayDomain} />
-            <InfoRow icon="location" label="Location" value={expertProfile?.location} />
-            <InfoRow icon="language" label="Languages" value={expertProfile?.language_spoken} />
-            <InfoRow icon="ribbon" label="Certification" value={expertProfile?.certification} />
+            <InfoRow
+              icon="location"
+              label="Location"
+              value={expertProfile?.location}
+            />
+            <InfoRow
+              icon="language"
+              label="Languages"
+              value={expertProfile?.language_spoken}
+            />
+            <InfoRow
+              icon="ribbon"
+              label="Certification"
+              value={expertProfile?.certification}
+            />
             {expertProfile?.bio ? (
               <View style={styles.bioRow}>
-                <Ionicons name="person-circle-outline" size={20} color="#6B7280" />
+                <Ionicons
+                  name="person-circle-outline"
+                  size={20}
+                  color="#6B7280"
+                />
                 <View style={{ marginLeft: 12, flex: 1 }}>
                   <Text style={styles.label}>Bio</Text>
                   <Text style={styles.value}>{expertProfile.bio}</Text>
@@ -193,39 +236,68 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
   cover: { height: 110, backgroundColor: "#6C63FF" },
   avatarWrapper: { alignItems: "center", marginTop: -55 },
-  avatar: { width: 110, height: 110, borderRadius: 60, borderWidth: 4, borderColor: "#fff" },
+  avatar: {
+    width: 110,
+    height: 110,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: "#fff",
+  },
   center: { alignItems: "center", marginTop: 10 },
   name: { fontSize: 22, fontWeight: "bold" },
   domain: { color: "#6B7280", marginTop: 4 },
   roleBadge: {
-    marginTop: 6, backgroundColor: "#6C63FF",
-    paddingHorizontal: 14, paddingVertical: 4, borderRadius: 20,
+    marginTop: 6,
+    backgroundColor: "#6C63FF",
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 20,
   },
   roleText: { color: "#fff", fontSize: 12, fontWeight: "600" },
   card: {
-    backgroundColor: "#fff", margin: 20, marginBottom: 0,
-    borderRadius: 18, padding: 20, elevation: 3,
+    backgroundColor: "#fff",
+    margin: 20,
+    marginBottom: 0,
+    borderRadius: 18,
+    padding: 20,
+    elevation: 3,
   },
-  cardTitle: { fontSize: 16, fontWeight: "700", color: "#0B2D72", marginBottom: 14 },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#0B2D72",
+    marginBottom: 14,
+  },
   row: { flexDirection: "row", marginBottom: 18 },
   bioRow: { flexDirection: "row", marginBottom: 18, alignItems: "flex-start" },
   label: { color: "#9CA3AF", fontSize: 12 },
   value: { fontSize: 16, fontWeight: "600" },
   skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   skillChip: {
-    backgroundColor: "#EEF2FF", paddingHorizontal: 12,
-    paddingVertical: 6, borderRadius: 20,
+    backgroundColor: "#EEF2FF",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   skillChipText: { color: "#6C63FF", fontSize: 13, fontWeight: "600" },
   cvButton: {
-    backgroundColor: "#6C63FF", margin: 20, marginBottom: 0,
-    padding: 15, borderRadius: 14,
-    flexDirection: "row", justifyContent: "center", alignItems: "center",
+    backgroundColor: "#6C63FF",
+    margin: 20,
+    marginBottom: 0,
+    padding: 15,
+    borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
   },
   cvText: { color: "#fff", marginLeft: 8, fontWeight: "600", fontSize: 15 },
   editButton: {
-    margin: 20, borderWidth: 1, borderColor: "#6C63FF",
-    padding: 15, borderRadius: 14, alignItems: "center",
+    margin: 20,
+    borderWidth: 1,
+    borderColor: "#6C63FF",
+    padding: 15,
+    borderRadius: 14,
+    alignItems: "center",
   },
   editText: { color: "#6C63FF", fontWeight: "600", fontSize: 15 },
 });

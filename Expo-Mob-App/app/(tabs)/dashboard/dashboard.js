@@ -16,7 +16,7 @@ import axiosInstance from "../../../services/api";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http://192.168.1.20:3000";
+const BASE_URL = "http://10.89.141.9:3000";
 
 const SKILLS = [
   "All",
@@ -378,7 +378,8 @@ export default function Dashboard() {
   const ExpertCard = ({ e }) => (
     <Pressable
       style={styles.skillExpertCard}
-      onPress={() => router.push(`/expert/${e.id}`)}>
+      onPress={() => router.push(`/expert/${e.id}`)}
+    >
       {e.image ? (
         <Image
           source={{ uri: getImageUri(e.image, e.name) }}
@@ -445,22 +446,22 @@ export default function Dashboard() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-      {/* BANNER */}
-      <View style={styles.promoBanner}>
-        <View style={styles.promoTextContainer}>
-          <Text style={styles.promoTitle}>
-            What will my future be{"\n"}in the next 5 years?
-          </Text>
-          <Text style={styles.promoSub}>Ask Expert</Text>
-          <TouchableOpacity style={styles.askExpertBtn}>
-            <Text style={styles.askExpertBtnText}>Ask Expert</Text>
-          </TouchableOpacity>
+        {/* BANNER */}
+        <View style={styles.promoBanner}>
+          <View style={styles.promoTextContainer}>
+            <Text style={styles.promoTitle}>
+              What will my future be{"\n"}in the next 5 years?
+            </Text>
+            <Text style={styles.promoSub}>Ask Expert</Text>
+            <TouchableOpacity style={styles.askExpertBtn}>
+              <Text style={styles.askExpertBtnText}>Ask Expert</Text>
+            </TouchableOpacity>
+          </View>
+          <Image
+            source={require("../../../assets/banner.png")}
+            style={styles.promoImage}
+          />
         </View>
-        <Image
-          source={require("../../../assets/banner.png")}
-          style={styles.promoImage}
-        />
-      </View>
         {/* LIVE EXPERTS */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Live Experts</Text>
@@ -762,7 +763,6 @@ export default function Dashboard() {
       </ScrollView>
     </SafeAreaView>
   );
-
 }
 
 const LiveExpert = ({ name, title, image, onPress }) => (
@@ -785,18 +785,18 @@ const styles = StyleSheet.create({
   },
 
   /* HEADER */
-header: {
-  flexDirection: "row",
-  alignItems: "center",
-  paddingHorizontal: 16,
-  paddingVertical: 12,
-  backgroundColor: "#FFF",
-  elevation: 4, // Android shadow
-  shadowColor: "#000", // iOS shadow
-  shadowOpacity: 0.1,
-  marginTop:10,
-  shadowRadius: 4,
-},
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFF",
+    elevation: 4, // Android shadow
+    shadowColor: "#000", // iOS shadow
+    shadowOpacity: 0.1,
+    marginTop: 10,
+    shadowRadius: 4,
+  },
 
   avatarCircle: {
     width: 36,

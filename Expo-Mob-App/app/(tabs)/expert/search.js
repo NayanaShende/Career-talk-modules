@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const BASE_URL = "http://192.168.1.20:3000"; // ✅ NEW
+const BASE_URL = "http://10.89.141.9:3000"; // ✅ NEW
 
 export default function Home() {
   const router = useRouter();
@@ -45,9 +45,10 @@ export default function Home() {
   };
 
   // Logic to filter experts based on search input
-  const filteredExperts = experts.filter((e) =>
-    e?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    e?.role?.toLowerCase().includes(search.toLowerCase())
+  const filteredExperts = experts.filter(
+    (e) =>
+      e?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      e?.role?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -55,7 +56,7 @@ export default function Home() {
       {/* --- HEADER --- */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>
-                  <Ionicons name="chevron-back" size={24} color="#fff" />
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Experts Search </Text>
         <Ionicons name="notifications-outline" size={24} color="#fff" />
@@ -64,7 +65,12 @@ export default function Home() {
       {/* --- SEARCH BAR SECTION --- */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#0B2D72" style={styles.searchIcon} />
+          <Ionicons
+            name="search"
+            size={20}
+            color="#0B2D72"
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for an expert..."
@@ -95,7 +101,9 @@ export default function Home() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={() => (
             <View style={styles.center}>
-              <Text style={{ marginTop: 50, color: '#999' }}>No experts found.</Text>
+              <Text style={{ marginTop: 50, color: "#999" }}>
+                No experts found.
+              </Text>
             </View>
           )}
           renderItem={({ item }) => {
@@ -204,7 +212,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 15,
     backgroundColor: "#fff",
-    alignItems: 'center',
+    alignItems: "center",
   },
   separator: {
     height: 1,
@@ -231,7 +239,7 @@ const styles = StyleSheet.create({
   infoContainer: {
     flex: 1,
     paddingHorizontal: 10,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   name: {
     fontSize: 17,

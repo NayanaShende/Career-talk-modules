@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.20:3000";
+const BASE_URL = "http://10.89.141.9:3000";
 
 const SKILL_OPTIONS = [
   "React",
@@ -82,7 +82,8 @@ function DropdownPicker({ label, value, options, onChange }) {
     <>
       <TouchableOpacity
         style={styles.dropdownBox}
-        onPress={() => setVisible(true)}>
+        onPress={() => setVisible(true)}
+      >
         <Text style={{ color: selected ? "#000" : "#777", fontSize: 15 }}>
           {selected ? selected.label : label}
         </Text>
@@ -108,13 +109,15 @@ function DropdownPicker({ label, value, options, onChange }) {
                 onPress={() => {
                   onChange(item.value);
                   setVisible(false);
-                }}>
+                }}
+              >
                 <Text
                   style={{
                     fontSize: 16,
                     fontWeight: item.value === value ? "700" : "400",
                     color: item.value === value ? "#0B2D72" : "#333",
-                  }}>
+                  }}
+                >
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -169,7 +172,8 @@ function SkillsPicker({ selectedSkills, onChange }) {
             <TouchableOpacity
               key={skill}
               style={styles.skillChip}
-              onPress={() => toggleSkill(skill)}>
+              onPress={() => toggleSkill(skill)}
+            >
               <Text style={styles.skillChipText}>{skill}</Text>
               <Ionicons
                 name="close"
@@ -184,7 +188,8 @@ function SkillsPicker({ selectedSkills, onChange }) {
 
       <TouchableOpacity
         style={styles.addSkillsBtn}
-        onPress={() => setVisible(true)}>
+        onPress={() => setVisible(true)}
+      >
         <Ionicons name="add-circle-outline" size={18} color="#0B2D72" />
         <Text style={styles.addSkillsBtnText}>
           {selectedSkills.length === 0 ? "Add Skills" : "Edit Skills"} (max 5)
@@ -204,7 +209,8 @@ function SkillsPicker({ selectedSkills, onChange }) {
               textAlign: "center",
               marginBottom: 10,
               fontSize: 13,
-            }}>
+            }}
+          >
             {selectedSkills.length}/5 selected
           </Text>
           <View style={styles.customSkillRow}>
@@ -216,7 +222,8 @@ function SkillsPicker({ selectedSkills, onChange }) {
             />
             <TouchableOpacity
               style={styles.customSkillAddBtn}
-              onPress={addCustomSkill}>
+              onPress={addCustomSkill}
+            >
               <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
             </TouchableOpacity>
           </View>
@@ -231,19 +238,22 @@ function SkillsPicker({ selectedSkills, onChange }) {
                     styles.modalItem,
                     isSelected && styles.modalItemSelected,
                   ]}
-                  onPress={() => toggleSkill(item)}>
+                  onPress={() => toggleSkill(item)}
+                >
                   <View
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
                       justifyContent: "space-between",
-                    }}>
+                    }}
+                  >
                     <Text
                       style={{
                         fontSize: 16,
                         color: isSelected ? "#0B2D72" : "#333",
                         fontWeight: isSelected ? "700" : "400",
-                      }}>
+                      }}
+                    >
                       {item}
                     </Text>
                     {isSelected && (
@@ -260,7 +270,8 @@ function SkillsPicker({ selectedSkills, onChange }) {
           />
           <TouchableOpacity
             style={[styles.submitBtn, { marginTop: 10 }]}
-            onPress={() => setVisible(false)}>
+            onPress={() => setVisible(false)}
+          >
             <Text style={styles.submitText}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -312,7 +323,8 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
             <TouchableOpacity
               key={lang}
               style={styles.skillChip}
-              onPress={() => toggleLanguage(lang)}>
+              onPress={() => toggleLanguage(lang)}
+            >
               <Text style={styles.skillChipText}>{lang}</Text>
               <Ionicons
                 name="close"
@@ -327,7 +339,8 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
 
       <TouchableOpacity
         style={styles.addSkillsBtn}
-        onPress={() => setVisible(true)}>
+        onPress={() => setVisible(true)}
+      >
         <Ionicons name="add-circle-outline" size={18} color="#0B2D72" />
         <Text style={styles.addSkillsBtnText}>
           {selectedLanguages.length === 0 ? "Add Languages" : "Edit Languages"}{" "}
@@ -348,7 +361,8 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
               textAlign: "center",
               marginBottom: 10,
               fontSize: 13,
-            }}>
+            }}
+          >
             {selectedLanguages.length}/5 selected
           </Text>
           <View style={styles.customSkillRow}>
@@ -360,7 +374,8 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
             />
             <TouchableOpacity
               style={styles.customSkillAddBtn}
-              onPress={addCustomLanguage}>
+              onPress={addCustomLanguage}
+            >
               <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
             </TouchableOpacity>
           </View>
@@ -375,19 +390,22 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
                     styles.modalItem,
                     isSelected && styles.modalItemSelected,
                   ]}
-                  onPress={() => toggleLanguage(item)}>
+                  onPress={() => toggleLanguage(item)}
+                >
                   <View
                     style={{
                       flexDirection: "row",
                       alignItems: "center",
                       justifyContent: "space-between",
-                    }}>
+                    }}
+                  >
                     <Text
                       style={{
                         fontSize: 16,
                         color: isSelected ? "#0B2D72" : "#333",
                         fontWeight: isSelected ? "700" : "400",
-                      }}>
+                      }}
+                    >
                       {item}
                     </Text>
                     {isSelected && (
@@ -404,7 +422,8 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
           />
           <TouchableOpacity
             style={[styles.submitBtn, { marginTop: 10 }]}
-            onPress={() => setVisible(false)}>
+            onPress={() => setVisible(false)}
+          >
             <Text style={styles.submitText}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -631,7 +650,9 @@ export default function ProfileScreen() {
                 style={styles.imagePreview}
               />
             ) : (
-              <Text style={{ color: "#777", textAlign: "center" }}>
+              <Text
+                style={{ color: "#777", fontSize: 13, textAlign: "center" }}
+              >
                 📷{"\n"}Choose Photo
               </Text>
             )}

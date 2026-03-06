@@ -4,6 +4,8 @@ require("dotenv").config();
 const { server } = require("../src/app"); // ✅ UPDATED: import server directly (no duplicate server creation)
 var http = require("http");
 // ✅ REMOVED: initSocket import — already called inside app.js
+var { Server } = require("socket.io");
+const { initSocket } = require("../src/socket"); // ✅ Socket.io
 
 var port = normalizePort(process.env.PORT || "3000");
 // ✅ REMOVED: app.set("port", port) — not needed, server comes from app.js
@@ -44,4 +46,5 @@ function onListening() {
   var addr = server.address();
   var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
   console.log("🚀 Server running on " + bind);
+  console.log("✅ Listening on " + bind);
 }

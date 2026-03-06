@@ -2,29 +2,25 @@ const chatService = require("../services/chat.service");
 
 exports.sendMessage = async (req, res) => {
   try {
-    const { senderId, receiverId, message } = req.body;
+    const { sender_id, receiver_id, message } = req.body;
 
+    // ✅ chat.service now returns snake_case directly (sender_id, receiver_id)
     const chat = await chatService.createMessage({
-      senderId,
-      receiverId,
+      sender_id,
+      receiver_id,
       message,
     });
 
+    // ✅ Safe io emit - won't crash if io is missing
     const io = req.app.get("io");
+    if (io) {
+      io.to(receiver_id.toString()).emit("receiveMessage", chat);
+    }
 
-    // 🔥 Emit to receiver
-    io.to(`user_${receiverId}`).emit("receive_message", chat);
-
-    // 🔥 Emit to sender
-    io.to(`user_${senderId}`).emit("receive_message", chat);
-
-    return res.json({
-      success: true,
-      data: chat,
-    });
+    return res.json({ success: true, data: chat });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false });
+    console.error("sendMessage error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -32,21 +28,25 @@ exports.getConversation = async (req, res) => {
   try {
     const { userId, expertId } = req.params;
 
-    const chats = await chatService.getConversation(
-      userId,
-      expertId
-    );
+    const chats = await chatService.getConversation(userId, expertId);
 
-    return res.status(200).json({
-      success: true,
-      data: chats,
-    });
-
+    return res.status(200).json({ success: true, data: chats });
   } catch (error) {
-    console.error("Get Conversation Error:", error);
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    console.error("getConversation error:", error.message);
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ✅ NEW: Get all conversations for chat list screen
+exports.getConversations = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const conversations = await chatService.getConversations(userId);
+
+    return res.status(200).json({ success: true, data: conversations });
+  } catch (error) {
+    console.error("getConversations error:", error.message);
+    return res.status(500).json({ success: false, message: error.message });
   }
 };

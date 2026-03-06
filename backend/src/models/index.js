@@ -26,6 +26,8 @@ db.sequelize = sequelize;
 
 // Load User FIRST (since Expert depends on it)
 db.User = require("./user")(sequelize, DataTypes);
+db.Chat = require('./chat')(sequelize, DataTypes);
+db.Call = require('./call')(sequelize, DataTypes);
 
 // Load Expert (depends on User)
 db.Expert = require("./expert")(sequelize, DataTypes);

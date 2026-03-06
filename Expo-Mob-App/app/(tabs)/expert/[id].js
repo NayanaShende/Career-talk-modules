@@ -22,9 +22,8 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.20:3000";
+const BASE_URL = "http://10.89.141.9:3000";
 
-// ✅ FIXED: parse float before rounding so "3" shows 3 stars not 2
 function StarRating({ rating, size = 20 }) {
   const roundedRating = Math.round(parseFloat(rating) || 0);
   return (
@@ -98,7 +97,8 @@ function RatingModal({ visible, onClose, onSubmit }) {
             <TouchableOpacity
               style={[styles.submitRatingBtn, submitting && { opacity: 0.6 }]}
               onPress={handleSubmit}
-              disabled={submitting}>
+              disabled={submitting}
+            >
               <Text style={styles.submitRatingBtnText}>
                 {submitting ? "Submitting..." : "Submit"}
               </Text>
@@ -115,10 +115,23 @@ export default function ExpertProfile() {
   const [expert, setExpert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ratingModal, setRatingModal] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null); // ✅ real logged in user
   const [ratingData, setRatingData] = useState({
     avgRating: 0,
     totalReviews: 0,
   });
+
+  // ✅ Load real logged-in userId from AsyncStorage
+  useEffect(() => {
+    AsyncStorage.getItem("user").then((str) => {
+      if (str) {
+        const u = JSON.parse(str);
+        const uid = u?.id || u?.userId || u?.user?.id;
+        console.log("✅ Logged in userId:", uid);
+        setCurrentUserId(Number(uid));
+      }
+    });
+  }, []);
 
   useEffect(() => {
     if (!id) {
@@ -134,7 +147,7 @@ export default function ExpertProfile() {
     try {
       const res = await getExpertById(id);
       const data = res?.data || res;
-      console.log("✅ Expert profile data:", JSON.stringify(data));
+      console.log("✅ Expert data:", JSON.stringify(data));
       setExpert(data);
     } catch (err) {
       console.log("Profile error:", err);
@@ -143,7 +156,6 @@ export default function ExpertProfile() {
     }
   };
 
-  // ✅ FIXED: parse avgRating as float, totalReviews as int
   const fetchRatings = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -182,7 +194,7 @@ export default function ExpertProfile() {
 
   const handleCallPress = async () => {
     try {
-      const callerId = 1;
+      const callerId = currentUserId || 1;
       const receiverId = id;
       const response = await initiateCall(callerId, receiverId);
       console.log("Call initiated:", response.data);
@@ -191,6 +203,40 @@ export default function ExpertProfile() {
       console.log("Call error:", error.response?.data || error.message);
       Alert.alert("Error", "Failed to initiate call");
     }
+  };
+
+  // ✅ FIXED: pass expert.userId (User table ID) not expert.id (Expert table ID)
+  const handleChatPress = () => {
+    if (!expert) {
+      Alert.alert("Error", "Expert data not loaded");
+      return;
+    }
+
+    // ✅ expert.userId is the correct ID to use for chat
+    // expert.id = Experts table primary key (e.g. 1,2,3)
+    // expert.userId = Users table foreign key (the actual user account ID)
+    const receiverUserId = expert?.userId || expert?.user_id || id;
+
+    console.log(
+      "🔥 Chat pressed - currentUserId:",
+      currentUserId,
+      "receiverUserId:",
+      receiverUserId,
+    );
+
+    if (String(currentUserId) === String(receiverUserId)) {
+      Alert.alert("Error", "Cannot chat with yourself");
+      return;
+    }
+
+    router.push({
+      pathname: "/home/chatscreen",
+      params: {
+        expertId: receiverUserId, // ✅ expert's USER id not expert table id
+        name: expert?.name,
+        avatar: expert?.image,
+      },
+    });
   };
 
   if (loading) {
@@ -220,21 +266,6 @@ export default function ExpertProfile() {
   const skills = Array.isArray(expert?.skills) ? expert.skills : [];
   const displayDomain = expert?.domain || "Expert";
 
-  const handleChatPress = () => {
-    if (!id) {
-      Alert.alert("Error", "Expert ID not found");
-      return;
-    }
-    router.push({
-      pathname: "/home/chatscreen",
-      params: {
-        expertId: id,
-        name: expert.name,
-        avatar: expert.image,
-      },
-    });
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -247,7 +278,8 @@ export default function ExpertProfile() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 }}>
+        contentContainerStyle={{ paddingBottom: 130 }}
+      >
         {/* PROFILE HEADER */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarWrapper}>
@@ -262,8 +294,6 @@ export default function ExpertProfile() {
           </View>
 
           <Text style={styles.nameText}>{expert.name}</Text>
-
-          {/* ✅ show domain instead of role */}
           <Text style={styles.roleText}>{displayDomain}</Text>
 
           <View style={styles.pillRow}>
@@ -273,22 +303,20 @@ export default function ExpertProfile() {
             <Text style={styles.pillLabel}>{totalReviews} Reviews</Text>
           </View>
 
-          {/* ✅ FIXED: pass raw float to StarRating, show numeric score */}
           <View style={{ marginTop: 8 }}>
             <StarRating rating={ratingData.avgRating} size={22} />
           </View>
 
-          {/* ✅ FIXED: show exact rating number so user can verify */}
           <Text style={{ color: "#888", fontSize: 13, marginTop: 4 }}>
             {ratingData.avgRating > 0
               ? `${ratingData.avgRating.toFixed(1)} / 5 (${ratingData.totalReviews} reviews)`
               : "No ratings yet"}
           </Text>
 
-          {/* Rate button */}
           <TouchableOpacity
             style={styles.rateBtn}
-            onPress={() => setRatingModal(true)}>
+            onPress={() => setRatingModal(true)}
+          >
             <Ionicons name="star" size={16} color="#fff" />
             <Text style={styles.rateBtnText}>Rate</Text>
           </TouchableOpacity>
@@ -336,7 +364,6 @@ export default function ExpertProfile() {
             />
           </View>
 
-          {/* Skills section */}
           {skills.length > 0 && (
             <View style={styles.skillsSection}>
               <Text style={styles.sectionTitle}>Skills</Text>
@@ -357,7 +384,7 @@ export default function ExpertProfile() {
         </View>
       </ScrollView>
 
-      {/* FIXED BOTTOM BAR */}
+      {/* BOTTOM BAR */}
       <View style={styles.bottomBarContainer}>
         <Pressable style={styles.chatAction} onPress={handleChatPress}>
           <MaterialCommunityIcons
@@ -367,7 +394,6 @@ export default function ExpertProfile() {
           />
           <Text style={styles.chatActionText}>Chat</Text>
         </Pressable>
-
       </View>
     </SafeAreaView>
   );
@@ -386,11 +412,7 @@ const DetailItem = ({ icon, label, value }) => (
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF" },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
-  profileHeader: {
-    alignItems: "center",
-    paddingTop: 40,
-    paddingBottom: 20,
-  },
+  profileHeader: { alignItems: "center", paddingTop: 40, paddingBottom: 20 },
   avatarWrapper: {
     padding: 3,
     borderRadius: 60,
@@ -402,25 +424,6 @@ const styles = StyleSheet.create({
   roleText: { fontSize: 14, fontWeight: "700", color: "#C5A059" },
   pillRow: { flexDirection: "row", gap: 15, marginTop: 10 },
   pillLabel: { fontSize: 13, color: "#666" },
-  actionRow: { flexDirection: "row", gap: 12, marginTop: 20 },
-  followBtn: {
-    width: 90,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: "#0B2D72",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  followText: { color: "#FFF", fontWeight: "600" },
-  askBtn: {
-    width: 90,
-    height: 50,
-    borderRadius: 8,
-    backgroundColor: "#0B2D72",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  askText: { color: "#FFF", fontWeight: "600", textAlign: "center" },
   rateBtn: {
     marginTop: 12,
     paddingHorizontal: 20,
@@ -507,17 +510,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chatActionText: { fontWeight: "bold", color: "#FFF", fontSize: 16 },
-  callAction: {
-    flex: 1,
-    height: 52,
-    borderRadius: 10,
-    backgroundColor: "#0B2D72",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
-  callActionText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",

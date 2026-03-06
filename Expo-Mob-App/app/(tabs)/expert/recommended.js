@@ -15,8 +15,7 @@ import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.20:3000";
-
+const BASE_URL = "http://10.89.141.9:3000";
 export default function Recommended() {
   const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,10 +33,17 @@ export default function Recommended() {
 
       const normalized = data.map((e) => ({
         ...e,
-        exp: e.experience ?? e.experience_years ?? e.yearsOfExperience ?? e.total_experience ?? 0,
+        exp:
+          e.experience ??
+          e.experience_years ??
+          e.yearsOfExperience ??
+          e.total_experience ??
+          0,
         realRating: parseFloat(e.rating) || 0,
         // ✅ NEW: normalize skills array
-        skillsList: Array.isArray(e.skills) ? e.skills.map((s) => s.skill_name) : [],
+        skillsList: Array.isArray(e.skills)
+          ? e.skills.map((s) => s.skill_name)
+          : [],
       }));
 
       const sorted = [...normalized].sort((a, b) => {
@@ -55,13 +61,16 @@ export default function Recommended() {
   };
 
   const filteredExperts = experts.filter((e) =>
-    e.name?.toLowerCase().includes(search.toLowerCase())
+    e.name?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const animateIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true }).start();
+    Animated.spring(scaleAnim, {
+      toValue: 0.98,
+      useNativeDriver: true,
+    }).start();
   };
 
   const animateOut = () => {
@@ -107,7 +116,9 @@ export default function Recommended() {
       ) : (
         <FlatList
           data={filteredExperts}
-          keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
+          keyExtractor={(item, index) =>
+            item.id ? item.id.toString() : index.toString()
+          }
           contentContainerStyle={{ paddingBottom: 20 }}
           renderItem={({ item }) => (
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -152,7 +163,9 @@ export default function Recommended() {
                     {/* Real stars from DB */}
                     {renderStars(item.realRating)}
                     <Text style={styles.ratingText}>
-                      {item.realRating > 0 ? item.realRating.toFixed(1) : "No rating"}
+                      {item.realRating > 0
+                        ? item.realRating.toFixed(1)
+                        : "No rating"}
                     </Text>
                     {/* Real experience from DB */}
                     <Text style={styles.expText}>

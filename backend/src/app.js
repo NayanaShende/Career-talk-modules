@@ -1,6 +1,5 @@
 require("dotenv").config();
 var express = require("express");
-const http = require("http");
 var logger = require("morgan");
 const cors = require("cors");
 const { Server } = require("socket.io"); // ✅ IMPORTANT
@@ -17,9 +16,7 @@ sequelize.authenticate()
 
 var app = express();
 
-// ------------------------------------------------------
 // CORS
-// ------------------------------------------------------
 app.use(
   cors({
     origin: "*",
@@ -27,19 +24,15 @@ app.use(
   })
 );
 
-// ------------------------------------------------------
-// MIDDLEWARE
-// ------------------------------------------------------
+// Middleware
 app.use(logger("dev"));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Serve uploaded files (cv, images) as static
-app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // ✅ FIXED PATH
+// Serve uploads
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-// ------------------------------------------------------
-// ROUTES
-// ------------------------------------------------------
+// Routes
 app.use("/api", routes);
 
 // ------------------------------------------------------
@@ -71,3 +64,9 @@ app.use(function (req, res, next) {
 // ------------------------------------------------------
 
 module.exports = { app, server }; // ✅ Export both app and server
+// 404
+app.use(function (req, res) {
+  res.status(404).json({ error: "Not Found" });
+});
+
+module.exports = app;
