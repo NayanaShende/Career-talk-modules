@@ -1,6 +1,6 @@
 // src/repositories/expert.repository.js
 
-const { Expert, ExpertSkill, ExpertProfile, sequelize } = require("../models");
+const { Expert, ExpertSkill, User } = require("../models");
 const { Op } = require("sequelize");
 
 /* ===============================
@@ -21,7 +21,6 @@ const createExpert = async (data) => {
   return await Expert.create(data);
 };
 
-// ✅ Used in auth.service
 const findExpertByUserId = async (userId) => {
   return await Expert.findOne({ where: { userId } });
 };
@@ -30,11 +29,20 @@ const updateExpertById = async (id, data) => {
   return await Expert.update(data, { where: { id } });
 };
 
+// ✅ FIXED: now returns userId field explicitly so chat works correctly
 const findExpertById = async (id) => {
-  return await Expert.findOne({
+  const expert = await Expert.findOne({
     where: { id },
     include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
   });
+
+  if (!expert) return null;
+
+  // ✅ Return plain object with userId explicitly included
+  return {
+    ...expert.toJSON(),
+    userId: expert.userId, // ✅ expert's User table ID for chat routing
+  };
 };
 
 /* ===============================
@@ -43,7 +51,6 @@ const findExpertById = async (id) => {
 
 const findRecommendedExperts = async (limit) => {
   return await Expert.findAll({
-    // ✅ FIXED: now includes skills + sorted by rating and experience
     include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
     order: [
       ["rating", "DESC"],
@@ -72,14 +79,16 @@ const findOnlineExperts = async (limit) => {
 ================================ */
 
 const bulkCreateSkills = async (skillRows) => {
-  // ✅ FIXED: delete old skills first to avoid duplicates on re-save
   if (skillRows.length > 0) {
     await ExpertSkill.destroy({ where: { expert_id: skillRows[0].expert_id } });
   }
   return await ExpertSkill.bulkCreate(skillRows);
 };
 
-// ✅ NEW: Filter experts by skill_name in ExpertSkills table
+const deleteSkillsByExpertId = async (expertId) => {
+  return await ExpertSkill.destroy({ where: { expert_id: expertId } });
+};
+
 const findExpertsBySkillName = async (skillName) => {
   return await Expert.findAll({
     include: [
@@ -87,7 +96,7 @@ const findExpertsBySkillName = async (skillName) => {
         model: ExpertSkill,
         as: "skills",
         where: { skill_name: { [Op.iLike]: `%${skillName}%` } },
-        required: true, // INNER JOIN — only experts who have this skill
+        required: true,
       },
     ],
     order: [
@@ -98,25 +107,17 @@ const findExpertsBySkillName = async (skillName) => {
 };
 
 /* ===============================
-   DOMAIN SEARCH (UPDATED)
+   DOMAIN SEARCH
 ================================ */
 
-// 🔥 Search by domain OR skills
 const searchExpertsByHeadline = async (domain) => {
   try {
     console.log("🔍 Filtering by domain:", domain);
-
     const result = await Expert.findAll({
-      where: {
-        domain: { [Op.iLike]: `%${domain}%` },
-      },
+      where: { domain: { [Op.iLike]: `%${domain}%` } },
       include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
-      order: [
-        ["rating", "DESC"],
-        ["experience", "DESC"],
-      ],
+      order: [["rating", "DESC"], ["experience", "DESC"]],
     });
-
     console.log("✅ Found:", result.length, "experts for domain:", domain);
     return result;
   } catch (err) {
@@ -129,35 +130,20 @@ const searchExpertsBySkill = async (domain) => {
   if (!domain) return await Expert.findAll({
     include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
   });
-
   return await Expert.findAll({
-    where: {
-      domain: { [Op.iLike]: `%${domain}%` },
-    },
-    include: [
-      // ✅ FIXED: also search inside ExpertSkills table
-      {
-        model: ExpertSkill,
-        as: "skills",
-        required: false,
-      },
-    ],
+    where: { domain: { [Op.iLike]: `%${domain}%` } },
+    include: [{ model: ExpertSkill, as: "skills", required: false }],
   });
 };
 
 const findExpertsBySkill = async (domain) => {
   try {
     console.log("🔍 Searching domain:", domain);
-
     const result = await Expert.findAll({
       where: { domain: { [Op.iLike]: `%${domain}%` } },
       include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
-      order: [
-        ["rating", "DESC"],
-        ["experience", "DESC"],
-      ],
+      order: [["rating", "DESC"], ["experience", "DESC"]],
     });
-
     console.log("✅ Found:", result.length, "experts");
     return result;
   } catch (err) {
@@ -171,15 +157,18 @@ const findExpertsBySkill = async (domain) => {
 ================================ */
 
 const findExpertProfileByUserId = async (userId) => {
-  return await ExpertProfile.findOne({ where: { userId } });
+  return await Expert.findOne({
+    where: { userId },
+    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
+  });
 };
 
 const createExpertProfile = async (data) => {
-  return await ExpertProfile.create(data);
+  return await Expert.create(data);
 };
 
-const updateExpertProfile = async (profile, data) => {
-  return await profile.update(data);
+const updateExpertProfile = async (expert, data) => {
+  return await expert.update(data);
 };
 
 /* ===============================
@@ -202,7 +191,8 @@ module.exports = {
   findRecommendedExperts,
   findOnlineExperts,
   bulkCreateSkills,
-  findExpertsBySkillName,   // ✅ NEW
+  deleteSkillsByExpertId,
+  findExpertsBySkillName,
   searchExpertsBySkill,
   searchExpertsByHeadline,
   findExpertsBySkill,

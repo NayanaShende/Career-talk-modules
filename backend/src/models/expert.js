@@ -103,12 +103,8 @@ module.exports = (sequelize, DataTypes) => {
       });
     }
 
-    if (models.ExpertProfile) {
-      Expert.hasOne(models.ExpertProfile, {
-        foreignKey: "expertId",
-        as: "profile",
-      });
-    }
+    // ❌ REMOVED: ExpertProfile association (model does not exist in your project)
+    // if (models.ExpertProfile) { ... }
 
     if (models.ExpertSkill) {
       Expert.hasMany(models.ExpertSkill, {

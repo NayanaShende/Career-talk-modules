@@ -10,21 +10,56 @@ module.exports = {
         type: Sequelize.INTEGER,
       },
 
-      name: {
-        type: Sequelize.STRING,
-        allowNull: false,
-      },
-
-      email: {
+      mobile: {
         type: Sequelize.STRING,
         allowNull: false,
         unique: true,
       },
 
-      password: {
+      otp: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      otpExpiryAt: {
+        type: Sequelize.DATE,
+        allowNull: true,
+      },
+
+      isVerified: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+
+      role: {
         type: Sequelize.STRING,
         allowNull: false,
+        defaultValue: "user",
       },
+
+      hasProfile: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+
+      // ✅ PROFILE DATA
+      fullName: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      email: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      dob: {
+        type: Sequelize.DATEONLY,
+        allowNull: true,
+      },
+
+      // ❌ qualification, experience, domain, cvFile, skills NOT here
+      // ✅ Those columns live in the Experts table
 
       createdAt: {
         allowNull: false,

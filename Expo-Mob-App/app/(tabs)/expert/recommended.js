@@ -16,7 +16,6 @@ import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
 const BASE_URL = "http://10.89.141.9:3000";
-
 export default function Recommended() {
   const [experts, setExperts] = useState([]);
   const [loading, setLoading] = useState(true);

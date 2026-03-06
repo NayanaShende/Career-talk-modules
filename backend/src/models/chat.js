@@ -2,13 +2,18 @@ module.exports = (sequelize, DataTypes) => {
   const Chat = sequelize.define('Chat', {
     senderId: {
       type: DataTypes.INTEGER,
+      field: 'senderId', // ✅ explicit field name
     },
     receiverId: {
       type: DataTypes.INTEGER,
+      field: 'receiverId',
     },
     message: {
       type: DataTypes.TEXT,
     },
+  }, {
+    tableName: 'Chats', // ✅ explicit table name
+    timestamps: true,
   });
 
   return Chat;
