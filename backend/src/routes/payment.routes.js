@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/payment.controller");
+const protect = require("../middleware/protect"); // ✅ ADDED
 
 // ✅ IMPORTANT: Webhook route MUST be defined BEFORE express.json() is applied
 // It needs raw body for Razorpay signature verification
@@ -22,9 +23,9 @@ router.post(
 );
 
 // ✅ Create Razorpay Order (requires auth middleware)
-router.post("/create-order", paymentController.createOrder);
+router.post("/create-order", protect, paymentController.createOrder);
 
 // ✅ Verify Payment + Credit Wallet (requires auth middleware)
-router.post("/verify-payment", paymentController.verifyPayment);
+router.post("/verify-payment", protect, paymentController.verifyPayment);
 
 module.exports = router;

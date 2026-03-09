@@ -15,8 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import WalletModal from "../../../components/WalletModal"; // ✅ ADDED
 
-const BASE_URL = "http://10.89.141.25:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 const SKILLS = [
   "All",
@@ -99,6 +100,9 @@ export default function Dashboard() {
   const [activeCertification, setActiveCertification] = useState("All");
   const [certificationExperts, setCertificationExperts] = useState([]);
   const [loadingCertification, setLoadingCertification] = useState(false);
+
+  // ✅ ADDED: wallet modal state
+  const [walletVisible, setWalletVisible] = useState(false);
 
   const socketRef = useRef(null);
   const expertIdRef = useRef(null);
@@ -428,7 +432,10 @@ export default function Dashboard() {
           <Text style={styles.avatarInitial}>C</Text>
         </View>
         <Text style={styles.headerTitle}>Career-Talk</Text>
-        <TouchableOpacity style={styles.addCashBtn}>
+        {/* ✅ UPDATED: Added onPress to open wallet modal */}
+        <TouchableOpacity
+          style={styles.addCashBtn}
+          onPress={() => setWalletVisible(true)}>
           <Text style={styles.addCashText}>Add Cash +</Text>
         </TouchableOpacity>
       </View>
@@ -436,8 +443,7 @@ export default function Dashboard() {
       {/* SEARCH */}
       <Pressable
         style={styles.searchBar}
-        onPress={() => router.push("/expert/search")}
-      >
+        onPress={() => router.push("/expert/search")}>
         <Ionicons name="search" size={20} color="#C4C4C4" />
         <Text style={styles.searchText}>Search</Text>
       </Pressable>
@@ -478,8 +484,7 @@ export default function Dashboard() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.liveScrollContainer}
-          >
+            contentContainerStyle={styles.liveScrollContainer}>
             {onlineExperts.map((e) => (
               <LiveExpert
                 key={e.id}
@@ -499,8 +504,7 @@ export default function Dashboard() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}
-        >
+          contentContainerStyle={styles.filterList}>
           {SKILL_FILTERS.map((skill) => (
             <TouchableOpacity
               key={skill}
@@ -508,14 +512,12 @@ export default function Dashboard() {
                 styles.filterChip,
                 activeSkillFilter === skill && styles.filterChipActive,
               ]}
-              onPress={() => setActiveSkillFilter(skill)}
-            >
+              onPress={() => setActiveSkillFilter(skill)}>
               <Text
                 style={[
                   styles.filterChipText,
                   activeSkillFilter === skill && styles.filterChipTextActive,
-                ]}
-              >
+                ]}>
                 {skill}
               </Text>
             </TouchableOpacity>
@@ -531,8 +533,7 @@ export default function Dashboard() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}
-          >
+            contentContainerStyle={styles.expertBySkillList}>
             {skillFilteredExperts.map((e) => (
               <ExpertCard key={e.id} e={e} />
             ))}
@@ -548,8 +549,7 @@ export default function Dashboard() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterList}
-            >
+              contentContainerStyle={styles.filterList}>
               {LANGUAGE_FILTERS.map((lang) => (
                 <TouchableOpacity
                   key={lang}
@@ -558,14 +558,12 @@ export default function Dashboard() {
                     styles.filterChipGreen,
                     activeLanguage === lang && styles.filterChipGreenActive,
                   ]}
-                  onPress={() => setActiveLanguage(lang)}
-                >
+                  onPress={() => setActiveLanguage(lang)}>
                   <Text
                     style={[
                       styles.filterChipText,
                       { color: activeLanguage === lang ? "#fff" : "#1a7a4a" },
-                    ]}
-                  >
+                    ]}>
                     {lang}
                   </Text>
                 </TouchableOpacity>
@@ -584,8 +582,7 @@ export default function Dashboard() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.expertBySkillList}
-              >
+                contentContainerStyle={styles.expertBySkillList}>
                 {languageExperts.map((e) => (
                   <ExpertCard key={e.id} e={e} />
                 ))}
@@ -603,8 +600,7 @@ export default function Dashboard() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterList}
-            >
+              contentContainerStyle={styles.filterList}>
               {CERTIFICATION_FILTERS.map((cert) => (
                 <TouchableOpacity
                   key={cert}
@@ -614,8 +610,7 @@ export default function Dashboard() {
                     activeCertification === cert &&
                       styles.filterChipOrangeActive,
                   ]}
-                  onPress={() => setActiveCertification(cert)}
-                >
+                  onPress={() => setActiveCertification(cert)}>
                   <Text
                     style={[
                       styles.filterChipText,
@@ -623,8 +618,7 @@ export default function Dashboard() {
                         color:
                           activeCertification === cert ? "#fff" : "#b45309",
                       },
-                    ]}
-                  >
+                    ]}>
                     {cert}
                   </Text>
                 </TouchableOpacity>
@@ -643,8 +637,7 @@ export default function Dashboard() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.expertBySkillList}
-              >
+                contentContainerStyle={styles.expertBySkillList}>
                 {certificationExperts.map((e) => (
                   <ExpertCard key={e.id} e={e} />
                 ))}
@@ -666,14 +659,12 @@ export default function Dashboard() {
           <ScrollView
             horizontal
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContainer}
-          >
+            contentContainerStyle={styles.scrollContainer}>
             {filteredExperts.map((e) => (
               <Pressable
                 key={e.id}
                 style={styles.skillExpertCard}
-                onPress={() => router.push(`/expert/${e.id}`)}
-              >
+                onPress={() => router.push(`/expert/${e.id}`)}>
                 {e.image ? (
                   <Image
                     source={{ uri: getImageUri(e.image, e.name) }}
@@ -728,14 +719,12 @@ export default function Dashboard() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.topExpertsList}
-          >
+            contentContainerStyle={styles.topExpertsList}>
             {topExperts.map((e) => (
               <TouchableOpacity
                 key={e.id}
                 style={styles.circularExpertContainer}
-                onPress={() => router.push(`/expert/${e.id}`)}
-              >
+                onPress={() => router.push(`/expert/${e.id}`)}>
                 <View style={styles.goldBorder}>
                   {e.image ? (
                     <Image
@@ -761,6 +750,12 @@ export default function Dashboard() {
           </ScrollView>
         )}
       </ScrollView>
+
+      {/* ✅ ADDED: Wallet Modal */}
+      <WalletModal
+        visible={walletVisible}
+        onClose={() => setWalletVisible(false)}
+      />
     </SafeAreaView>
   );
 }
