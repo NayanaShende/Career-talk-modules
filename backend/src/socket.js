@@ -90,14 +90,16 @@ function initSocket(server) {
     // ===============================
     socket.on("expert:online", async (userId) => {
       try {
-        const expert = await Expert.findOne({ where: { userId } });
+        const expert = await Expert.findOne({ where: { userId: userId } });
+
         if (!expert) {
           console.log(`⚠️ No expert found for userId: ${userId}`);
           return;
         }
 
         socketToExpert[socket.id] = expert.id;
-        await expert.update({ is_online: true });
+
+        await Expert.update({ is_online: true }, { where: { id: expert.id } });
 
         io.emit("expert:status", { expertId: expert.id, is_online: true });
         console.log(`🟢 Expert ${expert.id} is ONLINE`);
@@ -114,7 +116,8 @@ function initSocket(server) {
           return;
         }
 
-        await expert.update({ is_online: false });
+        await Expert.update({ is_online: false }, { where: { id: expert.id } });
+
         io.emit("expert:status", { expertId: expert.id, is_online: false });
         console.log(`🔴 Expert ${expert.id} is OFFLINE`);
       } catch (err) {

@@ -129,6 +129,7 @@ export default function LoginOtpScreen() {
     }
   };
 
+  // ✅ UPDATED: saves redirectTo inside user object so _layout.tsx can auto-login
   const verifyOtp = async () => {
     const finalOtp = otp.join("");
 
@@ -149,9 +150,13 @@ export default function LoginOtpScreen() {
         await AsyncStorage.setItem("token", res.data.token);
       }
 
-      // ✅ FIXED: Save full user object so dashboard can get userId/role
+      // ✅ UPDATED: Save redirectTo inside user object for persistent login check
       if (res.data.user) {
-        await AsyncStorage.setItem("user", JSON.stringify(res.data.user));
+        const userData = {
+          ...res.data.user,
+          redirectTo: res.data.redirectTo, // ✅ store redirectTo so _layout.tsx knows where to go
+        };
+        await AsyncStorage.setItem("user", JSON.stringify(userData));
       }
 
       // ✅ Redirect based on profile status
@@ -173,7 +178,6 @@ export default function LoginOtpScreen() {
         style={{ flex: 1 }}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={{ flex: 1 }}>
             <View style={styles.topSection}>
@@ -317,6 +321,7 @@ export default function LoginOtpScreen() {
                   </TouchableOpacity>
                 </Animated.View>
               )}
+
               {/* SOCIAL LOGIN SECTION */}
               <View style={{ marginTop: 25 }}>
                 <View

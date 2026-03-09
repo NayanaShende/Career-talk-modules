@@ -26,17 +26,30 @@ exports.createExpertProfile = async (req, res) => {
 };
 
 // ================= SUBMIT EXPERT PROFILE FORM =================
-// ✅ NEW: called when expert fills out the profile form
-// saves to Experts table using userId from JWT token
 exports.submitExpertProfileForm = async (req, res) => {
   try {
-    const userId = req.user.id; // ✅ from auth middleware (JWT)
-    const file = req.file; // ✅ CV file from multer (optional)
+    const userId = req.user.id;
+
+    // ✅ FIXED: multer.fields() puts files in req.files (object), not req.file
+    // req.file is only set when using upload.single()
+    const files = req.files || {};
+
+    const cvFile = files.cv ? files.cv[0] : null;
+    const imageFile = files.image ? files.image[0] : null;
+    const certificateFile = files.certificate ? files.certificate[0] : null;
+
+    console.log("📁 Uploaded files:", {
+      cv: cvFile?.filename,
+      image: imageFile?.filename,
+      certificate: certificateFile?.filename,
+    });
 
     const expert = await expertService.createExpertProfile(
       userId,
       req.body,
-      file,
+      cvFile,
+      imageFile,
+      certificateFile,
     );
 
     res.status(200).json({
@@ -51,14 +64,12 @@ exports.submitExpertProfileForm = async (req, res) => {
 };
 
 // ================= GET MY PROFILE =================
-// ✅ FIXED: returns empty profile instead of 404 error when no profile exists yet
 exports.getMyExpertProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // ✅ from auth middleware (JWT)
+    const userId = req.user.id;
     const profile = await expertService.getExpertProfile(userId);
 
     if (!profile) {
-      // ✅ Return empty profile instead of throwing error
       return res.status(200).json({
         success: true,
         data: null,
@@ -78,21 +89,16 @@ exports.updateExpertProfile = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // ✅ validation added
     if (!id || isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid expert id",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid expert id" });
     }
 
     const expert = await expertService.updateExpert(Number(id), req.body);
-
-    res.status(200).json({
-      success: true,
-      message: "Expert updated",
-      data: expert,
-    });
+    res
+      .status(200)
+      .json({ success: true, message: "Expert updated", data: expert });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -104,23 +110,19 @@ exports.addSkills = async (req, res) => {
     const { expertId } = req.params;
     const { skills } = req.body;
 
-    // ✅ validation added
     if (!expertId || isNaN(expertId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid expert id",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid expert id" });
     }
 
     if (!skills || !Array.isArray(skills)) {
-      return res.status(400).json({
-        success: false,
-        message: "skills must be an array",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "skills must be an array" });
     }
 
     await expertService.addSkills(Number(expertId), skills);
-
     res.json({ success: true, message: "Skills added" });
   } catch (err) {
     console.error(err);
@@ -155,21 +157,18 @@ exports.getExpertById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // ✅ CRITICAL FIX
     if (!id || isNaN(id)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid expert id",
-      });
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid expert id" });
     }
 
     const expert = await expertService.getExpertById(Number(id));
 
     if (!expert) {
-      return res.status(404).json({
-        success: false,
-        message: "Expert not found",
-      });
+      return res
+        .status(404)
+        .json({ success: false, message: "Expert not found" });
     }
 
     res.status(200).json({ success: true, data: expert });
@@ -180,8 +179,6 @@ exports.getExpertById = async (req, res) => {
 };
 
 // ================= GET DOMAINS LIST =================
-// ✅ NEW: returns 10 domains for frontend dropdown
-// No auth required — public route
 exports.getDomainsList = async (req, res) => {
   try {
     const domains = [
@@ -196,7 +193,6 @@ exports.getDomainsList = async (req, res) => {
       "Education & Tutoring",
       "Human Resources",
     ];
-
     res.status(200).json({ success: true, data: domains });
   } catch (err) {
     console.error(err);

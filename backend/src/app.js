@@ -3,11 +3,11 @@ var express = require("express");
 var logger = require("morgan");
 const cors = require("cors");
 const http = require("http");
+const { initSocket } = require("./socket"); // ✅ removed unused Server import
 const path = require("path");
 
 const routes = require("./routes");
 const { sequelize } = require("./models");
-const { initSocket } = require("./socket");
 
 // Test database connection
 sequelize
@@ -28,8 +28,7 @@ app.use(
 // Middleware
 app.use(logger("dev"));
 
-// ✅ CHANGE 1: Webhook route needs raw body — register BEFORE express.json()
-// This captures raw body only for /api/payments/webhook
+// ✅ Webhook route needs raw body — register BEFORE express.json()
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 
 // ✅ All other routes use normal JSON parsing

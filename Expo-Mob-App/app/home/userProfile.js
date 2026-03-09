@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.22:3000";
 
 const SKILL_OPTIONS = [
   "React",
@@ -72,12 +72,39 @@ const DOMAIN_OPTIONS = [
   { label: "Business Strategy", value: "Business Strategy" },
   { label: "Education & Tutoring", value: "Education & Tutoring" },
   { label: "Human Resources", value: "Human Resources" },
+  { label: "Other", value: "Other" },
 ];
 
+// Per-domain certificate guidance shown to the expert
+const DOMAIN_CERTIFICATE_GUIDE = {
+  "Career Counseling":
+    "Upload your Certified Career Counselor (CCC), NCDA certificate, or a relevant degree/diploma certificate (PDF or image).",
+  "Software Engineering":
+    "Upload your AWS / Google / Microsoft certification, or your CS/IT degree certificate (PDF or image).",
+  "Data Science & AI":
+    "Upload your IBM Data Science, Coursera ML, or university degree certificate in Data Science/AI (PDF or image).",
+  "Finance & Investment":
+    "Upload your CFA, CFP, CA, MBA-Finance marksheet, SEBI/NISM certificate (PDF or image).",
+  "Marketing & Branding":
+    "Upload your Google Digital Marketing, HubSpot, or MBA-Marketing degree certificate (PDF or image).",
+  "Health & Wellness":
+    "Upload your MBBS, BDS, BSc Nursing, Physiotherapy, or certified trainer/dietitian certificate (PDF or image).",
+  "Legal Advisory":
+    "Upload your LLB/LLM degree or Bar Council Enrollment certificate (PDF or image).",
+  "Business Strategy":
+    "Upload your MBA degree, CMC certification, or Business Strategy programme certificate (PDF or image).",
+  "Education & Tutoring":
+    "Upload your B.Ed/M.Ed degree, TET/CTET scorecard, or school-affiliation proof (PDF or image).",
+  "Human Resources":
+    "Upload your SHRM-CP, PHR, MBA-HR, or XLRI/TISS HR programme certificate (PDF or image).",
+  Other:
+    "Upload any official certificate, degree, or document that proves your expertise in your domain (PDF or image).",
+};
+
+// ─── Reusable dropdown ────────────────────────────────────────────────────────
 function DropdownPicker({ label, value, options, onChange }) {
   const [visible, setVisible] = useState(false);
   const selected = options.find((o) => o.value === value);
-
   return (
     <>
       <TouchableOpacity
@@ -129,6 +156,7 @@ function DropdownPicker({ label, value, options, onChange }) {
   );
 }
 
+// ─── Skills picker ────────────────────────────────────────────────────────────
 function SkillsPicker({ selectedSkills, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customSkill, setCustomSkill] = useState("");
@@ -138,25 +166,25 @@ function SkillsPicker({ selectedSkills, onChange }) {
       onChange(selectedSkills.filter((s) => s !== skill));
     } else {
       if (selectedSkills.length >= 5) {
-        Alert.alert("Max 5 skills", "You can select up to 5 skills");
+        Alert.alert("Max 5 skills");
         return;
       }
       onChange([...selectedSkills, skill]);
     }
   };
 
-  const addCustomSkill = () => {
-    const trimmed = customSkill.trim();
-    if (!trimmed) return;
-    if (selectedSkills.includes(trimmed)) {
-      Alert.alert("Already added", "This skill is already selected");
+  const addCustom = () => {
+    const t = customSkill.trim();
+    if (!t) return;
+    if (selectedSkills.includes(t)) {
+      Alert.alert("Already added");
       return;
     }
     if (selectedSkills.length >= 5) {
-      Alert.alert("Max 5 skills", "You can select up to 5 skills");
+      Alert.alert("Max 5 skills");
       return;
     }
-    onChange([...selectedSkills, trimmed]);
+    onChange([...selectedSkills, t]);
     setCustomSkill("");
   };
 
@@ -185,7 +213,6 @@ function SkillsPicker({ selectedSkills, onChange }) {
           ))
         )}
       </View>
-
       <TouchableOpacity
         style={styles.addSkillsBtn}
         onPress={() => setVisible(true)}
@@ -195,7 +222,6 @@ function SkillsPicker({ selectedSkills, onChange }) {
           {selectedSkills.length === 0 ? "Add Skills" : "Edit Skills"} (max 5)
         </Text>
       </TouchableOpacity>
-
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
           style={styles.modalOverlay}
@@ -222,7 +248,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
             />
             <TouchableOpacity
               style={styles.customSkillAddBtn}
-              onPress={addCustomSkill}
+              onPress={addCustom}
             >
               <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
             </TouchableOpacity>
@@ -231,13 +257,10 @@ function SkillsPicker({ selectedSkills, onChange }) {
             data={SKILL_OPTIONS}
             keyExtractor={(item) => item}
             renderItem={({ item }) => {
-              const isSelected = selectedSkills.includes(item);
+              const isSel = selectedSkills.includes(item);
               return (
                 <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    isSelected && styles.modalItemSelected,
-                  ]}
+                  style={[styles.modalItem, isSel && styles.modalItemSelected]}
                   onPress={() => toggleSkill(item)}
                 >
                   <View
@@ -250,13 +273,13 @@ function SkillsPicker({ selectedSkills, onChange }) {
                     <Text
                       style={{
                         fontSize: 16,
-                        color: isSelected ? "#0B2D72" : "#333",
-                        fontWeight: isSelected ? "700" : "400",
+                        color: isSel ? "#0B2D72" : "#333",
+                        fontWeight: isSel ? "700" : "400",
                       }}
                     >
                       {item}
                     </Text>
-                    {isSelected && (
+                    {isSel && (
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
@@ -280,34 +303,35 @@ function SkillsPicker({ selectedSkills, onChange }) {
   );
 }
 
+// ─── Languages picker ─────────────────────────────────────────────────────────
 function LanguagesPicker({ selectedLanguages, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customLang, setCustomLang] = useState("");
 
-  const toggleLanguage = (lang) => {
+  const toggle = (lang) => {
     if (selectedLanguages.includes(lang)) {
       onChange(selectedLanguages.filter((l) => l !== lang));
     } else {
       if (selectedLanguages.length >= 5) {
-        Alert.alert("Max 5 languages", "You can select up to 5 languages");
+        Alert.alert("Max 5 languages");
         return;
       }
       onChange([...selectedLanguages, lang]);
     }
   };
 
-  const addCustomLanguage = () => {
-    const trimmed = customLang.trim();
-    if (!trimmed) return;
-    if (selectedLanguages.includes(trimmed)) {
-      Alert.alert("Already added", "This language is already selected");
+  const addCustom = () => {
+    const t = customLang.trim();
+    if (!t) return;
+    if (selectedLanguages.includes(t)) {
+      Alert.alert("Already added");
       return;
     }
     if (selectedLanguages.length >= 5) {
-      Alert.alert("Max 5 languages", "You can select up to 5 languages");
+      Alert.alert("Max 5 languages");
       return;
     }
-    onChange([...selectedLanguages, trimmed]);
+    onChange([...selectedLanguages, t]);
     setCustomLang("");
   };
 
@@ -323,7 +347,7 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
             <TouchableOpacity
               key={lang}
               style={styles.skillChip}
-              onPress={() => toggleLanguage(lang)}
+              onPress={() => toggle(lang)}
             >
               <Text style={styles.skillChipText}>{lang}</Text>
               <Ionicons
@@ -336,7 +360,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
           ))
         )}
       </View>
-
       <TouchableOpacity
         style={styles.addSkillsBtn}
         onPress={() => setVisible(true)}
@@ -347,7 +370,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
           (max 5)
         </Text>
       </TouchableOpacity>
-
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
           style={styles.modalOverlay}
@@ -374,7 +396,7 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
             />
             <TouchableOpacity
               style={styles.customSkillAddBtn}
-              onPress={addCustomLanguage}
+              onPress={addCustom}
             >
               <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
             </TouchableOpacity>
@@ -383,14 +405,11 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
             data={LANGUAGE_OPTIONS}
             keyExtractor={(item) => item}
             renderItem={({ item }) => {
-              const isSelected = selectedLanguages.includes(item);
+              const isSel = selectedLanguages.includes(item);
               return (
                 <TouchableOpacity
-                  style={[
-                    styles.modalItem,
-                    isSelected && styles.modalItemSelected,
-                  ]}
-                  onPress={() => toggleLanguage(item)}
+                  style={[styles.modalItem, isSel && styles.modalItemSelected]}
+                  onPress={() => toggle(item)}
                 >
                   <View
                     style={{
@@ -402,13 +421,13 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
                     <Text
                       style={{
                         fontSize: 16,
-                        color: isSelected ? "#0B2D72" : "#333",
-                        fontWeight: isSelected ? "700" : "400",
+                        color: isSel ? "#0B2D72" : "#333",
+                        fontWeight: isSel ? "700" : "400",
                       }}
                     >
                       {item}
                     </Text>
-                    {isSelected && (
+                    {isSel && (
                       <Ionicons
                         name="checkmark-circle"
                         size={20}
@@ -432,10 +451,127 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   );
 }
 
+// ─── Inline field error ───────────────────────────────────────────────────────
+function FieldError({ message }) {
+  if (!message) return null;
+  return (
+    <View
+      style={{
+        flexDirection: "row",
+        alignItems: "center",
+        marginTop: 4,
+        gap: 4,
+      }}
+    >
+      <Ionicons name="alert-circle" size={13} color="#e53935" />
+      <Text style={styles.fieldError}>{message}</Text>
+    </View>
+  );
+}
+
+// ─── Certificate upload section (domain-aware) ────────────────────────────────
+function CertificateUploadSection({ domain, certFile, onPick, error }) {
+  const guide = domain ? DOMAIN_CERTIFICATE_GUIDE[domain] : null;
+  return (
+    <View style={{ marginTop: 6 }}>
+      {/* Instruction box */}
+      {domain ? (
+        <View style={styles.certInfoBox}>
+          <Ionicons
+            name="shield-checkmark-outline"
+            size={18}
+            color="#0B2D72"
+            style={{ marginTop: 2 }}
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.certInfoTitle}>
+              Required proof for "{domain}"
+            </Text>
+            <Text style={styles.certInfoText}>{guide}</Text>
+          </View>
+        </View>
+      ) : (
+        <View
+          style={[
+            styles.certInfoBox,
+            { borderLeftColor: "#e07b00", backgroundColor: "#fff8ee" },
+          ]}
+        >
+          <Ionicons
+            name="warning-outline"
+            size={18}
+            color="#e07b00"
+            style={{ marginTop: 2 }}
+          />
+          <Text style={[styles.certInfoText, { color: "#e07b00", flex: 1 }]}>
+            Please select your domain first — the required certificate type will
+            appear here.
+          </Text>
+        </View>
+      )}
+
+      {/* Upload button */}
+      <TouchableOpacity
+        style={[
+          styles.certUploadBtn,
+          certFile && styles.certUploadBtnSuccess,
+          error && !certFile && styles.certUploadBtnError,
+          !domain && { opacity: 0.45 },
+        ]}
+        onPress={
+          domain
+            ? onPick
+            : () =>
+                Alert.alert(
+                  "Select domain first",
+                  "Please choose your domain before uploading a certificate.",
+                )
+        }
+        activeOpacity={domain ? 0.7 : 1}
+      >
+        <Ionicons
+          name={certFile ? "document-attach" : "cloud-upload-outline"}
+          size={24}
+          color={certFile ? "#1a7f37" : error ? "#e53935" : "#0B2D72"}
+        />
+        <View style={{ flex: 1, marginLeft: 12 }}>
+          {certFile ? (
+            <>
+              <Text style={styles.certFileNameText} numberOfLines={1}>
+                {certFile.name}
+              </Text>
+              <Text style={{ fontSize: 11, color: "#1a7f37", marginTop: 2 }}>
+                ✓ Certificate uploaded — tap to replace
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text
+                style={[styles.certUploadLabel, error && { color: "#e53935" }]}
+              >
+                Tap to upload certificate *
+              </Text>
+              <Text style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
+                Accepted: PDF, JPG, PNG
+              </Text>
+            </>
+          )}
+        </View>
+        {certFile && (
+          <Ionicons name="checkmark-circle" size={24} color="#1a7f37" />
+        )}
+      </TouchableOpacity>
+      <FieldError message={error} />
+    </View>
+  );
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const [role, setRole] = useState("Jobseeker");
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -447,20 +583,47 @@ export default function ProfileScreen() {
     customExperience: "",
     cv: null,
     image: null,
-    certificate: "",
+    certFile: null,
     languages: "",
     customLanguages: "",
     location: "",
     customLocation: "",
     bio: "",
     domain: "",
+    customDomain: "",
   });
 
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
 
-  const handleChange = (field, value) =>
-    setFormData({ ...formData, [field]: value });
+  const setField = (field, value) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    setErrors((prev) => ({ ...prev, [field]: "" }));
+  };
+
+  // Name — letters + spaces only, strip everything else
+  const handleNameChange = (value) => {
+    const cleaned = value.replace(/[^a-zA-Z\s]/g, "");
+    setField("fullName", cleaned);
+    if (cleaned.trim().length < 2)
+      setErrors((p) => ({
+        ...p,
+        fullName: "Name must have at least 2 letters (letters only)",
+      }));
+    else setErrors((p) => ({ ...p, fullName: "" }));
+  };
+
+  // Email — force lowercase + format validation
+  const handleEmailChange = (value) => {
+    const lower = value.toLowerCase();
+    setField("email", lower);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lower))
+      setErrors((p) => ({
+        ...p,
+        email: "Enter a valid email (no capital letters allowed)",
+      }));
+    else setErrors((p) => ({ ...p, email: "" }));
+  };
 
   const onChangeDate = (event, selectedDate) => {
     const current = selectedDate || date;
@@ -472,66 +635,123 @@ export default function ProfileScreen() {
       String(current.getMonth() + 1).padStart(2, "0") +
       "-" +
       String(current.getDate()).padStart(2, "0");
-    handleChange("dob", formatted);
+    setField("dob", formatted);
   };
 
   const pickCV = async () => {
     const result = await DocumentPicker.getDocumentAsync({});
-    if (!result.canceled) {
-      handleChange("cv", result.assets[0]);
+    if (!result.canceled) setField("cv", result.assets[0]);
+  };
+
+  // Certificate: PDF or image only
+  const pickCertificate = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/jpeg", "image/png", "image/jpg"],
+        copyToCacheDirectory: true,
+      });
+      if (!result.canceled) {
+        setField("certFile", result.assets[0]);
+        setErrors((p) => ({ ...p, certFile: "" }));
+      }
+    } catch {
+      Alert.alert("Error", "Could not open file picker. Please try again.");
     }
   };
 
   const pickImage = async () => {
     const p = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!p.granted) {
+    if (!p.granted)
       return Alert.alert("Permission Required", "Enable gallery access.");
-    }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.7,
     });
-    if (!result.canceled) {
-      handleChange("image", result.assets[0]);
-    }
+    if (!result.canceled) setField("image", result.assets[0]);
   };
 
-  const submitProfile = async () => {
-    try {
-      if (!formData.fullName.trim())
-        return Alert.alert("Missing", "Full name is required");
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
-        return Alert.alert("Invalid Email");
-      if (!formData.dob) return Alert.alert("Missing", "Select birth date");
-      if (!formData.qualification)
-        return Alert.alert("Missing", "Select qualification");
-      if (!formData.experience)
-        return Alert.alert("Missing", "Select experience");
-      if (!formData.cv) return Alert.alert("Missing", "Upload your CV");
-      if (role === "Expert" && selectedSkills.length === 0)
-        return Alert.alert("Missing", "Please select at least 1 skill");
-      if (role === "Expert" && !formData.domain)
-        return Alert.alert("Missing", "Please select your domain");
+  // ── Full validation ──────────────────────────────────────────────────────────
+  const validate = () => {
+    const e = {};
 
+    if (!formData.fullName.trim() || formData.fullName.trim().length < 2)
+      e.fullName = "Full name is required (letters only, min 2 chars)";
+    else if (/[^a-zA-Z\s]/.test(formData.fullName))
+      e.fullName = "Name must contain letters only";
+
+    if (!formData.email) e.email = "Email is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
+      e.email = "Enter a valid email address";
+
+    if (!formData.dob) e.dob = "Birth date is required";
+
+    if (!formData.qualification) e.qualification = "Qualification is required";
+    else if (
+      formData.qualification === "Other" &&
+      !formData.customQualification.trim()
+    )
+      e.customQualification = "Please specify your qualification";
+
+    if (!formData.experience) e.experience = "Experience is required";
+    else if (
+      formData.experience === "Other" &&
+      !formData.customExperience.trim()
+    )
+      e.customExperience = "Please specify your experience";
+
+    if (!formData.cv) e.cv = "Please upload your CV";
+
+    if (role === "Expert") {
+      if (!formData.domain) e.domain = "Domain is required for Experts";
+      else if (formData.domain === "Other" && !formData.customDomain.trim())
+        e.customDomain = "Please specify your domain";
+
+      if (selectedSkills.length === 0)
+        e.skills = "Please select at least 1 skill";
+
+      if (!formData.certFile)
+        e.certFile =
+          "Please upload your certificate — this is required to verify your domain expertise";
+
+      if (formData.location === "Other" && !formData.customLocation.trim())
+        e.customLocation = "Please specify your city";
+    }
+
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  // ── Submit ───────────────────────────────────────────────────────────────────
+  const submitProfile = async () => {
+    if (!validate()) {
+      Alert.alert(
+        "Validation Error",
+        "Please fix the highlighted fields before submitting.",
+      );
+      return;
+    }
+    try {
       const token = await AsyncStorage.getItem("token");
       if (!token) return Alert.alert("Login Required");
 
-      // STEP 1: SET ROLE
+      // Set role
       await axios.post(
         `${BASE_URL}/api/auth/set-role`,
         { role: role.toLowerCase() },
         { headers: { Authorization: `Bearer ${token}` } },
       );
 
-      // STEP 2: BUILD FORM DATA
       const form = new FormData();
       form.append("role", role.toLowerCase());
 
-      // ✅ FIXED: renamed resolved → resolvedData, skip → skipFields
+      const resolvedDomain =
+        formData.domain === "Other" ? formData.customDomain : formData.domain;
+
       const resolvedData = {
         ...formData,
+        domain: resolvedDomain || null,
         location:
           formData.location === "Other"
             ? formData.customLocation
@@ -547,37 +767,38 @@ export default function ProfileScreen() {
         languages:
           selectedLanguages.length > 0
             ? selectedLanguages.join(", ")
-            : formData.languages === "Other"
-              ? formData.customLanguages
-              : formData.languages,
-        domain: formData.domain || null,
+            : formData.languages,
+        // Auto-approve on submit
+        isVerified: role === "Expert" ? true : false,
+        verificationStatus: role === "Expert" ? "approved" : "none",
       };
 
       const skipFields = [
         "cv",
         "image",
+        "certFile",
         "customLocation",
         "customQualification",
         "customExperience",
         "customLanguages",
+        "customDomain",
       ];
 
-      // ✅ FIXED: was Object.keys(resolved) → now Object.keys(resolvedData)
       Object.keys(resolvedData).forEach((key) => {
         if (
           !skipFields.includes(key) &&
           resolvedData[key] !== "" &&
-          resolvedData[key] !== null
+          resolvedData[key] !== null &&
+          resolvedData[key] !== undefined
         ) {
           form.append(key, resolvedData[key]);
         }
       });
 
-      // ✅ Append skills
-      if (selectedSkills.length > 0) {
+      if (selectedSkills.length > 0)
         form.append("skills", selectedSkills.join(", "));
-      }
 
+      // CV
       if (formData.cv) {
         const cleanUri = formData.cv.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -588,6 +809,7 @@ export default function ProfileScreen() {
         });
       }
 
+      // Profile image
       if (formData.image) {
         const cleanUri = formData.image.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -598,6 +820,24 @@ export default function ProfileScreen() {
         });
       }
 
+      // Certificate (expert only) — tells backend which domain this cert belongs to
+      if (role === "Expert" && formData.certFile) {
+        const cleanUri = formData.certFile.uri.split("?")[0];
+        const ext = cleanUri.split(".").pop().toLowerCase();
+        const mimeMap = {
+          pdf: "application/pdf",
+          jpg: "image/jpeg",
+          jpeg: "image/jpeg",
+          png: "image/png",
+        };
+        form.append("certificate", {
+          uri: cleanUri,
+          name: formData.certFile.name || `certificate.${ext}`,
+          type: mimeMap[ext] || "application/octet-stream",
+        });
+        form.append("certificateDomain", resolvedDomain);
+      }
+
       await axios.post(`${BASE_URL}/api/users/save-profile`, form, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -605,7 +845,7 @@ export default function ProfileScreen() {
         },
       });
 
-      // ✅ Update AsyncStorage with new role so socket works
+      // Update local storage
       const userStr = await AsyncStorage.getItem("user");
       const existingUser = userStr ? JSON.parse(userStr) : {};
       await AsyncStorage.setItem(
@@ -614,15 +854,22 @@ export default function ProfileScreen() {
           ...existingUser,
           role: role.toLowerCase(),
           hasProfile: true,
+          isVerified: role === "Expert",
         }),
       );
 
-      Alert.alert("Success", "Profile Saved", [
-        {
-          text: "OK",
-          onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
-        },
-      ]);
+      Alert.alert(
+        role === "Expert" ? "✅ Profile Verified & Saved" : "✅ Profile Saved",
+        role === "Expert"
+          ? "Your certificate has been uploaded and your expert profile is now verified!"
+          : "Your profile has been saved successfully!",
+        [
+          {
+            text: "OK",
+            onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
+          },
+        ],
+      );
     } catch (e) {
       console.log("Submit error:", e.response?.data || e.message);
       Alert.alert(
@@ -631,6 +878,12 @@ export default function ProfileScreen() {
       );
     }
   };
+
+  // Resolved display domain (for passing to CertificateUploadSection)
+  const displayDomain =
+    formData.domain === "Other"
+      ? formData.customDomain || "Other"
+      : formData.domain;
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
@@ -641,7 +894,7 @@ export default function ProfileScreen() {
         <ScrollView contentContainerStyle={styles.container}>
           <Text style={styles.header}>Profile Information</Text>
 
-          {/* PROFILE IMAGE */}
+          {/* ── Profile image ── */}
           <Text style={styles.label}>Profile Image</Text>
           <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
             {formData.image ? (
@@ -658,7 +911,7 @@ export default function ProfileScreen() {
             )}
           </TouchableOpacity>
 
-          {/* ROLE SELECT */}
+          {/* ── Role toggle ── */}
           <Text style={styles.label}>Select Role</Text>
           <View style={styles.roleRow}>
             {["Jobseeker", "Expert"].map((item) => (
@@ -676,30 +929,39 @@ export default function ProfileScreen() {
             ))}
           </View>
 
-          {/* FULL NAME */}
+          {/* ── Full name ── */}
           <Text style={styles.label}>Full Name *</Text>
           <TextInput
-            style={styles.input}
-            placeholder="Enter full name"
-            onChangeText={(v) => handleChange("fullName", v)}
+            style={[styles.input, errors.fullName && styles.inputError]}
+            placeholder="Enter full name (letters only)"
+            value={formData.fullName}
+            onChangeText={handleNameChange}
           />
+          <FieldError message={errors.fullName} />
 
-          {/* EMAIL */}
+          {/* ── Email ── */}
           <Text style={styles.label}>Email *</Text>
           <TextInput
-            style={styles.input}
-            placeholder="Enter email"
+            style={[styles.input, errors.email && styles.inputError]}
+            placeholder="Enter email (lowercase only)"
             keyboardType="email-address"
-            onChangeText={(v) => handleChange("email", v)}
+            autoCapitalize="none"
+            value={formData.email}
+            onChangeText={handleEmailChange}
           />
+          <FieldError message={errors.email} />
 
-          {/* DATE */}
+          {/* ── DOB ── */}
           <Text style={styles.label}>Birth Date *</Text>
-          <TouchableOpacity style={styles.input} onPress={() => setShow(true)}>
+          <TouchableOpacity
+            style={[styles.input, errors.dob && styles.inputError]}
+            onPress={() => setShow(true)}
+          >
             <Text style={{ color: formData.dob ? "#000" : "#777" }}>
               {formData.dob || "Select Birth Date"}
             </Text>
           </TouchableOpacity>
+          <FieldError message={errors.dob} />
           {show && (
             <DateTimePicker
               value={date}
@@ -708,21 +970,42 @@ export default function ProfileScreen() {
               onChange={onChangeDate}
             />
           )}
-          {/* DOMAIN */}
+
+          {/* ── Domain (with Other option) ── */}
           <Text style={styles.label}>Domain * (Your Expertise Area)</Text>
           <DropdownPicker
             label="Select Domain"
             value={formData.domain}
-            onChange={(v) => handleChange("domain", v)}
+            onChange={(v) => {
+              setField("domain", v);
+              setField("certFile", null); // reset cert when domain changes
+              setField("customDomain", "");
+            }}
             options={DOMAIN_OPTIONS}
           />
+          <FieldError message={errors.domain} />
+          {formData.domain === "Other" && (
+            <>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.otherInput,
+                  errors.customDomain && styles.inputError,
+                ]}
+                placeholder="Please specify your domain..."
+                value={formData.customDomain}
+                onChangeText={(v) => setField("customDomain", v)}
+              />
+              <FieldError message={errors.customDomain} />
+            </>
+          )}
 
-          {/* QUALIFICATION */}
+          {/* ── Qualification ── */}
           <Text style={styles.label}>Qualification *</Text>
           <DropdownPicker
             label="Select Qualification"
             value={formData.qualification}
-            onChange={(v) => handleChange("qualification", v)}
+            onChange={(v) => setField("qualification", v)}
             options={[
               { label: "Graduate", value: "Graduate" },
               { label: "Post Graduate", value: "PG" },
@@ -731,13 +1014,29 @@ export default function ProfileScreen() {
               { label: "Other", value: "Other" },
             ]}
           />
+          <FieldError message={errors.qualification} />
+          {formData.qualification === "Other" && (
+            <>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.otherInput,
+                  errors.customQualification && styles.inputError,
+                ]}
+                placeholder="Please specify your qualification..."
+                value={formData.customQualification}
+                onChangeText={(v) => setField("customQualification", v)}
+              />
+              <FieldError message={errors.customQualification} />
+            </>
+          )}
 
-          {/* EXPERIENCE */}
+          {/* ── Experience ── */}
           <Text style={styles.label}>Experience *</Text>
           <DropdownPicker
             label="Select Experience"
             value={formData.experience}
-            onChange={(v) => handleChange("experience", v)}
+            onChange={(v) => setField("experience", v)}
             options={[
               { label: "Fresher", value: "0" },
               { label: "1 Year", value: "1" },
@@ -748,76 +1047,124 @@ export default function ProfileScreen() {
               { label: "Other", value: "Other" },
             ]}
           />
+          <FieldError message={errors.experience} />
           {formData.experience === "Other" && (
-            <TextInput
-              style={styles.input}
-              placeholder="Enter years of experience"
-              keyboardType="numeric"
-              onChangeText={(v) => handleChange("customExperience", v)}
-            />
+            <>
+              <TextInput
+                style={[
+                  styles.input,
+                  styles.otherInput,
+                  errors.customExperience && styles.inputError,
+                ]}
+                placeholder="Enter years of experience"
+                keyboardType="numeric"
+                value={formData.customExperience}
+                onChangeText={(v) => setField("customExperience", v)}
+              />
+              <FieldError message={errors.customExperience} />
+            </>
           )}
 
-          {/* CV */}
+          {/* ── CV ── */}
           <Text style={styles.label}>Upload CV *</Text>
-          <TouchableOpacity style={styles.uploadBtn} onPress={pickCV}>
-            <Text style={{ fontWeight: "600" }}>
-              {formData.cv ? formData.cv.name : "Choose File"}
+          <TouchableOpacity
+            style={[
+              styles.uploadBtn,
+              errors.cv && { borderWidth: 1.5, borderColor: "#e53935" },
+            ]}
+            onPress={pickCV}
+          >
+            <Ionicons
+              name="document-outline"
+              size={18}
+              color="#0B2D72"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={{ fontWeight: "600", flex: 1 }} numberOfLines={1}>
+              {formData.cv ? formData.cv.name : "Choose CV file (PDF)"}
             </Text>
+            {formData.cv && (
+              <Ionicons name="checkmark-circle" size={18} color="#1a7f37" />
+            )}
           </TouchableOpacity>
+          <FieldError message={errors.cv} />
 
-          {/* EXPERT ONLY FIELDS */}
+          {/* ══ EXPERT ONLY ══════════════════════════════════════════ */}
           {role === "Expert" && (
             <>
-              {/* SKILLS */}
+              {/* ── Skills ── */}
               <Text style={styles.label}>Skills * (select up to 5)</Text>
               <SkillsPicker
                 selectedSkills={selectedSkills}
                 onChange={setSelectedSkills}
               />
+              <FieldError message={errors.skills} />
 
-              {/* CERTIFICATE */}
-              <Text style={styles.label}>Certification</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter certifications"
-                onChangeText={(v) => handleChange("certificate", v)}
+              {/* ── Certificate upload — domain aware ── */}
+              <Text style={styles.label}>
+                Domain Certificate / Proof of Expertise *
+              </Text>
+              <CertificateUploadSection
+                domain={displayDomain}
+                certFile={formData.certFile}
+                onPick={pickCertificate}
+                error={errors.certFile}
               />
 
-              {/* LANGUAGES */}
+              {/* ── Languages ── */}
               <Text style={styles.label}>Languages Known</Text>
               <LanguagesPicker
                 selectedLanguages={selectedLanguages}
                 onChange={setSelectedLanguages}
               />
 
-              {/* LOCATION */}
+              {/* ── City ── */}
               <Text style={styles.label}>City</Text>
               <DropdownPicker
                 label="Select Location"
                 value={formData.location}
-                onChange={(v) => handleChange("location", v)}
+                onChange={(v) => setField("location", v)}
                 options={[
                   { label: "Mumbai", value: "Mumbai" },
                   { label: "Pune", value: "Pune" },
                   { label: "Nashik", value: "Nashik" },
+                  { label: "Nagpur", value: "Nagpur" },
+                  { label: "Aurangabad", value: "Aurangabad" },
                   { label: "Other", value: "Other" },
                 ]}
               />
+              {formData.location === "Other" && (
+                <>
+                  <TextInput
+                    style={[
+                      styles.input,
+                      styles.otherInput,
+                      errors.customLocation && styles.inputError,
+                    ]}
+                    placeholder="Please enter your city name..."
+                    value={formData.customLocation}
+                    onChangeText={(v) => setField("customLocation", v)}
+                  />
+                  <FieldError message={errors.customLocation} />
+                </>
+              )}
 
-              {/* BIO */}
+              {/* ── Bio ── */}
               <Text style={styles.label}>Bio</Text>
               <TextInput
                 style={[styles.input, { height: 100 }]}
                 multiline
-                placeholder="Short bio"
-                onChangeText={(v) => handleChange("bio", v)}
+                placeholder="Short bio about yourself..."
+                onChangeText={(v) => setField("bio", v)}
               />
             </>
           )}
 
-          {/* SUBMIT */}
+          {/* ── Submit ── */}
           <TouchableOpacity style={styles.submitBtn} onPress={submitProfile}>
-            <Text style={styles.submitText}>Submit</Text>
+            <Text style={styles.submitText}>
+              {role === "Expert" ? "Submit & Get Verified ✓" : "Submit"}
+            </Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -825,8 +1172,9 @@ export default function ProfileScreen() {
   );
 }
 
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { padding: 20 },
+  container: { padding: 20, paddingBottom: 50 },
   header: {
     fontSize: 26,
     fontWeight: "700",
@@ -840,6 +1188,19 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 5,
   },
+  inputError: {
+    borderWidth: 1.5,
+    borderColor: "#e53935",
+    backgroundColor: "#fff5f5",
+  },
+  otherInput: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: "#0B2D72",
+    borderStyle: "dashed",
+    backgroundColor: "#f0f4ff",
+  },
+  fieldError: { color: "#e53935", fontSize: 12 },
   dropdownBox: {
     backgroundColor: "#f3f4f6",
     padding: 14,
@@ -864,6 +1225,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 8,
     marginTop: 8,
+    flexDirection: "row",
     alignItems: "center",
   },
   submitBtn: {
@@ -960,4 +1322,44 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
   },
+  // Certificate
+  certInfoBox: {
+    flexDirection: "row",
+    gap: 10,
+    backgroundColor: "#eef2ff",
+    borderRadius: 10,
+    padding: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#0B2D72",
+    marginBottom: 10,
+  },
+  certInfoTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#0B2D72",
+    marginBottom: 3,
+  },
+  certInfoText: { fontSize: 13, color: "#444", lineHeight: 19 },
+  certUploadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: "#0B2D72",
+    borderStyle: "dashed",
+    backgroundColor: "#f8faff",
+  },
+  certUploadBtnSuccess: {
+    borderStyle: "solid",
+    borderColor: "#1a7f37",
+    backgroundColor: "#f0fff4",
+  },
+  certUploadBtnError: {
+    borderStyle: "solid",
+    borderColor: "#e53935",
+    backgroundColor: "#fff5f5",
+  },
+  certUploadLabel: { fontSize: 15, fontWeight: "600", color: "#0B2D72" },
+  certFileNameText: { fontSize: 14, fontWeight: "600", color: "#1a7f37" },
 });

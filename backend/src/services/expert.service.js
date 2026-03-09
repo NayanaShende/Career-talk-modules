@@ -62,7 +62,6 @@ const searchExpertsByHeadline = async (domain) => {
   return await expertRepo.searchExpertsByHeadline(domain);
 };
 
-// ✅ FIXED: filter by ExpertSkills table not domain column
 const getExpertsBySkill = async (skill) => {
   if (!skill || skill === "All") return await expertRepo.findAllExperts();
   return await expertRepo.findExpertsBySkillName(skill);
@@ -72,19 +71,46 @@ const getExpertsBySkill = async (skill) => {
    EXPERT PROFILE
 ================================ */
 
-const createExpertProfile = async (userId, profileData, file) => {
-  // ✅ FIXED: field names now match Experts table columns (not Users table)
+// ✅ FIXED: now accepts imageFile and certificateFile separately
+// ✅ FIXED: saves image filename to DB so dashboard can show it
+// ✅ FIXED: sets is_online = true immediately after profile creation
+// ✅ FIXED: saves skills from comma-separated string in profileData.skills
+const createExpertProfile = async (
+  userId,
+  profileData,
+  cvFile,
+  imageFile,
+  certificateFile,
+) => {
+  // ✅ Parse skills from comma-separated string e.g. "React,Node.js,Python"
+  let skillsArray = [];
+  if (profileData.skills) {
+    skillsArray = profileData.skills
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
   const data = {
-    name:            profileData.fullName        || null,  // ✅ Expert.name
-    email:           profileData.email           || null,  // ✅ via User, kept for reference
-    bio:             profileData.bio             || null,  // ✅ Expert.bio
-    experience:      profileData.experience      || null,  // ✅ Expert.experience
-    domain:          profileData.domain          || null,  // ✅ Expert.domain
-    certification:   profileData.certifications  || null,  // ✅ Expert.certification
-    location:        profileData.location        || null,  // ✅ Expert.location
-    language_spoken: profileData.language_spoken || null,  // ✅ Expert.language_spoken
-    cv:              file ? file.filename         : null,  // ✅ Expert.cv (was cvFile)
-    userId,                                                // ✅ FK link to Users table
+    name: profileData.fullName || null,
+    email: profileData.email || null,
+    bio: profileData.bio || null,
+    experience: profileData.experience || null,
+    domain: profileData.domain || null,
+    certification: profileData.certificate || null, // ✅ FIXED: was profileData.certifications
+    location: profileData.location || null,
+    language_spoken: profileData.languages || null, // ✅ FIXED: was profileData.language_spoken
+    qualification: profileData.qualification || null,
+    // ✅ FIXED: save actual filenames from multer — these were all null before
+    cv: cvFile ? cvFile.filename : null,
+    image: imageFile ? imageFile.filename : null,
+    certificate_file: certificateFile ? certificateFile.filename : null,
+    certificate_domain: profileData.certificateDomain || null,
+    // ✅ FIXED: set is_online = true so expert appears in Live Experts immediately
+    is_online: true,
+    isVerified: true,
+    verificationStatus: "approved",
+    userId,
   };
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);
@@ -93,13 +119,25 @@ const createExpertProfile = async (userId, profileData, file) => {
   } else {
     profile = await expertRepo.createExpertProfile(data);
   }
+
+  // ✅ Save skills to ExpertSkills table if provided
+  if (skillsArray.length > 0 && profile?.id) {
+    // Delete old skills first to avoid duplicates on update
+    await expertRepo.deleteSkillsByExpertId(profile.id);
+
+    const skillRows = skillsArray.map((skill) => ({
+      expert_id: profile.id,
+      skill_name: skill,
+    }));
+    await expertRepo.bulkCreateSkills(skillRows);
+  }
+
   return profile;
 };
 
-// ✅ FIXED: return null instead of throwing — lets frontend handle empty profile gracefully
 const getExpertProfile = async (userId) => {
   const profile = await expertRepo.findExpertProfileByUserId(userId);
-  if (!profile) return null; // ✅ no longer throws "Profile not found"
+  if (!profile) return null;
   return profile;
 };
 
@@ -114,11 +152,7 @@ const getExpertById = async (id) => {
 const submitRating = async (expertId, rating) => {
   const { Review, Expert } = require("../models");
 
-  // ✅ FIXED: only save fields that exist in DB (no comment, no user_id)
-  await Review.create({
-    expert_id: expertId,
-    rating,
-  });
+  await Review.create({ expert_id: expertId, rating });
 
   const reviews = await Review.findAll({ where: { expert_id: expertId } });
   const avgRating =
@@ -126,7 +160,7 @@ const submitRating = async (expertId, rating) => {
 
   await Expert.update(
     { rating: parseFloat(avgRating.toFixed(1)) },
-    { where: { id: expertId } }
+    { where: { id: expertId } },
   );
 
   return {

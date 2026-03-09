@@ -34,18 +34,11 @@ db.Expert = require("./expert")(sequelize, DataTypes);
 
 // Load Review ✅ NEW
 db.Review = require("./review")(sequelize, DataTypes);
-<<<<<<< HEAD
 db.WalletTransaction = require("./walletTransaction")(sequelize, DataTypes);
-=======
->>>>>>> bb3183da1e3807dbf7ce8764e255ed0fa580b6e1
 
 // ✅ Load Payment
 db.Payment = require("./payment")(sequelize, DataTypes);
 
-<<<<<<< HEAD
-=======
-db.WalletTransaction = require("./walletTransaction")(sequelize, DataTypes);
->>>>>>> bb3183da1e3807dbf7ce8764e255ed0fa580b6e1
 // Load ExpertSkill (if exists)
 try {
   db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
