@@ -1,7 +1,7 @@
 import { Platform } from "react-native";
 
 // ✅ CHANGE ONLY THIS ONE IP ADDRESS WHEN YOUR NETWORK CHANGES
-const LOCAL_IP = "10.89.141.9";
+const LOCAL_IP = "192.168.1.27";
 
 // Automatically picks correct URL for web vs mobile
 const BASE_URL =

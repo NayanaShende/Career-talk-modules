@@ -8,7 +8,6 @@ const userSockets = {}; // track userId → socketId to prevent duplicates
 function initSocket(server) {
   io = new Server(server, {
     cors: { origin: "*", methods: ["GET", "POST"] },
-    // Prevent duplicate connections from same client
     pingTimeout: 60000,
     pingInterval: 25000,
   });
@@ -22,7 +21,6 @@ function initSocket(server) {
     socket.on("joinRoom", ({ userId }) => {
       const uid = userId.toString();
 
-      // If user already has a socket, disconnect the old one
       if (userSockets[uid] && userSockets[uid] !== socket.id) {
         const oldSocket = io.sockets.sockets.get(userSockets[uid]);
         if (oldSocket) {
@@ -31,7 +29,6 @@ function initSocket(server) {
         }
       }
 
-      // Register new socket for this user
       userSockets[uid] = socket.id;
 
       socket.join(uid);
@@ -51,10 +48,42 @@ function initSocket(server) {
         created_at: new Date(),
       };
 
-      // Send to receiver only (sender already updates UI instantly)
+      // Send message
       io.to(receiverId.toString()).emit("receiveMessage", payload);
 
+      // 🔔 Send notification
+      const notificationPayload = {
+        type: "message",
+        title: "New Message",
+        message: message,
+        senderId,
+        receiverId,
+        created_at: new Date(),
+      };
+
+      io.to(receiverId.toString()).emit("new-notification", notificationPayload);
+
       console.log(`💬 ${senderId} → ${receiverId}: ${message}`);
+    });
+
+    // ===============================
+    // MANUAL NOTIFICATION EVENT
+    // ===============================
+    socket.on("sendNotification", (data) => {
+      const { senderId, receiverId, title, message, type } = data;
+
+      const payload = {
+        senderId,
+        receiverId,
+        title,
+        message,
+        type,
+        created_at: new Date(),
+      };
+
+      io.to(receiverId.toString()).emit("new-notification", payload);
+
+      console.log(`🔔 Notification ${senderId} → ${receiverId}`);
     });
 
     // ===============================
@@ -126,7 +155,6 @@ function initSocket(server) {
     // DISCONNECT
     // ===============================
     socket.on("disconnect", async () => {
-      // Cleanup userSockets map
       for (const [uid, sid] of Object.entries(userSockets)) {
         if (sid === socket.id) {
           delete userSockets[uid];
@@ -134,7 +162,6 @@ function initSocket(server) {
         }
       }
 
-      // Cleanup expert status
       const expertId = socketToExpert[socket.id];
       if (expertId) {
         try {

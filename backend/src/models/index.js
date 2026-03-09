@@ -29,9 +29,11 @@ db.User = require("./user")(sequelize, DataTypes);
 db.Chat = require('./chat')(sequelize, DataTypes);
 db.Call = require('./call')(sequelize, DataTypes);
 
+// ADD THIS LINE ✅
+db.Notification = require('./notification.model')(sequelize, DataTypes);
+
 // Load Expert (depends on User)
 db.Expert = require("./expert")(sequelize, DataTypes);
-
 // Load Review ✅ NEW
 db.Review = require("./review")(sequelize, DataTypes);
 

@@ -20,7 +20,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://10.89.141.9:3000";
+const BASE_URL = "http://192.168.1.27:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── helpers ──────────────────────────────────────────────

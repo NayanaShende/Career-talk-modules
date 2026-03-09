@@ -9,7 +9,7 @@ const userRoutes = require("./user.routes");
 const expertsRoutes = require("./expert.routes");
 const chatRoutes = require('./chat.routes');
 const callRoutes = require('./call.routes');
-
+const notificationRoutes = require("./notification.routes"); // ADDED
 
 
 
@@ -29,10 +29,18 @@ router.use("/users", userRoutes);
 // Example: /api/experts
 router.use("/experts", expertsRoutes);
 
-
 // Chat routes
 router.use('/chat', chatRoutes);
+
+// Call routes
 router.use('/calls', callRoutes);
+
+// Notification routes
+// Example: /api/notifications/create
+router.use("/notifications", notificationRoutes); // ADDED
+
+
+
 // --------------------------------------
 // HEALTH CHECK ROUTE
 // --------------------------------------
