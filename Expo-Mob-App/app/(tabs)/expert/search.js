@@ -8,13 +8,14 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Image,
+  TouchableOpacity,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const BASE_URL = "http://172.20.10.3:3000"; // ✅ NEW
+const BASE_URL = "http://192.168.1.19:3000";
 
 export default function Home() {
   const router = useRouter();
@@ -38,16 +39,31 @@ export default function Home() {
     }
   };
 
-  // ✅ NEW: Build full image URL
+  // ✅ Build full image URL
   const getImageUri = (image, name) => {
     if (image) return `${BASE_URL}/uploads/${image}`;
-    return null; // null = show placeholder with initial
+    return null;
+  };
+
+  // ✅ FIXED: get correct domain from DB — check domain, then skills, then role
+  const getExpertDomain = (item) => {
+    if (item?.domain) return item.domain;
+    if (Array.isArray(item?.skills) && item.skills.length > 0) {
+      return item.skills[0].skill_name;
+    }
+    return item?.role || "Expert";
   };
 
   // Logic to filter experts based on search input
-  const filteredExperts = experts.filter((e) =>
-    e?.name?.toLowerCase().includes(search.toLowerCase()) ||
-    e?.role?.toLowerCase().includes(search.toLowerCase())
+  const filteredExperts = experts.filter(
+    (e) =>
+      e?.name?.toLowerCase().includes(search.toLowerCase()) ||
+      e?.domain?.toLowerCase().includes(search.toLowerCase()) ||
+      e?.role?.toLowerCase().includes(search.toLowerCase()) ||
+      (Array.isArray(e?.skills) &&
+        e.skills.some((s) =>
+          s.skill_name?.toLowerCase().includes(search.toLowerCase()),
+        )),
   );
 
   return (
@@ -55,16 +71,21 @@ export default function Home() {
       {/* --- HEADER --- */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()}>
-                  <Ionicons name="chevron-back" size={24} color="#fff" />
+          <Ionicons name="chevron-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Experts Search </Text>
+        <Text style={styles.headerTitle}>Experts Search</Text>
         <Ionicons name="notifications-outline" size={24} color="#fff" />
       </View>
 
       {/* --- SEARCH BAR SECTION --- */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#0B2D72" style={styles.searchIcon} />
+          <Ionicons
+            name="search"
+            size={20}
+            color="#0B2D72"
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for an expert..."
@@ -95,19 +116,20 @@ export default function Home() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={() => (
             <View style={styles.center}>
-              <Text style={{ marginTop: 50, color: '#999' }}>No experts found.</Text>
+              <Text style={{ marginTop: 50, color: "#999" }}>
+                No experts found.
+              </Text>
             </View>
           )}
           renderItem={({ item }) => {
-            const imageUri = getImageUri(item.image, item.name); // ✅ FIXED: was item.profile_image
+            const imageUri = getImageUri(item.image, item.name);
             return (
               <Pressable
                 style={styles.card}
-                onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
-              >
+                onPress={() => router.push(`/(tabs)/expert/${item.id}`)}>
+                {/* --- IMAGE --- */}
                 <View style={styles.imageContainer}>
                   {imageUri ? (
-                    // ✅ FIXED: Show actual profile image
                     <Image source={{ uri: imageUri }} style={styles.image} />
                   ) : (
                     <View style={[styles.image, styles.placeholderImg]}>
@@ -118,28 +140,60 @@ export default function Home() {
                   )}
                 </View>
 
+                {/* --- INFO --- */}
                 <View style={styles.infoContainer}>
                   <Text style={styles.name}>{item?.name}</Text>
-                  <Text style={styles.role}>{item?.role || "UI Designer"}</Text>
+
+                  {/* ✅ FIXED: show real domain from DB */}
+                  <Text style={styles.role}>{getExpertDomain(item)}</Text>
 
                   <View style={styles.ratingRow}>
                     <Ionicons name="star" size={16} color="#FFD700" />
                     <Text style={styles.ratingText}>
-                      {item?.rating || "4.9"}({item?.reviews || "234"})
+                      {item?.rating || "0"}({item?.reviews || "0"})
                     </Text>
                     <Text style={styles.expText}>
-                      {item?.experience || 8} years exp
+                      {item?.experience || 0} years exp
                     </Text>
                   </View>
 
                   <View style={styles.badge}>
-                    <View style={styles.greenDot} />
-                    <Text style={styles.badgeText}>Available Now</Text>
+                    <View
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor: item?.is_online
+                            ? "#22C55E"
+                            : "#9CA3AF",
+                        },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.badgeText,
+                        { color: item?.is_online ? "#16A34A" : "#6B7280" },
+                      ]}>
+                      {item?.is_online ? "Available Now" : "Offline"}
+                    </Text>
                   </View>
                 </View>
 
-                <View style={styles.viewBtn}>
-                  <Text style={styles.viewBtnText}>View</Text>
+                {/* ✅ FIXED: View + Chat buttons */}
+                <View style={styles.btnColumn}>
+                  <TouchableOpacity
+                    style={styles.viewBtn}
+                    onPress={() =>
+                      router.push(`/(tabs)/expert/${item.id}`)
+                    }>
+                    <Text style={styles.viewBtnText}>View</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.chatBtn}
+                    onPress={() => router.push("/(tabs)/chat")}>
+                    <Ionicons name="chatbubble-outline" size={14} color="#0B2D72" />
+                    <Text style={styles.chatBtnText}>Chat</Text>
+                  </TouchableOpacity>
                 </View>
               </Pressable>
             );
@@ -204,7 +258,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 15,
     backgroundColor: "#fff",
-    alignItems: 'center',
+    alignItems: "center",
   },
   separator: {
     height: 1,
@@ -231,7 +285,7 @@ const styles = StyleSheet.create({
   infoContainer: {
     flex: 1,
     paddingHorizontal: 10,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   name: {
     fontSize: 17,
@@ -267,26 +321,51 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 8,
   },
-  greenDot: {
+  dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#0B2D72",
     marginRight: 6,
   },
   badgeText: {
-    color: "#0B2D72",
     fontSize: 12,
     fontWeight: "600",
   },
+  /* ✅ FIXED: two buttons stacked vertically */
+  btnColumn: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 80,
+  },
   viewBtn: {
     backgroundColor: "#0B2D72",
-    paddingHorizontal: 18,
-    paddingVertical: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 9,
     borderRadius: 10,
+    width: 80,
+    alignItems: "center",
+    justifyContent: "center",
   },
   viewBtnText: {
     color: "#fff",
     fontWeight: "bold",
+    fontSize: 14,
+  },
+  chatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: "#0B2D72",
+    paddingVertical: 8,
+    borderRadius: 10,
+    width: 80,
+    justifyContent: "center",
+  },
+  chatBtnText: {
+    color: "#0B2D72",
+    fontWeight: "bold",
+    fontSize: 13,
   },
 });

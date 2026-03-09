@@ -15,7 +15,6 @@ function initSocket(server) {
     // Expert goes ONLINE — receives userId from mobile app
     socket.on("expert:online", async (userId) => {
       try {
-        // ✅ FIXED: Find expert by userId (not expert.id)
         const expert = await Expert.findOne({ where: { userId: userId } });
 
         if (!expert) {
@@ -23,9 +22,9 @@ function initSocket(server) {
           return;
         }
 
-        socketToExpert[socket.id] = expert.id; // store expert.id for disconnect
+        socketToExpert[socket.id] = expert.id;
 
-        await expert.update({ is_online: true });
+        await Expert.update({ is_online: true }, { where: { id: expert.id } });
 
         io.emit("expert:status", { expertId: expert.id, is_online: true });
         console.log(`✅ Expert ${expert.id} (userId: ${userId}) is now ONLINE`);
@@ -46,7 +45,7 @@ function initSocket(server) {
           return;
         }
 
-        await expert.update({ is_online: false });
+        await Expert.update({ is_online: false }, { where: { id: expert.id } });
 
         io.emit("expert:status", { expertId: expert.id, is_online: false });
         console.log(`🔴 Expert ${expert.id} (userId: ${userId}) is now OFFLINE`);

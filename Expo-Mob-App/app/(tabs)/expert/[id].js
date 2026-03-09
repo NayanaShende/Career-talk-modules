@@ -22,7 +22,7 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.19:3000";
 
 // ✅ FIXED: parse float before rounding so "3" shows 3 stars not 2
 function StarRating({ rating, size = 20 }) {

@@ -3,8 +3,7 @@ var express = require("express");
 const http = require("http");
 var logger = require("morgan");
 const cors = require("cors");
-const { Server } = require("socket.io"); // ✅ IMPORTANT
-const { initSocket } = require("./socket");
+const { initSocket } = require("./socket"); // ✅ removed unused Server import
 const path = require("path");
 
 const routes = require("./routes");
@@ -32,8 +31,7 @@ app.use(
 // ------------------------------------------------------
 app.use(logger("dev"));
 
-// ✅ CHANGE 1: Webhook route needs raw body — register BEFORE express.json()
-// This captures raw body only for /api/payments/webhook
+// ✅ Webhook route needs raw body — register BEFORE express.json()
 app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 
 // ✅ All other routes use normal JSON parsing
@@ -49,21 +47,16 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use("/api", routes);
 
 // ------------------------------------------------------
-// CREATE SERVER
+// CREATE HTTP SERVER
 // ------------------------------------------------------
 const server = http.createServer(app);
 
 // ------------------------------------------------------
 // SOCKET.IO
+// ✅ FIXED: pass the HTTP server directly to initSocket
+// Do NOT create a second new Server() here — socket.js handles it
 // ------------------------------------------------------
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
-
-// ✅ Initialize socket logic
-initSocket(io);
+initSocket(server);
 
 // ------------------------------------------------------
 // 404 HANDLER
@@ -73,7 +66,7 @@ app.use(function (req, res, next) {
 });
 
 // ------------------------------------------------------
-// ✅ REMOVED server.listen() from here — now handled in bin/www
+// ✅ server.listen() handled in bin/www
 // ------------------------------------------------------
 
 module.exports = { app, server }; // ✅ Export both app and server
