@@ -26,12 +26,12 @@ exports.createExpertProfile = async (req, res) => {
 };
 
 // ================= SUBMIT EXPERT PROFILE FORM =================
-// ✅ NEW: called when expert fills out the profile form
+// ✅ called when expert fills out the profile form
 // saves to Experts table using userId from JWT token
 exports.submitExpertProfileForm = async (req, res) => {
   try {
     const userId = req.user.id; // ✅ from auth middleware (JWT)
-    const file = req.file; // ✅ CV file from multer (optional)
+    const file = req.file;      // ✅ CV file from multer (optional)
 
     const expert = await expertService.createExpertProfile(
       userId,
@@ -58,7 +58,6 @@ exports.getMyExpertProfile = async (req, res) => {
     const profile = await expertService.getExpertProfile(userId);
 
     if (!profile) {
-      // ✅ Return empty profile instead of throwing error
       return res.status(200).json({
         success: true,
         data: null,
@@ -69,6 +68,39 @@ exports.getMyExpertProfile = async (req, res) => {
     res.status(200).json({ success: true, data: profile });
   } catch (error) {
     console.error("getMyExpertProfile error:", error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ================= UPDATE MY EXPERT PROFILE (Protected) =================
+// ✅ NEW: PUT /api/experts/profile/me
+// Updates Experts table using userId from JWT — fixes language_spoken & certification not saving
+exports.updateMyExpertProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // ✅ from auth middleware (JWT)
+
+    // ✅ Support both multipart/form-data (with file) and JSON
+    const file = req.file || null;
+
+    // ✅ FIXED: map both "certification" AND "certifications" so either works
+    const body = {
+      ...req.body,
+      certifications: req.body.certification || req.body.certifications || null,
+    };
+
+    console.log("📝 updateMyExpertProfile — userId:", userId);
+    console.log("📝 body:", JSON.stringify(body));
+
+    // ✅ reuse createExpertProfile which already does upsert (update or create)
+    const expert = await expertService.createExpertProfile(userId, body, file);
+
+    res.status(200).json({
+      success: true,
+      message: "Expert profile updated successfully",
+      data: expert,
+    });
+  } catch (error) {
+    console.error("updateMyExpertProfile error:", error.message);
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -180,7 +212,7 @@ exports.getExpertById = async (req, res) => {
 };
 
 // ================= GET DOMAINS LIST =================
-// ✅ NEW: returns 10 domains for frontend dropdown
+// ✅ returns 10 domains for frontend dropdown
 // No auth required — public route
 exports.getDomainsList = async (req, res) => {
   try {

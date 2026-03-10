@@ -459,7 +459,7 @@ const EditProfile = () => {
     // Expert fields
     expertise: "",
     years_of_experience: "",
-    linkedin: "",
+    linkedin: "", // ✅ KEPT in state, just removed from UI
     bio: "",
     location: "",
     certification: "",
@@ -527,6 +527,10 @@ const EditProfile = () => {
               location: ep.location || "",
               certification: ep.certification || "",
               expertise: ep.domain || prev.expertise,
+              years_of_experience:
+                ep.years_of_experience != null
+                  ? String(ep.years_of_experience)
+                  : prev.years_of_experience,
               image_url: ep.image
                 ? `${BASE_URL}/uploads/${ep.image}`
                 : prev.image_url,
@@ -597,6 +601,9 @@ const EditProfile = () => {
       setSaving(true);
       const token = await AsyncStorage.getItem("token");
 
+      // ─────────────────────────────────────────────────────────────────────
+      // STEP 1: Save user profile via save-profile (Users table)
+      // ─────────────────────────────────────────────────────────────────────
       const formData = new FormData();
 
       formData.append("full_name", form.full_name);
@@ -607,23 +614,27 @@ const EditProfile = () => {
       formData.append("qualification", form.qualification);
       formData.append("experience", form.experience);
       formData.append("dob", form.dob);
-      formData.append("skills", form.skills);
       formData.append("preferred_job_role", form.preferred_job_role);
       formData.append("current_status", form.current_status);
       formData.append("expertise", form.expertise);
       formData.append("years_of_experience", form.years_of_experience);
-      formData.append("linkedin", form.linkedin);
+      formData.append("linkedin", form.linkedin); // ✅ KEPT even though removed from UI
 
       if (isExpert) {
         formData.append("bio", form.bio);
         formData.append("location", form.location);
         formData.append("certification", form.certification);
+        formData.append(
+          "language_spoken",
+          selectedLanguages.length > 0 ? selectedLanguages.join(", ") : "",
+        );
+        // ✅ send skills as comma-separated for experts
         if (selectedSkills.length > 0) {
           formData.append("skills", selectedSkills.join(", "));
         }
-        if (selectedLanguages.length > 0) {
-          formData.append("language_spoken", selectedLanguages.join(", "));
-        }
+      } else {
+        // Jobseeker: send plain text skills field
+        formData.append("skills", form.skills);
       }
 
       // New image only if user picked one
@@ -646,6 +657,7 @@ const EditProfile = () => {
         });
       }
 
+      console.log("📤 Step 1: Saving user profile...");
       await axios.post(`${BASE_URL}/api/users/save-profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -653,12 +665,65 @@ const EditProfile = () => {
         },
       });
 
+      // ─────────────────────────────────────────────────────────────────────
+      // ✅ STEP 2: For experts — call PUT /api/experts/profile/me
+      // This updates language_spoken, certification, bio, location in Experts table
+      // ─────────────────────────────────────────────────────────────────────
+      if (isExpert) {
+        console.log("📤 Step 2: Saving expert profile via PUT /profile/me...");
+
+        const expertFormData = new FormData();
+        expertFormData.append("fullName", form.full_name);
+        expertFormData.append("domain", form.domain);
+        expertFormData.append("bio", form.bio);
+        expertFormData.append("location", form.location);
+        expertFormData.append("certification", form.certification);  // ✅ controller maps this correctly
+        expertFormData.append("certifications", form.certification); // ✅ send both just in case
+        expertFormData.append("expertise", form.expertise);
+        expertFormData.append(
+          "experience",
+          form.years_of_experience || form.experience,
+        );
+        expertFormData.append(
+          "language_spoken",
+          selectedLanguages.length > 0 ? selectedLanguages.join(", ") : "",
+        );
+        expertFormData.append(
+          "skills",
+          selectedSkills.length > 0 ? selectedSkills.join(", ") : "",
+        );
+
+        // New image for expert too
+        if (form.image_file) {
+          expertFormData.append("image", {
+            uri: form.image_file,
+            name: "profile.jpg",
+            type: "image/jpeg",
+          });
+        }
+
+        await axios.put(
+          `${BASE_URL}/api/experts/profile/me`,
+          expertFormData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "multipart/form-data",
+            },
+          },
+        );
+        console.log("✅ Expert profile updated successfully");
+      }
+
       Alert.alert("✅ Success", "Profile Updated Successfully", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (err) {
-      console.log(err.response?.data || err.message);
-      Alert.alert("Error", "Profile update failed");
+      console.log("❌ Save error:", err.response?.data || err.message);
+      Alert.alert(
+        "Error",
+        err.response?.data?.message || "Profile update failed. Try again.",
+      );
     } finally {
       setSaving(false);
     }
@@ -845,6 +910,7 @@ const EditProfile = () => {
               setForm={setForm}
               form={form}
             />
+
             <InputField
               label="Years of Experience"
               value={form.years_of_experience}
@@ -853,14 +919,9 @@ const EditProfile = () => {
               form={form}
               keyboardType="numeric"
             />
-            <InputField
-              label="LinkedIn Profile"
-              value={form.linkedin}
-              field="linkedin"
-              setForm={setForm}
-              form={form}
-              placeholder="https://linkedin.com/in/..."
-            />
+
+            {/* ✅ REMOVED: LinkedIn Profile field removed from UI */}
+            {/* linkedin state is kept in form and still sent in saveProfile */}
           </>
         )}
 

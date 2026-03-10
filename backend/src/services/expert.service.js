@@ -73,19 +73,22 @@ const getExpertsBySkill = async (skill) => {
 ================================ */
 
 const createExpertProfile = async (userId, profileData, file) => {
-  // ✅ FIXED: field names now match Experts table columns (not Users table)
   const data = {
-    name:            profileData.fullName        || null,  // ✅ Expert.name
-    email:           profileData.email           || null,  // ✅ via User, kept for reference
-    bio:             profileData.bio             || null,  // ✅ Expert.bio
-    experience:      profileData.experience      || null,  // ✅ Expert.experience
-    domain:          profileData.domain          || null,  // ✅ Expert.domain
-    certification:   profileData.certifications  || null,  // ✅ Expert.certification
-    location:        profileData.location        || null,  // ✅ Expert.location
-    language_spoken: profileData.language_spoken || null,  // ✅ Expert.language_spoken
-    cv:              file ? file.filename         : null,  // ✅ Expert.cv (was cvFile)
-    userId,                                                // ✅ FK link to Users table
+    name:            profileData.fullName        || profileData.name || null,  // ✅ Expert.name
+    email:           profileData.email           || null,                      // ✅ via User, kept for reference
+    bio:             profileData.bio             || null,                      // ✅ Expert.bio
+    experience:      profileData.experience      || null,                      // ✅ Expert.experience
+    domain:          profileData.domain          || null,                      // ✅ Expert.domain
+    // ✅ FIXED: was only checking "certifications" (plural) — now checks both
+    certification:   profileData.certification   || profileData.certifications || null,  // ✅ Expert.certification
+    location:        profileData.location        || null,                      // ✅ Expert.location
+    // ✅ language_spoken was already correct — now also logs it for debugging
+    language_spoken: profileData.language_spoken || null,                      // ✅ Expert.language_spoken
+    cv:              file ? file.filename         : null,                      // ✅ Expert.cv (was cvFile)
+    userId,                                                                    // ✅ FK link to Users table
   };
+
+  console.log("📝 createExpertProfile — data to save:", JSON.stringify(data));
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);
   if (profile) {
