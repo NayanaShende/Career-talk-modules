@@ -14,6 +14,7 @@ import { router, Redirect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../services/api";
 import { getAllExperts } from "../services/expertService";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // ✅ ADDED
 
 function Home() {
   const [experts, setExperts] = useState([]);
@@ -145,8 +146,49 @@ function Home() {
   );
 }
 
+// ✅ UPDATED: check token first, redirect accordingly
 export default function Index() {
-  return <Redirect href="/loginOtp" />;
+  const [target, setTarget] = useState(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem("token");
+        const userStr = await AsyncStorage.getItem("user");
+
+        if (token && userStr) {
+          const user = JSON.parse(userStr);
+          // ✅ Already logged in → skip OTP → go to dashboard
+          if (user?.redirectTo === "/dashboard" || user?.role) {
+            setTarget("dashboard");
+          } else {
+            setTarget("userProfile");
+          }
+        } else {
+          // ✅ No token → go to OTP login
+          setTarget("login");
+        }
+      } catch (e) {
+        setTarget("login");
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // ✅ Show blue spinner while checking token
+  if (!target) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0B2D72" }}>
+        <ActivityIndicator size="large" color="#ffffff" />
+      </View>
+    );
+  }
+
+  // ✅ Redirect based on token check
+  if (target === "dashboard") return <Redirect href="/(tabs)/dashboard/dashboard" />;
+  if (target === "userProfile") return <Redirect href="/home/userProfile" />;
+  return <Redirect href="/loginOtp" />; // ✅ FIXED: correct path from sitemap
 }
 
 const styles = StyleSheet.create({

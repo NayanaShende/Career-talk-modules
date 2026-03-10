@@ -3,7 +3,7 @@ const { Expert } = require("./models");
 
 let io;
 const socketToExpert = {};
-const userSockets = {}; // track userId → socketId to prevent duplicates
+const userSockets = {};
 
 function initSocket(server) {
   io = new Server(server, {
@@ -15,9 +15,6 @@ function initSocket(server) {
   io.on("connection", (socket) => {
     console.log("🟢 Socket connected:", socket.id);
 
-    // ===============================
-    // JOIN PRIVATE ROOM (userId room)
-    // ===============================
     socket.on("joinRoom", ({ userId }) => {
       const uid = userId.toString();
 
@@ -30,14 +27,10 @@ function initSocket(server) {
       }
 
       userSockets[uid] = socket.id;
-
       socket.join(uid);
       console.log(`User ${userId} joined room`);
     });
 
-    // ===============================
-    // CHAT
-    // ===============================
     socket.on("sendMessage", (data) => {
       const { senderId, receiverId, message } = data;
 
@@ -48,47 +41,37 @@ function initSocket(server) {
         created_at: new Date(),
       };
 
-      // Send message
       io.to(receiverId.toString()).emit("receiveMessage", payload);
 
-      // 🔔 Send notification
-      const notificationPayload = {
+      // ✅ FIXED: "newNotification" + snake_case fields
+      io.to(receiverId.toString()).emit("newNotification", {
         type: "message",
         title: "New Message",
+        sender_id: Number(senderId),
+        receiver_id: Number(receiverId),
         message: message,
-        senderId,
-        receiverId,
         created_at: new Date(),
-      };
-
-      io.to(receiverId.toString()).emit("new-notification", notificationPayload);
+      });
 
       console.log(`💬 ${senderId} → ${receiverId}: ${message}`);
     });
 
-    // ===============================
-    // MANUAL NOTIFICATION EVENT
-    // ===============================
     socket.on("sendNotification", (data) => {
       const { senderId, receiverId, title, message, type } = data;
 
-      const payload = {
-        senderId,
-        receiverId,
+      // ✅ FIXED: "newNotification" + snake_case fields
+      io.to(receiverId.toString()).emit("newNotification", {
+        sender_id: Number(senderId),
+        receiver_id: Number(receiverId),
         title,
         message,
         type,
         created_at: new Date(),
-      };
-
-      io.to(receiverId.toString()).emit("new-notification", payload);
+      });
 
       console.log(`🔔 Notification ${senderId} → ${receiverId}`);
     });
 
-    // ===============================
-    // CALL EVENTS
-    // ===============================
     socket.on("call-user", (data) => {
       const { callId, callerId, receiverId } = data;
       console.log(`📞 Call initiated from ${callerId} to ${receiverId}`);
@@ -114,20 +97,15 @@ function initSocket(server) {
       io.to(receiverId.toString()).emit("call-ended", { callId });
     });
 
-    // ===============================
-    // EXPERT ONLINE / OFFLINE STATUS
-    // ===============================
     socket.on("expert:online", async (userId) => {
       try {
-        const expert = await Expert.findOne({ where: { userId } });
+        const expert = await Expert.findOne({ where: { userId: userId } });
         if (!expert) {
           console.log(`⚠️ No expert found for userId: ${userId}`);
           return;
         }
-
         socketToExpert[socket.id] = expert.id;
-        await expert.update({ is_online: true });
-
+        await Expert.update({ is_online: true }, { where: { id: expert.id } });
         io.emit("expert:status", { expertId: expert.id, is_online: true });
         console.log(`🟢 Expert ${expert.id} is ONLINE`);
       } catch (err) {
@@ -142,8 +120,7 @@ function initSocket(server) {
           console.log(`⚠️ No expert found for userId: ${userId}`);
           return;
         }
-
-        await expert.update({ is_online: false });
+        await Expert.update({ is_online: false }, { where: { id: expert.id } });
         io.emit("expert:status", { expertId: expert.id, is_online: false });
         console.log(`🔴 Expert ${expert.id} is OFFLINE`);
       } catch (err) {
@@ -151,9 +128,6 @@ function initSocket(server) {
       }
     });
 
-    // ===============================
-    // DISCONNECT
-    // ===============================
     socket.on("disconnect", async () => {
       for (const [uid, sid] of Object.entries(userSockets)) {
         if (sid === socket.id) {

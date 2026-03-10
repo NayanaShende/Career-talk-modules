@@ -78,6 +78,27 @@ export default function ProfileScreen() {
     }, []),
   );
 
+  // ✅ Logout function
+  const handleLogout = () => {
+    Alert.alert("Logout", "Are you sure you want to logout?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Logout",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await AsyncStorage.removeItem("token");
+            await AsyncStorage.removeItem("user");
+            // ✅ FIXED: correct path for loginOtp screen
+            router.replace("/loginOtp");
+          } catch (e) {
+            Alert.alert("Error", "Logout failed. Try again.");
+          }
+        },
+      },
+    ]);
+  };
+
   const openCV = () => {
     const cvFile = expertProfile?.cv || profile?.cvFile;
     if (!cvFile) {
@@ -126,7 +147,6 @@ export default function ProfileScreen() {
           <Text style={styles.name}>
             {expertProfile?.name || profile?.fullName || "No Name"}
           </Text>
-          {/* ✅ FIXED: show domain under name */}
           <Text style={styles.domain}>{displayDomain || "Domain not set"}</Text>
           {profile?.role && (
             <View style={styles.roleBadge}>
@@ -142,7 +162,6 @@ export default function ProfileScreen() {
           <InfoRow icon="mail" label="Email" value={profile?.email} />
           <InfoRow icon="call" label="Mobile" value={profile?.mobile} />
           <InfoRow icon="calendar" label="Birth Date" value={profile?.dob} />
-          {/* ✅ FIXED: qualification from user profile */}
           <InfoRow
             icon="school"
             label="Qualification"
@@ -159,7 +178,6 @@ export default function ProfileScreen() {
         {isExpert && (
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Expert Details</Text>
-            {/* ✅ FIXED: domain shown here too */}
             <InfoRow icon="tv-outline" label="Domain" value={displayDomain} />
             <InfoRow
               icon="location"
@@ -216,6 +234,12 @@ export default function ProfileScreen() {
           onPress={() => router.push("/home/edit")}
         >
           <Text style={styles.editText}>Edit Profile</Text>
+        </TouchableOpacity>
+
+        {/* ✅ Logout Button */}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={20} color="#fff" />
+          <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -298,6 +322,24 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 14,
     alignItems: "center",
+    marginBottom: 0,
   },
   editText: { color: "#6C63FF", fontWeight: "600", fontSize: 15 },
+  logoutButton: {
+    margin: 20,
+    marginTop: 12,
+    backgroundColor: "#EF4444",
+    padding: 15,
+    borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  logoutText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 15,
+    marginLeft: 8,
+  },
 });

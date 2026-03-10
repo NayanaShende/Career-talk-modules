@@ -16,30 +16,40 @@ const createMessage = async (data) => {
 
     const result = {
       id: chat.id,
-      sender_id: chat.senderId,
-      receiver_id: chat.receiverId,
+      sender_id: Number(chat.senderId),
+      receiver_id: Number(chat.receiverId),
       message: chat.message,
       is_seen: chat.is_seen || false,
       created_at: chat.createdAt,
     };
 
-    // 🔔 Emit socket message
+    // 🔔 Emit socket + save notification
     try {
       const io = getIO();
 
+      // ✅ FIXED: room is receiver_id.toString() directly
       io.to(String(result.receiver_id)).emit("receiveMessage", result);
 
-      // 🔔 Create notification
-      await notificationService.createNotification(
-        {
-          sender_id: result.sender_id,
-          receiver_id: result.receiver_id,
-          type: "message",
-          title: "New Message",
-          message: result.message,
-        },
-        io
-      );
+      // ✅ FIXED: "newNotification" + snake_case fields
+      io.to(String(result.receiver_id)).emit("newNotification", {
+        type: "message",
+        title: "New Message",
+        sender_id: result.sender_id,
+        receiver_id: result.receiver_id,
+        message: result.message.length > 60
+          ? result.message.substring(0, 60) + "..."
+          : result.message,
+        created_at: new Date(),
+      });
+
+      // ✅ Save to DB via notification service (no socket pass needed now)
+      await notificationService.createNotification({
+        sender_id: result.sender_id,
+        receiver_id: result.receiver_id,
+        type: "message",
+        title: "New Message",
+        message: result.message,
+      }, null); // ✅ pass null for io — already emitted above
 
     } catch (socketError) {
       console.log("Socket not available:", socketError.message);
@@ -51,7 +61,6 @@ const createMessage = async (data) => {
     throw new Error("Create message failed: " + error.message);
   }
 };
-
 
 // ✅ GET CONVERSATION between two users
 const getConversation = async (userId, expertId) => {
@@ -69,8 +78,8 @@ const getConversation = async (userId, expertId) => {
 
     return chats.map((chat) => ({
       id: chat.id,
-      sender_id: chat.senderId,
-      receiver_id: chat.receiverId,
+      sender_id: Number(chat.senderId),
+      receiver_id: Number(chat.receiverId),
       message: chat.message,
       is_seen: chat.is_seen,
       created_at: chat.createdAt,
@@ -80,7 +89,6 @@ const getConversation = async (userId, expertId) => {
     throw new Error("Get conversation failed: " + error.message);
   }
 };
-
 
 // ✅ GET ALL CONVERSATIONS for chat list screen
 const getConversations = async (userId) => {
@@ -103,8 +111,8 @@ const getConversations = async (userId) => {
 
       const otherUserId =
         Number(chat.senderId) === Number(userId)
-          ? chat.receiverId
-          : chat.senderId;
+          ? Number(chat.receiverId)
+          : Number(chat.senderId);
 
       if (!seen.has(otherUserId)) {
 
@@ -129,7 +137,6 @@ const getConversations = async (userId) => {
           lastMessage: chat.message,
           lastMessageTime: chat.createdAt,
         });
-
       }
     }
 
@@ -139,7 +146,6 @@ const getConversations = async (userId) => {
     throw new Error("Get conversations failed: " + error.message);
   }
 };
-
 
 module.exports = {
   createMessage,

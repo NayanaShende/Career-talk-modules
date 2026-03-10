@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
   Image,
+  TouchableOpacity,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
@@ -22,6 +23,7 @@ export default function Home() {
   const [experts, setExperts] = useState([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [selectedSkill, setSelectedSkill] = useState("All");
 
   useEffect(() => {
     fetchExperts();
@@ -38,18 +40,56 @@ export default function Home() {
     }
   };
 
-  // ✅ NEW: Build full image URL
+  // ✅ Build full image URL
   const getImageUri = (image, name) => {
     if (image) return `${BASE_URL}/uploads/${image}`;
-    return null; // null = show placeholder with initial
+    return null;
+  };
+
+  // ✅ FIXED: get correct domain from DB — check domain, then skills, then role
+  const getExpertDomain = (item) => {
+    if (item?.domain) return item.domain;
+    if (Array.isArray(item?.skills) && item.skills.length > 0) {
+      return item.skills[0].skill_name;
+    }
+    return item?.role || "Expert";
   };
 
   // Logic to filter experts based on search input
-  const filteredExperts = experts.filter(
-    (e) =>
+  const filteredExperts = experts.filter((e) => {
+    const matchesSearch =
       e?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      e?.role?.toLowerCase().includes(search.toLowerCase()),
-  );
+      e?.domain?.toLowerCase().includes(search.toLowerCase()) ||
+      e?.role?.toLowerCase().includes(search.toLowerCase()) ||
+      (Array.isArray(e?.skills) &&
+        e.skills.some((s) =>
+          s.skill_name?.toLowerCase().includes(search.toLowerCase()),
+        ));
+
+    const matchesSkill =
+      selectedSkill === "All" ||
+      (Array.isArray(e?.skills) &&
+        e.skills.some(
+          (s) => s.skill_name?.toLowerCase() === selectedSkill.toLowerCase(),
+        ));
+
+    return matchesSearch && matchesSkill;
+  });
+  const skills = [
+    "All",
+    "React",
+    "React Native",
+    "Python",
+    "Node.js",
+    "Java",
+    "Angular",
+    "DevOps",
+    "UI/UX Design",
+    "Data Analysis",
+    "Machine Learning",
+    "PHP",
+    "Flutter",
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
@@ -58,7 +98,7 @@ export default function Home() {
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </Pressable>
-        <Text style={styles.headerTitle}>Experts Search </Text>
+        <Text style={styles.headerTitle}>Experts Search</Text>
         <Ionicons name="notifications-outline" size={24} color="#fff" />
       </View>
 
@@ -86,6 +126,33 @@ export default function Home() {
         </View>
       </View>
 
+      <View style={styles.skillContainer}>
+        <FlatList
+          data={skills}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.skillChip,
+                selectedSkill === item && styles.activeChip,
+              ]}
+              onPress={() => setSelectedSkill(item)}
+            >
+              <Text
+                style={[
+                  styles.skillText,
+                  selectedSkill === item && styles.activeChipText,
+                ]}
+              >
+                {item}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color="#0B2D72" />
@@ -107,15 +174,15 @@ export default function Home() {
             </View>
           )}
           renderItem={({ item }) => {
-            const imageUri = getImageUri(item.image, item.name); // ✅ FIXED: was item.profile_image
+            const imageUri = getImageUri(item.image, item.name);
             return (
               <Pressable
                 style={styles.card}
                 onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
               >
+                {/* --- IMAGE --- */}
                 <View style={styles.imageContainer}>
                   {imageUri ? (
-                    // ✅ FIXED: Show actual profile image
                     <Image source={{ uri: imageUri }} style={styles.image} />
                   ) : (
                     <View style={[styles.image, styles.placeholderImg]}>
@@ -126,28 +193,65 @@ export default function Home() {
                   )}
                 </View>
 
+                {/* --- INFO --- */}
                 <View style={styles.infoContainer}>
                   <Text style={styles.name}>{item?.name}</Text>
-                  <Text style={styles.role}>{item?.role || "UI Designer"}</Text>
+
+                  {/* ✅ FIXED: show real domain from DB */}
+                  <Text style={styles.role}>{getExpertDomain(item)}</Text>
 
                   <View style={styles.ratingRow}>
                     <Ionicons name="star" size={16} color="#FFD700" />
                     <Text style={styles.ratingText}>
-                      {item?.rating || "4.9"}({item?.reviews || "234"})
+                      {item?.rating || "0"}({item?.reviews || "0"})
                     </Text>
                     <Text style={styles.expText}>
-                      {item?.experience || 8} years exp
+                      {item?.experience || 0} years exp
                     </Text>
                   </View>
 
                   <View style={styles.badge}>
-                    <View style={styles.greenDot} />
-                    <Text style={styles.badgeText}>Available Now</Text>
+                    <View
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor: item?.is_online
+                            ? "#22C55E"
+                            : "#9CA3AF",
+                        },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.badgeText,
+                        { color: item?.is_online ? "#16A34A" : "#6B7280" },
+                      ]}
+                    >
+                      {item?.is_online ? "Available Now" : "Offline"}
+                    </Text>
                   </View>
                 </View>
 
-                <View style={styles.viewBtn}>
-                  <Text style={styles.viewBtnText}>View</Text>
+                {/* ✅ FIXED: View + Chat buttons */}
+                <View style={styles.btnColumn}>
+                  <TouchableOpacity
+                    style={styles.viewBtn}
+                    onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
+                  >
+                    <Text style={styles.viewBtnText}>View</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.chatBtn}
+                    onPress={() => router.push("/(tabs)/chat")}
+                  >
+                    <Ionicons
+                      name="chatbubble-outline"
+                      size={14}
+                      color="#0B2D72"
+                    />
+                    <Text style={styles.chatBtnText}>Chat</Text>
+                  </TouchableOpacity>
                 </View>
               </Pressable>
             );
@@ -275,26 +379,78 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 8,
   },
-  greenDot: {
+  dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "#0B2D72",
     marginRight: 6,
   },
   badgeText: {
-    color: "#0B2D72",
     fontSize: 12,
     fontWeight: "600",
   },
+  /* ✅ FIXED: two buttons stacked vertically */
+  btnColumn: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 80,
+  },
   viewBtn: {
     backgroundColor: "#0B2D72",
-    paddingHorizontal: 18,
-    paddingVertical: 8,
+    paddingHorizontal: 0,
+    paddingVertical: 9,
     borderRadius: 10,
+    width: 80,
+    alignItems: "center",
+    justifyContent: "center",
   },
   viewBtnText: {
     color: "#fff",
     fontWeight: "bold",
+    fontSize: 14,
+  },
+  chatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: "#0B2D72",
+    paddingVertical: 8,
+    borderRadius: 10,
+    width: 80,
+    justifyContent: "center",
+  },
+  chatBtnText: {
+    color: "#0B2D72",
+    fontWeight: "bold",
+    fontSize: 13,
+  },
+  skillContainer: {
+    paddingHorizontal: 15,
+    paddingBottom: 10,
+  },
+
+  skillChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#0B2D72",
+    marginRight: 8,
+    backgroundColor: "#fff",
+  },
+
+  activeChip: {
+    backgroundColor: "#0B2D72",
+  },
+
+  skillText: {
+    color: "#0B2D72",
+    fontWeight: "500",
+  },
+
+  activeChipText: {
+    color: "#fff",
   },
 });

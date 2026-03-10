@@ -1,31 +1,19 @@
 const { Chat } = require("../models");
-const { Op } = require("sequelize");
 
 class ChatRepository {
-
-  // ✅ create message
-  async createMessage({ senderId, receiverId, message }) {
-    return await Chat.create({
-      senderId,
-      receiverId,
-      message,
-      isRead: true,
-    });
+  async createMessage(data) {
+    return Chat.create(data);
   }
 
-  // ✅ get conversation between two users
-  async getConversation(user1, user2) {
-    return await Chat.findAll({
+  async getConversation(userId, expertId) {
+    return Chat.findAll({
       where: {
-        [Op.or]: [
-          { senderId: user1, receiverId: user2 },
-          { senderId: user2, receiverId: user1 },
-        ],
+        sender_id: [userId, expertId],
+        receiver_id: [userId, expertId],
       },
-      order: [["createdAt", "ASC"]],
+      order: [["created_at", "ASC"]],
     });
   }
-
 }
 
 module.exports = new ChatRepository();

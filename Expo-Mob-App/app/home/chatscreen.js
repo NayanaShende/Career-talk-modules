@@ -18,12 +18,12 @@ import { useLocalSearchParams, router } from "expo-router";
 import axios from "axios";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
 const BASE_URL = "http://192.168.1.27:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
-// ── helpers ──────────────────────────────────────────────
 const sortMessages = (msgs) =>
   [...msgs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -59,12 +59,11 @@ const formatTime = (date) =>
       })
     : "";
 
-// ─────────────────────────────────────────────────────────
 export default function ChatScreen() {
   const { expertId, name, avatar } = useLocalSearchParams();
   const RECEIVER_ID = Number(expertId);
+  const { clearUnread } = useNotification();
 
-  // ── unchanged logic from previous version ────────────
   const expertName =
     name && name !== "undefined" && name !== "null" ? name : "Expert";
 
@@ -91,6 +90,11 @@ export default function ChatScreen() {
       }
     });
   }, []);
+
+  // ✅ Clear unread when opening this chat
+  useEffect(() => {
+    if (RECEIVER_ID) clearUnread(RECEIVER_ID);
+  }, [RECEIVER_ID]);
 
   const loadChats = async () => {
     if (!RECEIVER_ID || !currentUserId) return;
@@ -139,17 +143,21 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
     loadChats();
+
     socketRef.current = io(BASE_URL, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
     });
+
     socketRef.current.on("connect", () => {
       setIsOnline(true);
       socketRef.current.emit("joinRoom", { userId: currentUserId });
     });
+
     socketRef.current.on("disconnect", () => setIsOnline(false));
+
     socketRef.current.on("receiveMessage", (newMessage) => {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
         setMessages((prev) => sortMessages([...prev, newMessage]));
@@ -159,6 +167,7 @@ export default function ChatScreen() {
         );
       }
     });
+
     return () => {
       socketRef.current.off("receiveMessage");
       socketRef.current.off("connect");
@@ -167,9 +176,7 @@ export default function ChatScreen() {
     };
   }, [currentUserId, RECEIVER_ID]);
 
-  // ── render ────────────────────────────────────────────
   const renderItem = ({ item }) => {
-    // Date separator
     if (item.type === "date") {
       return (
         <View style={styles.dateSepWrap}>
@@ -182,12 +189,9 @@ export default function ChatScreen() {
 
     return (
       <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
-        {/* Receiver avatar */}
         {!isUser && (
           <Image source={{ uri: expertAvatarUrl }} style={styles.msgAvatar} />
         )}
-
-        {/* Bubble */}
         <View
           style={[
             styles.bubble,
@@ -214,8 +218,6 @@ export default function ChatScreen() {
             {isUser && <Text style={styles.ticks}> ✓✓</Text>}
           </View>
         </View>
-
-        {/* Spacer so receiver bubbles don't stretch full width */}
         {!isUser && <View style={{ width: 48 }} />}
       </View>
     );
@@ -233,12 +235,11 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar backgroundColor="#fff" barStyle="dark-content" />
 
-      {/* ── HEADER (iMessage / reference UI style) ── */}
+      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>
-
         <View style={styles.headerCenter}>
           <Image
             source={{ uri: expertAvatarUrl }}
@@ -246,7 +247,6 @@ export default function ChatScreen() {
           />
           <View style={styles.onlineDot} />
         </View>
-
         <View style={styles.headerInfo}>
           <Text style={styles.headerName} numberOfLines={1}>
             {expertName}
@@ -260,7 +260,6 @@ export default function ChatScreen() {
             {isOnline ? "Active now" : "Offline"}
           </Text>
         </View>
-
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.iconBtn}>
             <Text style={styles.iconText}>📹</Text>
@@ -271,7 +270,7 @@ export default function ChatScreen() {
         </View>
       </View>
 
-      {/* ── MESSAGES ── */}
+      {/* MESSAGES */}
       <View style={styles.chatBg}>
         {loading && messages.length === 0 ? (
           <ActivityIndicator
@@ -284,7 +283,8 @@ export default function ChatScreen() {
             ref={flatListRef}
             data={groupByDate(messages)}
             renderItem={renderItem}
-            keyExtractor={(item) => String(item.id)}
+            // ✅ FIXED: unique key to avoid duplicate key warning
+            keyExtractor={(item, index) => `msg_${item.id}_${index}`}
             contentContainerStyle={styles.listContent}
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: false })
@@ -294,7 +294,7 @@ export default function ChatScreen() {
         )}
       </View>
 
-      {/* ── INPUT BAR ── */}
+      {/* INPUT BAR */}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
@@ -302,7 +302,6 @@ export default function ChatScreen() {
           <TouchableOpacity style={styles.plusBtn}>
             <Text style={styles.plusText}>＋</Text>
           </TouchableOpacity>
-
           <View style={styles.inputWrap}>
             <TextInput
               placeholder="Message..."
@@ -312,15 +311,12 @@ export default function ChatScreen() {
               onChangeText={setTextMessage}
               multiline
             />
-            {/* mic icon when empty */}
             {!textMessage.trim() && (
               <TouchableOpacity style={styles.micBtn}>
                 <Text style={styles.micText}>🎤</Text>
               </TouchableOpacity>
             )}
           </View>
-
-          {/* send button */}
           <TouchableOpacity
             style={[
               styles.sendBtn,
@@ -337,7 +333,6 @@ export default function ChatScreen() {
   );
 }
 
-// ── STYLES ───────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F2F2F7" },
   loadingScreen: {
@@ -346,8 +341,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#F2F2F7",
   },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -364,7 +357,6 @@ const styles = StyleSheet.create({
     lineHeight: 38,
     fontWeight: "300",
   },
-
   headerCenter: { position: "relative", marginRight: 10 },
   headerAvatar: { width: 42, height: 42, borderRadius: 21 },
   onlineDot: {
@@ -378,11 +370,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
   },
-
   headerInfo: { flex: 1 },
   headerName: { fontSize: 16, fontWeight: "600", color: "#000" },
   headerStatus: { fontSize: 12, marginTop: 1 },
-
   headerActions: { flexDirection: "row", gap: 4 },
   iconBtn: {
     width: 36,
@@ -393,12 +383,12 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   iconText: { fontSize: 16 },
-
-  // Chat background
   chatBg: { flex: 1, backgroundColor: "#F2F2F7" },
-  listContent: { paddingHorizontal: 12, paddingVertical: 12, paddingBottom: 8 },
-
-  // Date separator
+  listContent: {
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    paddingBottom: 8,
+  },
   dateSepWrap: { alignItems: "center", marginVertical: 14 },
   dateSepText: {
     fontSize: 12,
@@ -406,12 +396,9 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     fontWeight: "500",
   },
-
-  // Message rows
   row: { flexDirection: "row", marginBottom: 6, alignItems: "flex-end" },
   rowRight: { justifyContent: "flex-end" },
   rowLeft: { justifyContent: "flex-start" },
-
   msgAvatar: {
     width: 30,
     height: 30,
@@ -419,8 +406,6 @@ const styles = StyleSheet.create({
     marginRight: 6,
     marginBottom: 2,
   },
-
-  // Bubbles — iMessage style
   bubble: {
     maxWidth: width * 0.68,
     paddingHorizontal: 14,
@@ -429,22 +414,20 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   bubbleMine: {
-    backgroundColor: "#4A6CF7", // blue for sender
+    backgroundColor: "#4A6CF7",
     borderBottomRightRadius: 4,
   },
   bubbleTheirs: {
-    backgroundColor: "#FFFFFF", // white for receiver
+    backgroundColor: "#FFFFFF",
     borderBottomLeftRadius: 4,
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
-
   msgText: { fontSize: 15, lineHeight: 21 },
   msgTextMine: { color: "#FFFFFF" },
   msgTextTheirs: { color: "#1C1C1E" },
-
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -455,8 +438,6 @@ const styles = StyleSheet.create({
   timeMine: { color: "rgba(255,255,255,0.65)" },
   timeTheirs: { color: "#8E8E93" },
   ticks: { fontSize: 10, color: "rgba(255,255,255,0.65)" },
-
-  // Input bar
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -477,7 +458,6 @@ const styles = StyleSheet.create({
     marginBottom: 3,
   },
   plusText: { fontSize: 20, color: "#4A6CF7", lineHeight: 24 },
-
   inputWrap: {
     flex: 1,
     flexDirection: "row",
@@ -498,7 +478,6 @@ const styles = StyleSheet.create({
   },
   micBtn: { marginLeft: 6, marginBottom: 1 },
   micText: { fontSize: 16 },
-
   sendBtn: {
     width: 36,
     height: 36,

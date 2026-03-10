@@ -14,7 +14,7 @@ import {
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
-import { io } from "socket.io-client"; // ✅ NEW
+import { useNotification } from "../../context/NotificationContext";
 
 const BASE_URL = "http://192.168.1.27:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
@@ -35,9 +35,8 @@ export default function ChatLogs() {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const socketRef = useRef(null); // ✅ NEW
+  const { unreadCounts, clearUnread, totalUnread } = useNotification();
 
-  // ✅ Load real userId from AsyncStorage
   useEffect(() => {
     AsyncStorage.getItem("user").then((str) => {
       if (str) {
@@ -48,7 +47,6 @@ export default function ChatLogs() {
     });
   }, []);
 
-  // ✅ Fetch real conversations from API
   const loadConversations = async () => {
     if (!currentUserId) return;
     try {
@@ -63,47 +61,11 @@ export default function ChatLogs() {
     }
   };
 
-  // ✅ Reload every time screen is focused
   useFocusEffect(
     useCallback(() => {
       if (currentUserId) loadConversations();
     }, [currentUserId]),
   );
-
-  // ✅ NEW: Socket connection for auto-refresh of chat list
-  useEffect(() => {
-    if (!currentUserId) return;
-
-    socketRef.current = io(BASE_URL, {
-      transports: ["websocket"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-    });
-
-    socketRef.current.on("connect", () => {
-      console.log("🟢 ChatLogs socket connected");
-      // Join room so this screen receives messages meant for currentUser
-      socketRef.current.emit("joinRoom", { userId: currentUserId });
-    });
-
-    // ✅ When a new message arrives → refresh conversation list instantly
-    socketRef.current.on("receiveMessage", (newMessage) => {
-      console.log("📩 New message received, refreshing chat list...");
-      loadConversations(); // re-fetch list to show latest message + reorder
-    });
-
-    socketRef.current.on("disconnect", () => {
-      console.log("🔌 ChatLogs socket disconnected");
-    });
-
-    return () => {
-      socketRef.current.off("receiveMessage");
-      socketRef.current.off("connect");
-      socketRef.current.off("disconnect");
-      socketRef.current.disconnect();
-    };
-  }, [currentUserId]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -115,11 +77,14 @@ export default function ChatLogs() {
       ? `${BASE_URL}/uploads/${item.avatar}`
       : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=0B2D72&color=fff`;
 
+    const unread = unreadCounts[item.otherUserId] || 0;
+
     return (
       <TouchableOpacity
         style={styles.row}
         activeOpacity={0.7}
-        onPress={() =>
+        onPress={() => {
+          clearUnread(item.otherUserId);
           router.push({
             pathname: "/home/chatscreen",
             params: {
@@ -127,24 +92,34 @@ export default function ChatLogs() {
               name: item.name,
               avatar: item.avatar || "",
             },
-          })
-        }
+          });
+        }}
       >
-        {/* AVATAR with online dot */}
         <View style={styles.avatarWrap}>
           <Image source={{ uri: avatarUri }} style={styles.avatar} />
           <View style={styles.onlineDot} />
         </View>
 
-        {/* NAME + LAST MESSAGE + TIME */}
         <View style={styles.textWrap}>
           <View style={styles.topRow}>
             <Text style={styles.name} numberOfLines={1}>
               {item.name}
             </Text>
-            <Text style={styles.date}>{formatTime(item.lastMessageTime)}</Text>
+            <View style={styles.rightCol}>
+              <Text style={styles.date}>{formatTime(item.lastMessageTime)}</Text>
+              {unread > 0 && (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadText}>
+                    {unread > 99 ? "99+" : unread}
+                  </Text>
+                </View>
+              )}
+            </View>
           </View>
-          <Text style={styles.status} numberOfLines={1}>
+          <Text
+            style={[styles.status, unread > 0 && styles.statusUnread]}
+            numberOfLines={1}
+          >
             {item.lastMessage || "No messages yet"}
           </Text>
         </View>
@@ -159,14 +134,19 @@ export default function ChatLogs() {
       {/* HEADER */}
       <View style={styles.header}>
         <Text style={styles.title}>Messages</Text>
-        {chatData.length > 0 && (
+        {totalUnread > 0 ? (
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>
+              {totalUnread > 99 ? "99+" : totalUnread}
+            </Text>
+          </View>
+        ) : chatData.length > 0 ? (
           <View style={styles.countBadge}>
             <Text style={styles.countText}>{chatData.length}</Text>
           </View>
-        )}
+        ) : null}
       </View>
 
-      {/* LIST */}
       {loading && chatData.length === 0 ? (
         <ActivityIndicator
           style={{ marginTop: 40 }}
@@ -177,7 +157,8 @@ export default function ChatLogs() {
         <FlatList
           data={chatData}
           renderItem={renderChatItem}
-          keyExtractor={(item) => String(item.id || item.otherUserId)}
+          // ✅ FIXED: unique key using index to avoid duplicate key warning
+          keyExtractor={(item, index) => `chat_${item.otherUserId}_${index}`}
           contentContainerStyle={{ paddingBottom: 24 }}
           ItemSeparatorComponent={() => <View style={styles.divider} />}
           refreshControl={
@@ -205,7 +186,6 @@ export default function ChatLogs() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F5F6FA" },
-
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -227,7 +207,6 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   countText: { fontSize: 12, fontWeight: "700", color: "#0B2D72" },
-
   row: {
     flexDirection: "row",
     alignItems: "center",
@@ -235,7 +214,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 13,
   },
-
   avatarWrap: { position: "relative", marginRight: 14 },
   avatar: {
     width: 54,
@@ -255,7 +233,6 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
   },
-
   textWrap: { flex: 1 },
   topRow: {
     flexDirection: "row",
@@ -270,11 +247,21 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: 8,
   },
+  rightCol: { alignItems: "flex-end", gap: 4 },
   date: { fontSize: 11, color: "#9E9E9E" },
+  unreadBadge: {
+    backgroundColor: "#0B2D72",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
+  },
+  unreadText: { fontSize: 11, fontWeight: "700", color: "#fff" },
   status: { fontSize: 13, color: "#757575", lineHeight: 18 },
-
+  statusUnread: { fontWeight: "700", color: "#1A1A2E" },
   divider: { height: 1, backgroundColor: "#F0F0F5", marginLeft: 84 },
-
   emptyWrap: { alignItems: "center", marginTop: 100 },
   emptyIcon: { fontSize: 56, marginBottom: 16 },
   emptyText: { fontSize: 18, fontWeight: "700", color: "#333" },

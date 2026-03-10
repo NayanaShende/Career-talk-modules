@@ -10,8 +10,13 @@ const expertsRoutes = require("./expert.routes");
 const chatRoutes = require('./chat.routes');
 const callRoutes = require('./call.routes');
 const notificationRoutes = require("./notification.routes"); // ADDED
+const walletRoutes = require("./wallet.routes");
 
 
+
+
+// ✅ Razorpay Payment Routes
+const paymentRoutes = require("./payment.routes");
 
 // --------------------------------------
 // MOUNT ROUTES
@@ -29,17 +34,20 @@ router.use("/users", userRoutes);
 // Example: /api/experts
 router.use("/experts", expertsRoutes);
 
-// Chat routes
-router.use('/chat', chatRoutes);
-
-// Call routes
-router.use('/calls', callRoutes);
-
 // Notification routes
 // Example: /api/notifications/create
 router.use("/notifications", notificationRoutes); // ADDED
 
 
+router.use("/wallet", walletRoutes);
+
+// Chat routes
+router.use("/chat", chatRoutes);
+router.use("/calls", callRoutes);
+
+// ✅ Payment routes
+// Example: /api/payment/create-order
+router.use("/payment", paymentRoutes);
 
 // --------------------------------------
 // HEALTH CHECK ROUTE

@@ -11,5 +11,5 @@ router.use("/users", userRoutes);
 router.use("/auth", authRoutes); // ✅ ADD
 router.use("/experts", expertRoutes);
 router.use("/calls", callRoutes);
-router.use("/chats", require("./chat.routes"));
+router.use("/chats", chatRoutes);
 module.exports = router;

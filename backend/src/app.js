@@ -2,6 +2,8 @@ require("dotenv").config();
 var express = require("express");
 var logger = require("morgan");
 const cors = require("cors");
+const http = require("http");
+const { initSocket } = require("./socket");
 const path = require("path");
 const helmet = require("helmet");
 
@@ -11,12 +13,9 @@ const { sequelize } = require("./models");
 var app = express();
 
 /* ---------------- SECURITY MIDDLEWARE ---------------- */
-
-// Secure HTTP headers
 app.use(helmet());
 
 /* ---------------- CORS ---------------- */
-
 app.use(
   cors({
     origin: "*",
@@ -26,33 +25,34 @@ app.use(
 );
 
 /* ---------------- MIDDLEWARE ---------------- */
-
 app.use(logger("dev"));
 
-// JSON parser
-app.use(express.json({ limit: "10mb" }));
+// ✅ Webhook route needs raw body — register BEFORE express.json()
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 
-// URL encoded parser
+// ✅ All other routes use normal JSON parsing
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 /* ---------------- STATIC FILES ---------------- */
-
-// Serve uploaded files
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
-/* ---------------- API ROUTES ---------------- */
+/* ---------------- DATABASE ---------------- */
+// ✅ Single database connection check
+sequelize
+  .authenticate()
+  .then(() => console.log("✅ Database connection successful"))
+  .catch((err) => console.log("❌ Database connection error:", err));
 
-// Debug middleware (helps verify routes are loading)
+/* ---------------- API ROUTES ---------------- */
 app.use("/api", (req, res, next) => {
   console.log(`API Request: ${req.method} ${req.originalUrl}`);
   next();
 });
 
-// Load all API routes
 app.use("/api", routes);
 
 /* ---------------- HEALTH CHECK ---------------- */
-
 app.get("/", (req, res) => {
   res.json({
     success: true,
@@ -61,7 +61,6 @@ app.get("/", (req, res) => {
 });
 
 /* ---------------- 404 HANDLER ---------------- */
-
 app.use(function (req, res) {
   res.status(404).json({
     success: false,
@@ -70,14 +69,17 @@ app.use(function (req, res) {
 });
 
 /* ---------------- GLOBAL ERROR HANDLER ---------------- */
-
 app.use((err, req, res, next) => {
   console.error("Server Error:", err);
-
   res.status(err.status || 500).json({
     success: false,
     message: err.message || "Internal Server Error",
   });
 });
 
-module.exports = app;
+/* ---------------- SERVER & SOCKET ---------------- */
+const server = http.createServer(app);
+const io = initSocket(server); // ✅ FIXED: get io from initSocket
+app.set("io", io);              // ✅ FIXED: set io on app so controllers can use req.app.get("io")
+
+module.exports = { app, server };

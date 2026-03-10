@@ -4,9 +4,19 @@ exports.createNotification = async (data, io) => {
 
   const notification = await notificationRepository.createNotification(data);
 
-  // Real-time notification
+  // ✅ FIXED: room is just receiver_id.toString() (not "user_X")
+  // ✅ FIXED: event is "newNotification" (not "new_notification")
   if (io) {
-    io.to(`user_${data.receiver_id}`).emit("new_notification", notification);
+    io.to(data.receiver_id.toString()).emit("newNotification", {
+      id: notification.id,
+      sender_id: Number(data.sender_id),
+      receiver_id: Number(data.receiver_id),
+      type: data.type,
+      title: data.title || "New Message",
+      message: data.message,
+      is_read: false,
+      createdAt: notification.createdAt,
+    });
   }
 
   return notification;
