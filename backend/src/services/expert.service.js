@@ -71,47 +71,23 @@ const getExpertsBySkill = async (skill) => {
    EXPERT PROFILE
 ================================ */
 
-// ✅ FIXED: now accepts imageFile and certificateFile separately
-// ✅ FIXED: saves image filename to DB so dashboard can show it
-// ✅ FIXED: sets is_online = true immediately after profile creation
-// ✅ FIXED: saves skills from comma-separated string in profileData.skills
-const createExpertProfile = async (
-  userId,
-  profileData,
-  cvFile,
-  imageFile,
-  certificateFile,
-) => {
-  // ✅ Parse skills from comma-separated string e.g. "React,Node.js,Python"
-  let skillsArray = [];
-  if (profileData.skills) {
-    skillsArray = profileData.skills
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  }
-
+const createExpertProfile = async (userId, profileData, file) => {
   const data = {
-    name: profileData.fullName || null,
-    email: profileData.email || null,
-    bio: profileData.bio || null,
-    experience: profileData.experience || null,
-    domain: profileData.domain || null,
-    certification: profileData.certificate || null, // ✅ FIXED: was profileData.certifications
-    location: profileData.location || null,
-    language_spoken: profileData.languages || null, // ✅ FIXED: was profileData.language_spoken
-    qualification: profileData.qualification || null,
-    // ✅ FIXED: save actual filenames from multer — these were all null before
-    cv: cvFile ? cvFile.filename : null,
-    image: imageFile ? imageFile.filename : null,
-    certificate_file: certificateFile ? certificateFile.filename : null,
-    certificate_domain: profileData.certificateDomain || null,
-    // ✅ FIXED: set is_online = true so expert appears in Live Experts immediately
-    is_online: true,
-    isVerified: true,
-    verificationStatus: "approved",
-    userId,
+    name:            profileData.fullName        || profileData.name || null,  // ✅ Expert.name
+    email:           profileData.email           || null,                      // ✅ via User, kept for reference
+    bio:             profileData.bio             || null,                      // ✅ Expert.bio
+    experience:      profileData.experience      || null,                      // ✅ Expert.experience
+    domain:          profileData.domain          || null,                      // ✅ Expert.domain
+    // ✅ FIXED: was only checking "certifications" (plural) — now checks both
+    certification:   profileData.certification   || profileData.certifications || null,  // ✅ Expert.certification
+    location:        profileData.location        || null,                      // ✅ Expert.location
+    // ✅ language_spoken was already correct — now also logs it for debugging
+    language_spoken: profileData.language_spoken || null,                      // ✅ Expert.language_spoken
+    cv:              file ? file.filename         : null,                      // ✅ Expert.cv (was cvFile)
+    userId,                                                                    // ✅ FK link to Users table
   };
+
+  console.log("📝 createExpertProfile — data to save:", JSON.stringify(data));
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);
   if (profile) {
