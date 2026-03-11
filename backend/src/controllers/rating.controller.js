@@ -5,7 +5,7 @@ exports.submitRating = async (req, res) => {
   try {
     const expertId = req.params.id;
     const { rating, comment } = req.body;
-    const userId = req.user?.id || null;
+    const userid = req.user?.id || null;
 
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({
@@ -14,7 +14,7 @@ exports.submitRating = async (req, res) => {
       });
     }
 
-    const result = await expertService.submitRating(expertId, rating, comment, userId);
+    const result = await expertService.submitRating(expertId, rating, comment, userid);
 
     res.status(200).json({
       success: true,

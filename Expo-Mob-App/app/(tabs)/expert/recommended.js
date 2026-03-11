@@ -16,7 +16,7 @@ import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
 
-const BASE_URL = "http://192.168.1.22:3000";
+const BASE_URL = "http://192.168.1.15:3000";
 
 
 export default function Recommended() {
