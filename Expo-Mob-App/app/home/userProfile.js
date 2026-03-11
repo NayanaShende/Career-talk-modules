@@ -838,12 +838,17 @@ export default function ProfileScreen() {
         form.append("certificateDomain", resolvedDomain);
       }
 
-      await axios.post(`${BASE_URL}/api/users/save-profile`, form, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
+      // ✅ Single API call — removed duplicate
+      const res = await axios.post(
+        "http://192.168.1.18:3000/api/users/save-profile",
+        form,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
+          },
         },
-      });
+      );
 
       // Update local storage
       const userStr = await AsyncStorage.getItem("user");
@@ -875,6 +880,27 @@ export default function ProfileScreen() {
       Alert.alert(
         "Error",
         e.response?.data?.message || "Could not save profile",
+      );
+    }
+  };
+
+  const saveRole = async (selectedRole) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
+      await axios.post(
+        "http://192.168.1.18:3000/api/auth/set-role",
+        { role: selectedRole },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+    } catch (e) {
+      console.log("Save role error:", e.response?.data || e.message);
+      Alert.alert(
+        "Error",
+        e.response?.data?.message || "Could not save role",
       );
     }
   };
