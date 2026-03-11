@@ -61,16 +61,35 @@ const findRecommendedExperts = async (limit) => {
   });
 };
 
+// ✅ FIXED: include User model so we can fallback to User.image if Expert.image is null
+// This fixes the Live Expert card on dashboard not showing profile photo
 const findOnlineExperts = async (limit) => {
-  return await Expert.findAll({
+  const experts = await Expert.findAll({
     where: { is_online: true },
-    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
+    include: [
+      ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
+      {
+        model: User,
+        as: "user",
+        attributes: ["id", "fullName", "image"], // ✅ pull user's image and fullName
+      },
+    ],
     order: [
       ["rating", "DESC"],
       ["experience", "DESC"],
       ["id", "DESC"],
     ],
     limit,
+  });
+
+  // ✅ FIXED: if Expert.image is null, use User.image as fallback
+  return experts.map((e) => {
+    const plain = e.toJSON();
+    return {
+      ...plain,
+      image: plain.image || plain.user?.image || null,
+      name: plain.name || plain.user?.fullName || null,
+    };
   });
 };
 

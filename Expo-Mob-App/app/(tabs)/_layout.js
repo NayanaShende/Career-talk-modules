@@ -1,10 +1,10 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { View, Text } from "react-native"; // ✅ NEW
-import { useNotification } from "../../context/NotificationContext";// ✅ NEW
+import { View, Text } from "react-native";
+import { useNotification } from "../../context/NotificationContext";
 
 export default function TabLayout() {
-  const { totalUnread } = useNotification(); // ✅ NEW
+  const { totalUnread } = useNotification();
 
   return (
     <Tabs
@@ -42,7 +42,7 @@ export default function TabLayout() {
         }}
       />
 
-      {/* CHAT ✅ NEW: badge on chat icon */}
+      {/* CHAT ✅ badge on chat icon */}
       <Tabs.Screen
         name="chat"
         options={{
@@ -92,6 +92,18 @@ export default function TabLayout() {
           href: "/(tabs)/profile",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* ✅ FIXED: Wallet tab with proper professional icon */}
+      <Tabs.Screen
+        name="wallet"
+        options={{
+          title: "Wallet",
+          href: "/(tabs)/wallet",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="wallet" size={size} color={color} />
           ),
         }}
       />

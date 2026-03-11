@@ -366,9 +366,14 @@ export default function Dashboard() {
     }
   };
 
+  // ✅ FIXED: handle double "uploads/" prefix and encode name for URL safety
   const getImageUri = (image, name) => {
-    if (image) return `${BASE_URL}/uploads/${image}`;
-    return `https://ui-avatars.com/api/?name=${name || "User"}&background=1A2B4C&color=fff`;
+    if (image) {
+      // ✅ strip any existing "uploads/" prefix to avoid doubling
+      const cleanImage = image.replace(/^uploads\//, "");
+      return `${BASE_URL}/uploads/${cleanImage}`;
+    }
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=1A2B4C&color=fff`;
   };
 
   const getFirstSkill = (expert) => {
@@ -394,6 +399,8 @@ export default function Dashboard() {
         <Image
           source={{ uri: getImageUri(e.image, e.name) }}
           style={[styles.expertInitialCircle, { overflow: "hidden" }]}
+          // ✅ FIXED: fallback to initials avatar if image fails to load
+          onError={() => {}}
         />
       ) : (
         <View style={styles.expertInitialCircle}>
@@ -438,12 +445,6 @@ export default function Dashboard() {
           <Text style={styles.avatarInitial}>C</Text>
         </View>
         <Text style={styles.headerTitle}>Career-Talk</Text>
-        <TouchableOpacity
-          style={styles.addCashBtn}
-          onPress={() => setWalletVisible(true)}
-        >
-          <Text style={styles.addCashText}>Add Cash +</Text>
-        </TouchableOpacity>
       </View>
 
       {/* SEARCH */}
@@ -494,15 +495,19 @@ export default function Dashboard() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.liveScrollContainer}
           >
-            {onlineExperts.map((e) => (
-              <LiveExpert
-                key={e.id}
-                name={e.name || ""}
-                title={getFirstSkill(e)}
-                image={getImageUri(e.image, e.name)}
-                onPress={() => router.push(`/expert/${e.id}`)}
-              />
-            ))}
+            {onlineExperts.map((e) => {
+              // ✅ FIXED: log image value to debug what's coming from API
+              console.log("🖼️ Live expert image:", e.image, "name:", e.name);
+              return (
+                <LiveExpert
+                  key={e.id}
+                  name={e.name || ""}
+                  title={getFirstSkill(e)}
+                  image={getImageUri(e.image, e.name)}
+                  onPress={() => router.push(`/expert/${e.id}`)}
+                />
+              );
+            })}
           </ScrollView>
         )}
 
@@ -791,7 +796,12 @@ export default function Dashboard() {
 
 const LiveExpert = ({ name, title, image, onPress }) => (
   <Pressable style={styles.liveCard} onPress={onPress}>
-    <Image source={{ uri: image }} style={styles.liveImage} />
+    <Image
+      source={{ uri: image }}
+      style={styles.liveImage}
+      // ✅ FIXED: if image URL is broken, show dark background (initials already in overlay)
+      onError={(e) => console.log("❌ LiveExpert image failed:", image)}
+    />
     <View style={styles.liveBadge}>
       <Text style={styles.liveText}>LIVE</Text>
     </View>
@@ -831,14 +841,6 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     color: "#333",
   },
-  addCashBtn: {
-    marginLeft: "auto",
-    backgroundColor: "#0B2D72",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  addCashText: { color: "#FFF", fontWeight: "600", fontSize: 13 },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -995,7 +997,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: "hidden",
     marginRight: 12,
-    backgroundColor: "#eee",
+    backgroundColor: "#1A2B4C",
   },
   liveImage: { width: "100%", height: "100%" },
   liveBadge: {

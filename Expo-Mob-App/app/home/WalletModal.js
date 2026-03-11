@@ -12,6 +12,8 @@ import {
   Dimensions,
   Alert,
   Linking,
+  SafeAreaView,
+  StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -21,6 +23,7 @@ const { height } = Dimensions.get("window");
 
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
 
+// ✅ FIXED: visible & onClose are optional — works as both Modal AND Tab screen
 export default function WalletModal({ visible, onClose }) {
   const [balance, setBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
@@ -30,12 +33,20 @@ export default function WalletModal({ visible, onClose }) {
   const [userId, setUserId] = useState(null);
   const [activeTab, setActiveTab] = useState("topup"); // "topup" | "history"
 
+  // ✅ isTabMode = true when used as a tab screen (no visible/onClose props)
+  const isTabMode = visible === undefined;
+
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (isTabMode) {
+      // ✅ Tab mode: load data immediately on mount
+      loadUserAndBalance();
+      return;
+    }
+
     if (visible) {
-      // Animate in
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
@@ -50,7 +61,6 @@ export default function WalletModal({ visible, onClose }) {
       ]).start();
       loadUserAndBalance();
     } else {
-      // Animate out
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: height,
@@ -124,8 +134,6 @@ export default function WalletModal({ visible, onClose }) {
       if (!order?.id) throw new Error("Order creation failed");
 
       // Step 2: Open Razorpay checkout
-      // Since this is a mobile app, we use Razorpay's payment link or
-      // redirect to a web checkout page
       const checkoutUrl = `https://api.razorpay.com/v1/checkout/embedded`;
 
       Alert.alert(
@@ -151,7 +159,6 @@ export default function WalletModal({ visible, onClose }) {
   const simulatePaymentSuccess = async (orderId, amt) => {
     try {
       setLoading(true);
-      // Direct wallet topup for testing
       await axiosInstance.post("/wallet/topup", {
         userId: userId,
         amount: amt,
@@ -170,23 +177,23 @@ export default function WalletModal({ visible, onClose }) {
 
   const getTransactionIcon = (type) => {
     switch (type) {
-      case "topup": return { icon: "arrow-down-circle", color: "#10b981" };
-      case "debit": return { icon: "arrow-up-circle", color: "#ef4444" };
-      case "hold": return { icon: "pause-circle", color: "#f59e0b" };
-      case "release": return { icon: "refresh-circle", color: "#3b82f6" };
-      case "refund": return { icon: "return-down-back", color: "#8b5cf6" };
-      default: return { icon: "ellipse", color: "#6b7280" };
+      case "topup":   return { icon: "arrow-down-circle", color: "#10b981" };
+      case "debit":   return { icon: "arrow-up-circle",   color: "#ef4444" };
+      case "hold":    return { icon: "pause-circle",      color: "#f59e0b" };
+      case "release": return { icon: "refresh-circle",    color: "#3b82f6" };
+      case "refund":  return { icon: "return-down-back",  color: "#8b5cf6" };
+      default:        return { icon: "ellipse",           color: "#6b7280" };
     }
   };
 
   const getTransactionLabel = (type) => {
     switch (type) {
-      case "topup": return "Money Added";
-      case "debit": return "Money Debited";
-      case "hold": return "On Hold";
+      case "topup":   return "Money Added";
+      case "debit":   return "Money Debited";
+      case "hold":    return "On Hold";
       case "release": return "Released";
-      case "refund": return "Refunded";
-      default: return type;
+      case "refund":  return "Refunded";
+      default:        return type;
     }
   };
 
@@ -201,6 +208,199 @@ export default function WalletModal({ visible, onClose }) {
     });
   };
 
+  // ✅ Shared wallet content — used in both tab and modal
+  const WalletContent = () => (
+    <>
+      {/* Balance Card */}
+      <View style={styles.balanceCard}>
+        <View style={styles.balanceLeft}>
+          <Ionicons name="wallet-outline" size={28} color="#fff" />
+          <View style={{ marginLeft: 12 }}>
+            <Text style={styles.balanceLabel}>Available Balance</Text>
+            {loadingBalance ? (
+              <ActivityIndicator color="#fff" size="small" />
+            ) : (
+              <Text style={styles.balanceAmount}>
+                ₹{parseFloat(balance).toFixed(2)}
+              </Text>
+            )}
+          </View>
+        </View>
+        <TouchableOpacity
+          style={styles.refreshBtn}
+          onPress={() => userId && fetchBalance(userId)}
+        >
+          <Ionicons name="refresh" size={18} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Tabs */}
+      <View style={styles.tabs}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "topup" && styles.tabActive]}
+          onPress={() => setActiveTab("topup")}
+        >
+          <Ionicons
+            name="add-circle-outline"
+            size={16}
+            color={activeTab === "topup" ? "#fff" : "#0B2D72"}
+          />
+          <Text style={[styles.tabText, activeTab === "topup" && styles.tabTextActive]}>
+            Add Money
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === "history" && styles.tabActive]}
+          onPress={() => setActiveTab("history")}
+        >
+          <Ionicons
+            name="time-outline"
+            size={16}
+            color={activeTab === "history" ? "#fff" : "#0B2D72"}
+          />
+          <Text style={[styles.tabText, activeTab === "history" && styles.tabTextActive]}>
+            History
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Content */}
+      {activeTab === "topup" ? (
+        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+          <Text style={styles.sectionLabel}>Quick Add</Text>
+          <View style={styles.quickAmounts}>
+            {QUICK_AMOUNTS.map((qa) => (
+              <TouchableOpacity
+                key={qa}
+                style={[
+                  styles.quickBtn,
+                  amount === String(qa) && styles.quickBtnActive,
+                ]}
+                onPress={() => setAmount(String(qa))}
+              >
+                <Text
+                  style={[
+                    styles.quickBtnText,
+                    amount === String(qa) && styles.quickBtnTextActive,
+                  ]}
+                >
+                  ₹{qa}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.sectionLabel}>Enter Amount</Text>
+          <View style={styles.inputContainer}>
+            <Text style={styles.rupeeSign}>₹</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter amount"
+              placeholderTextColor="#aaa"
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+              maxLength={6}
+            />
+          </View>
+
+          <TouchableOpacity
+            style={[styles.addBtn, (!amount || loading) && styles.addBtnDisabled]}
+            onPress={handleAddMoney}
+            disabled={!amount || loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="add-circle" size={20} color="#fff" />
+                <Text style={styles.addBtnText}>
+                  Add ₹{amount || "0"} to Wallet
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.infoBox}>
+            <Ionicons name="shield-checkmark" size={16} color="#0B2D72" />
+            <Text style={styles.infoText}>
+              Payments secured by Razorpay. Amount will be credited instantly.
+            </Text>
+          </View>
+        </ScrollView>
+      ) : (
+        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+          {transactions.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="receipt-outline" size={48} color="#ccc" />
+              <Text style={styles.emptyText}>No transactions yet</Text>
+              <Text style={styles.emptySubText}>Add money to get started</Text>
+            </View>
+          ) : (
+            transactions.map((tx) => {
+              const { icon, color } = getTransactionIcon(tx.type);
+              const isCredit = ["topup", "refund", "release"].includes(tx.type);
+              return (
+                <View key={tx.id} style={styles.txItem}>
+                  <View style={[styles.txIcon, { backgroundColor: color + "20" }]}>
+                    <Ionicons name={icon} size={24} color={color} />
+                  </View>
+                  <View style={styles.txInfo}>
+                    <Text style={styles.txLabel}>
+                      {getTransactionLabel(tx.type)}
+                    </Text>
+                    <Text style={styles.txDate}>
+                      {formatDate(tx.created_at)}
+                    </Text>
+                    {tx.ref_id && (
+                      <Text style={styles.txRef} numberOfLines={1}>
+                        Ref: {tx.ref_id}
+                      </Text>
+                    )}
+                  </View>
+                  <Text
+                    style={[
+                      styles.txAmount,
+                      { color: isCredit ? "#10b981" : "#ef4444" },
+                    ]}
+                  >
+                    {isCredit ? "+" : "-"}₹{parseFloat(tx.amount).toFixed(2)}
+                  </Text>
+                </View>
+              );
+            })
+          )}
+        </ScrollView>
+      )}
+    </>
+  );
+
+  // ✅ TAB MODE: render as full screen (no Modal wrapper)
+  if (isTabMode) {
+    return (
+      <SafeAreaView style={styles.tabContainer}>
+        <StatusBar backgroundColor="#0B2D72" barStyle="light-content" />
+        {/* Header for tab mode */}
+        <View style={styles.tabHeader}>
+          <View>
+            <Text style={styles.headerTitle}>My Wallet</Text>
+            <Text style={styles.headerSub}>Career Talk Balance</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.refreshBtn}
+            onPress={() => userId && loadUserAndBalance()}
+          >
+            <Ionicons name="refresh" size={18} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.tabContent}>
+          <WalletContent />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ✅ MODAL MODE: render as bottom sheet (used from dashboard Add Cash button)
   return (
     <Modal
       visible={visible}
@@ -215,10 +415,7 @@ export default function WalletModal({ visible, onClose }) {
 
       {/* Bottom Sheet */}
       <Animated.View
-        style={[
-          styles.sheet,
-          { transform: [{ translateY: slideAnim }] },
-        ]}
+        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
       >
         {/* Handle */}
         <View style={styles.handle} />
@@ -234,177 +431,34 @@ export default function WalletModal({ visible, onClose }) {
           </TouchableOpacity>
         </View>
 
-        {/* Balance Card */}
-        <View style={styles.balanceCard}>
-          <View style={styles.balanceLeft}>
-            <Ionicons name="wallet-outline" size={28} color="#fff" />
-            <View style={{ marginLeft: 12 }}>
-              <Text style={styles.balanceLabel}>Available Balance</Text>
-              {loadingBalance ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.balanceAmount}>₹{parseFloat(balance).toFixed(2)}</Text>
-              )}
-            </View>
-          </View>
-          <TouchableOpacity
-            style={styles.refreshBtn}
-            onPress={() => userId && fetchBalance(userId)}
-          >
-            <Ionicons name="refresh" size={18} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Tabs */}
-        <View style={styles.tabs}>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "topup" && styles.tabActive]}
-            onPress={() => setActiveTab("topup")}
-          >
-            <Ionicons
-              name="add-circle-outline"
-              size={16}
-              color={activeTab === "topup" ? "#fff" : "#0B2D72"}
-            />
-            <Text style={[styles.tabText, activeTab === "topup" && styles.tabTextActive]}>
-              Add Money
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tab, activeTab === "history" && styles.tabActive]}
-            onPress={() => setActiveTab("history")}
-          >
-            <Ionicons
-              name="time-outline"
-              size={16}
-              color={activeTab === "history" ? "#fff" : "#0B2D72"}
-            />
-            <Text style={[styles.tabText, activeTab === "history" && styles.tabTextActive]}>
-              History
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Tab Content */}
-        {activeTab === "topup" ? (
-          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-            {/* Quick Amount Buttons */}
-            <Text style={styles.sectionLabel}>Quick Add</Text>
-            <View style={styles.quickAmounts}>
-              {QUICK_AMOUNTS.map((qa) => (
-                <TouchableOpacity
-                  key={qa}
-                  style={[
-                    styles.quickBtn,
-                    amount === String(qa) && styles.quickBtnActive,
-                  ]}
-                  onPress={() => setAmount(String(qa))}
-                >
-                  <Text
-                    style={[
-                      styles.quickBtnText,
-                      amount === String(qa) && styles.quickBtnTextActive,
-                    ]}
-                  >
-                    ₹{qa}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Custom Amount Input */}
-            <Text style={styles.sectionLabel}>Enter Amount</Text>
-            <View style={styles.inputContainer}>
-              <Text style={styles.rupeeSign}>₹</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter amount"
-                placeholderTextColor="#aaa"
-                keyboardType="numeric"
-                value={amount}
-                onChangeText={setAmount}
-                maxLength={6}
-              />
-            </View>
-
-            {/* Add Money Button */}
-            <TouchableOpacity
-              style={[styles.addBtn, (!amount || loading) && styles.addBtnDisabled]}
-              onPress={handleAddMoney}
-              disabled={!amount || loading}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <>
-                  <Ionicons name="add-circle" size={20} color="#fff" />
-                  <Text style={styles.addBtnText}>
-                    Add ₹{amount || "0"} to Wallet
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Info */}
-            <View style={styles.infoBox}>
-              <Ionicons name="shield-checkmark" size={16} color="#0B2D72" />
-              <Text style={styles.infoText}>
-                Payments secured by Razorpay. Amount will be credited instantly.
-              </Text>
-            </View>
-          </ScrollView>
-        ) : (
-          <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
-            {transactions.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="receipt-outline" size={48} color="#ccc" />
-                <Text style={styles.emptyText}>No transactions yet</Text>
-                <Text style={styles.emptySubText}>
-                  Add money to get started
-                </Text>
-              </View>
-            ) : (
-              transactions.map((tx) => {
-                const { icon, color } = getTransactionIcon(tx.type);
-                const isCredit = ["topup", "refund", "release"].includes(tx.type);
-                return (
-                  <View key={tx.id} style={styles.txItem}>
-                    <View style={[styles.txIcon, { backgroundColor: color + "20" }]}>
-                      <Ionicons name={icon} size={24} color={color} />
-                    </View>
-                    <View style={styles.txInfo}>
-                      <Text style={styles.txLabel}>
-                        {getTransactionLabel(tx.type)}
-                      </Text>
-                      <Text style={styles.txDate}>
-                        {formatDate(tx.created_at)}
-                      </Text>
-                      {tx.ref_id && (
-                        <Text style={styles.txRef} numberOfLines={1}>
-                          Ref: {tx.ref_id}
-                        </Text>
-                      )}
-                    </View>
-                    <Text
-                      style={[
-                        styles.txAmount,
-                        { color: isCredit ? "#10b981" : "#ef4444" },
-                      ]}
-                    >
-                      {isCredit ? "+" : "-"}₹{parseFloat(tx.amount).toFixed(2)}
-                    </Text>
-                  </View>
-                );
-              })
-            )}
-          </ScrollView>
-        )}
+        <WalletContent />
       </Animated.View>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  // ✅ Tab mode styles
+  tabContainer: {
+    flex: 1,
+    backgroundColor: "#f8f9ff",
+  },
+  tabHeader: {
+    backgroundColor: "#0B2D72",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  tabContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 30,
+  },
+
+  // Modal mode styles
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -440,11 +494,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "800",
-    color: "#0B2D72",
+    color: "#fff",
   },
   headerSub: {
     fontSize: 12,
-    color: "#888",
+    color: "rgba(255,255,255,0.7)",
     marginTop: 2,
   },
   closeBtn: {
@@ -469,20 +523,13 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
   },
-  balanceLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  balanceLeft: { flexDirection: "row", alignItems: "center" },
   balanceLabel: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 12,
     marginBottom: 4,
   },
-  balanceAmount: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "800",
-  },
+  balanceAmount: { color: "#fff", fontSize: 28, fontWeight: "800" },
   refreshBtn: {
     width: 36,
     height: 36,
@@ -507,17 +554,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
   },
-  tabActive: {
-    backgroundColor: "#0B2D72",
-  },
-  tabText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#0B2D72",
-  },
-  tabTextActive: {
-    color: "#fff",
-  },
+  tabActive: { backgroundColor: "#0B2D72" },
+  tabText: { fontSize: 14, fontWeight: "600", color: "#0B2D72" },
+  tabTextActive: { color: "#fff" },
   sectionLabel: {
     fontSize: 13,
     fontWeight: "700",
@@ -526,11 +565,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  quickAmounts: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 20,
-  },
+  quickAmounts: { flexDirection: "row", gap: 10, marginBottom: 20 },
   quickBtn: {
     flex: 1,
     paddingVertical: 12,
@@ -540,17 +575,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
   },
-  quickBtnActive: {
-    backgroundColor: "#0B2D72",
-  },
-  quickBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#0B2D72",
-  },
-  quickBtnTextActive: {
-    color: "#fff",
-  },
+  quickBtnActive: { backgroundColor: "#0B2D72" },
+  quickBtnText: { fontSize: 14, fontWeight: "700", color: "#0B2D72" },
+  quickBtnTextActive: { color: "#fff" },
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -562,18 +589,8 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     height: 56,
   },
-  rupeeSign: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#0B2D72",
-    marginRight: 8,
-  },
-  input: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#333",
-  },
+  rupeeSign: { fontSize: 20, fontWeight: "700", color: "#0B2D72", marginRight: 8 },
+  input: { flex: 1, fontSize: 20, fontWeight: "700", color: "#333" },
   addBtn: {
     backgroundColor: "#0B2D72",
     borderRadius: 16,
@@ -589,16 +606,8 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 3 },
   },
-  addBtnDisabled: {
-    backgroundColor: "#ccc",
-    elevation: 0,
-    shadowOpacity: 0,
-  },
-  addBtnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "700",
-  },
+  addBtnDisabled: { backgroundColor: "#ccc", elevation: 0, shadowOpacity: 0 },
+  addBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   infoBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -608,27 +617,10 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 10,
   },
-  infoText: {
-    flex: 1,
-    fontSize: 12,
-    color: "#555",
-    lineHeight: 18,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 60,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#333",
-    marginTop: 12,
-  },
-  emptySubText: {
-    fontSize: 13,
-    color: "#999",
-    marginTop: 4,
-  },
+  infoText: { flex: 1, fontSize: 12, color: "#555", lineHeight: 18 },
+  emptyState: { alignItems: "center", paddingVertical: 60 },
+  emptyText: { fontSize: 16, fontWeight: "700", color: "#333", marginTop: 12 },
+  emptySubText: { fontSize: 13, color: "#999", marginTop: 4 },
   txItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -644,26 +636,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
-  txInfo: {
-    flex: 1,
-  },
-  txLabel: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#333",
-  },
-  txDate: {
-    fontSize: 11,
-    color: "#999",
-    marginTop: 2,
-  },
-  txRef: {
-    fontSize: 10,
-    color: "#bbb",
-    marginTop: 2,
-  },
-  txAmount: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
+  txInfo: { flex: 1 },
+  txLabel: { fontSize: 14, fontWeight: "700", color: "#333" },
+  txDate: { fontSize: 11, color: "#999", marginTop: 2 },
+  txRef: { fontSize: 10, color: "#bbb", marginTop: 2 },
+  txAmount: { fontSize: 16, fontWeight: "800" },
 });

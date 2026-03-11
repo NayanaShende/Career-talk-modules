@@ -128,8 +128,7 @@ function InfoModal({ visible, onClose, content }) {
           {/* ✅ FIXED: ScrollView fills remaining space using flex: 1 inside fixed-height container */}
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 30 }}
-          >
+            contentContainerStyle={{ paddingBottom: 30 }}>
             {content.sections.map((section, idx) => (
               <View key={idx} style={{ marginBottom: 16 }}>
                 {section.heading && (
@@ -378,8 +377,7 @@ export default function ProfileScreen() {
 
         <TouchableOpacity
           style={styles.editButton}
-          onPress={() => router.push("/home/edit")}
-        >
+          onPress={() => router.push("/home/edit")}>
           <Text style={styles.editText}>Edit Profile</Text>
         </TouchableOpacity>
 
@@ -388,21 +386,21 @@ export default function ProfileScreen() {
           <Text style={styles.settingsTitle}>Account Settings</Text>
           <SettingsRow
             icon="information-circle-outline"
-            iconBg="#6C63FF"
+            iconBg="#0B2D72"
             label="About Us"
             onPress={() => setAboutModal(true)}
           />
           <View style={styles.divider} />
           <SettingsRow
             icon="lock-closed-outline"
-            iconBg="#EF4444"
+            iconBg="#0B2D72"
             label="Privacy Policy"
             onPress={() => setPrivacyModal(true)}
           />
           <View style={styles.divider} />
           <SettingsRow
             icon="document-text-outline"
-            iconBg="#06B6D4"
+            iconBg="#0B2D72"
             label="Terms & Conditions"
             onPress={() => setTermsModal(true)}
           />
@@ -447,7 +445,7 @@ const InfoRow = ({ icon, label, value }) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F3F4F6" },
-  cover: { height: 110, backgroundColor: "#6C63FF" },
+  cover: { height: 110, backgroundColor: "#0B2D72" },
   avatarWrapper: { alignItems: "center", marginTop: -55 },
   avatar: {
     width: 110,
@@ -461,7 +459,7 @@ const styles = StyleSheet.create({
   domain: { color: "#6B7280", marginTop: 4 },
   roleBadge: {
     marginTop: 6,
-    backgroundColor: "#6C63FF",
+    backgroundColor: "#0B2D72",
     paddingHorizontal: 14,
     paddingVertical: 4,
     borderRadius: 20,
@@ -492,9 +490,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
-  skillChipText: { color: "#6C63FF", fontSize: 13, fontWeight: "600" },
+  skillChipText: { color: "#0B2D72", fontSize: 13, fontWeight: "600" },
   cvButton: {
-    backgroundColor: "#6C63FF",
+    backgroundColor: "#0B2D72",
     margin: 20,
     marginBottom: 0,
     padding: 15,
@@ -507,13 +505,13 @@ const styles = StyleSheet.create({
   editButton: {
     margin: 20,
     borderWidth: 1,
-    borderColor: "#6C63FF",
+    borderColor: "#0B2D72",
     padding: 15,
     borderRadius: 14,
     alignItems: "center",
     marginBottom: 0,
   },
-  editText: { color: "#6C63FF", fontWeight: "600", fontSize: 15 },
+  editText: { color: "#0B2D72", fontWeight: "600", fontSize: 15 },
 
   // ✅ NEW: Settings card styles
   settingsCard: {
@@ -544,7 +542,7 @@ const styles = StyleSheet.create({
   logoutButton: {
     margin: 20,
     marginTop: 12,
-    backgroundColor: "#EF4444",
+    backgroundColor: "#a51111",
     padding: 15,
     borderRadius: 14,
     flexDirection: "row",

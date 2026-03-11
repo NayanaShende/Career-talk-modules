@@ -27,27 +27,45 @@ const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 const sortMessages = (msgs) =>
   [...msgs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
+// ✅ FIXED: deduplicate messages by id to prevent socket + DB double rendering
+const dedupeMessages = (msgs) => {
+  const seen = new Set();
+  return msgs.filter((m) => {
+    // temp messages have string ids like "temp_123" — always keep
+    if (String(m.id).startsWith("temp_")) return true;
+    if (seen.has(m.id)) return false;
+    seen.add(m.id);
+    return true;
+  });
+};
+
 const groupByDate = (msgs) => {
   const groups = [];
   let lastDate = null;
+
   msgs.forEach((msg) => {
     const msgDate = msg.created_at
       ? new Date(msg.created_at).toDateString()
       : null;
+
     if (msgDate && msgDate !== lastDate) {
       const today = new Date().toDateString();
       const yesterday = new Date(Date.now() - 86400000).toDateString();
+
       const label =
         msgDate === today
           ? "Today"
           : msgDate === yesterday
-            ? "Yesterday"
-            : msgDate;
+          ? "Yesterday"
+          : msgDate;
+
       groups.push({ id: `date_${msgDate}`, type: "date", label });
       lastDate = msgDate;
     }
+
     groups.push({ ...msg, type: "message" });
   });
+
   return groups;
 };
 
@@ -60,17 +78,26 @@ const formatTime = (date) =>
     : "";
 
 export default function ChatScreen() {
-  const { expertId, name, avatar } = useLocalSearchParams();
+  const { expertId, name, avatar, expertName: paramExpertName, expertImage } = useLocalSearchParams();
   const RECEIVER_ID = Number(expertId);
   const { clearUnread } = useNotification();
 
-  const expertName =
-    name && name !== "undefined" && name !== "null" ? name : "Expert";
+  // ✅ FIXED: accept both old params (name/avatar) and new params (expertName/expertImage)
+  // Old navigation: router.push({ params: { name, avatar } })
+  // New navigation from search/recommended: router.push({ params: { expertName, expertImage } })
+  const rawName = paramExpertName || name;
+  const rawImage = expertImage || avatar;
 
+  const expertName =
+    rawName && rawName !== "undefined" && rawName !== "null" ? rawName : "Expert";
+
+  const cleanImage = rawImage ? rawImage.replace(/^uploads\//, "") : null;
   const expertAvatarUrl =
-    avatar && avatar !== "undefined" && avatar !== "null" && avatar !== ""
-      ? `${BASE_URL}/uploads/${avatar}`
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(expertName)}&background=0B2D72&color=fff`;
+    cleanImage && cleanImage !== "undefined" && cleanImage !== "null" && cleanImage !== ""
+      ? `${BASE_URL}/uploads/${cleanImage}`
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          expertName
+        )}&background=0B2D72&color=fff`;
 
   const [currentUserId, setCurrentUserId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -89,7 +116,7 @@ export default function ChatScreen() {
         setCurrentUserId(Number(uid));
       }
     });
-  }, []); // ✅ Clear unread when opening this chat
+  }, []);
 
   useEffect(() => {
     if (RECEIVER_ID) clearUnread(RECEIVER_ID);
@@ -97,12 +124,14 @@ export default function ChatScreen() {
 
   const loadChats = async () => {
     if (!RECEIVER_ID || !currentUserId) return;
+
     try {
       setLoading(true);
       const res = await API.get(
-        `/chat/messages/${currentUserId}/${RECEIVER_ID}`,
+        `/chat/messages/${currentUserId}/${RECEIVER_ID}`
       );
-      setMessages(sortMessages(res?.data?.data || []));
+      // ✅ FIXED: dedupe after loading from DB
+      setMessages(dedupeMessages(sortMessages(res?.data?.data || [])));
     } catch (error) {
       console.log("Load chat error:", error.message);
     } finally {
@@ -112,9 +141,12 @@ export default function ChatScreen() {
 
   const handleSend = async () => {
     if (!textMessage.trim() || !RECEIVER_ID || !currentUserId) return;
+
     const messageToSend = textMessage;
     setTextMessage("");
+
     const tempId = `temp_${Date.now()}`;
+
     setMessages((prev) =>
       sortMessages([
         ...prev,
@@ -125,9 +157,11 @@ export default function ChatScreen() {
           message: messageToSend,
           created_at: new Date(),
         },
-      ]),
+      ])
     );
+
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
+
     try {
       await API.post("/chat/send", {
         sender_id: currentUserId,
@@ -141,6 +175,7 @@ export default function ChatScreen() {
 
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
+
     loadChats();
 
     socketRef.current = io(BASE_URL, {
@@ -159,11 +194,11 @@ export default function ChatScreen() {
 
     socketRef.current.on("receiveMessage", (newMessage) => {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
-        setMessages((prev) => sortMessages([...prev, newMessage]));
-        setTimeout(
-          () => flatListRef.current?.scrollToEnd({ animated: true }),
-          100,
-        );
+        // ✅ FIXED: dedupe when adding socket message to prevent duplicates
+        setMessages((prev) => dedupeMessages(sortMessages([...prev, newMessage])));
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       }
     });
 
@@ -179,53 +214,56 @@ export default function ChatScreen() {
     if (item.type === "date") {
       return (
         <View style={styles.dateSepWrap}>
-                    <Text style={styles.dateSepText}>{item.label}</Text>     
-           {" "}
+          {/* ✅ FIXED: label guaranteed string from groupByDate */}
+          <Text style={styles.dateSepText}>{String(item.label || "")}</Text>
         </View>
       );
     }
 
     const isUser = Number(item.sender_id) === Number(currentUserId);
 
+    // ✅ FIXED: safely convert message to string — null/undefined causes crash
+    const messageText = item.message != null ? String(item.message) : "";
+    const timeText = formatTime(item.created_at);
+
     return (
       <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
-               {" "}
         {!isUser && (
           <Image source={{ uri: expertAvatarUrl }} style={styles.msgAvatar} />
         )}
-               {" "}
+
         <View
           style={[
             styles.bubble,
             isUser ? styles.bubbleMine : styles.bubbleTheirs,
           ]}
         >
-                   {" "}
+          {/* ✅ FIXED: messageText is always a string now */}
           <Text
             style={[
               styles.msgText,
               isUser ? styles.msgTextMine : styles.msgTextTheirs,
             ]}
           >
-                        {item.message}         {" "}
+            {messageText}
           </Text>
-                   {" "}
+
           <View style={styles.metaRow}>
-                       {" "}
+            {/* ✅ FIXED: timeText is always a string from formatTime */}
             <Text
               style={[
                 styles.timeText,
                 isUser ? styles.timeMine : styles.timeTheirs,
               ]}
             >
-                            {formatTime(item.created_at)}           {" "}
+              {timeText}
             </Text>
-                        {isUser && <Text style={styles.ticks}> ✓✓</Text>}       
-             {" "}
+
+            {isUser && <Text style={styles.ticks}>✓✓</Text>}
           </View>
-                 {" "}
         </View>
-                {!isUser && <View style={{ width: 48 }} />}     {" "}
+
+        {!isUser && <View style={{ width: 48 }} />}
       </View>
     );
   };
@@ -233,63 +271,50 @@ export default function ChatScreen() {
   if (!currentUserId) {
     return (
       <View style={styles.loadingScreen}>
-                <ActivityIndicator size="large" color="#4A6CF7" />     {" "}
+        <ActivityIndicator size="large" color="#4A6CF7" />
       </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-            <StatusBar backgroundColor="#fff" barStyle="dark-content" />     {" "}
-      {/* HEADER */}     {" "}
+      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
+
       <View style={styles.header}>
-               {" "}
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-                    <Text style={styles.backArrow}>‹</Text>       {" "}
+          <Text style={styles.backArrow}>‹</Text>
         </TouchableOpacity>
-               {" "}
+
         <View style={styles.headerCenter}>
-                   {" "}
-          <Image
-            source={{ uri: expertAvatarUrl }}
-            style={styles.headerAvatar}
-          />
-                    <View style={styles.onlineDot} />       {" "}
+          <Image source={{ uri: expertAvatarUrl }} style={styles.headerAvatar} />
+          <View style={styles.onlineDot} />
         </View>
-               {" "}
+
         <View style={styles.headerInfo}>
-                   {" "}
           <Text style={styles.headerName} numberOfLines={1}>
-                        {expertName}         {" "}
+            {expertName}
           </Text>
-                   {" "}
           <Text
             style={[
               styles.headerStatus,
               { color: isOnline ? "#34C759" : "#8E8E93" },
             ]}
           >
-                        {isOnline ? "Active now" : "Offline"}         {" "}
+            {isOnline ? "Active now" : "Offline"}
           </Text>
-                 {" "}
         </View>
-               {" "}
+
         <View style={styles.headerActions}>
-                   {" "}
           <TouchableOpacity style={styles.iconBtn}>
-                        <Text style={styles.iconText}>📹</Text>         {" "}
+            <Text style={styles.iconText}>📹</Text>
           </TouchableOpacity>
-                   {" "}
           <TouchableOpacity style={styles.iconBtn}>
-                        <Text style={styles.iconText}>📞</Text>         {" "}
+            <Text style={styles.iconText}>📞</Text>
           </TouchableOpacity>
-                 {" "}
         </View>
-             {" "}
       </View>
-            {/* MESSAGES */}     {" "}
+
       <View style={styles.chatBg}>
-               {" "}
         {loading && messages.length === 0 ? (
           <ActivityIndicator
             style={{ marginTop: 40 }}
@@ -300,7 +325,7 @@ export default function ChatScreen() {
           <FlatList
             ref={flatListRef}
             data={groupByDate(messages)}
-            renderItem={renderItem} // ✅ FIXED: unique key to avoid duplicate key warning
+            renderItem={renderItem}
             keyExtractor={(item, index) => `msg_${item.id}_${index}`}
             contentContainerStyle={styles.listContent}
             onContentSizeChange={() =>
@@ -309,21 +334,17 @@ export default function ChatScreen() {
             showsVerticalScrollIndicator={false}
           />
         )}
-             {" "}
       </View>
-            {/* INPUT BAR */}     {" "}
+
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-               {" "}
         <View style={styles.inputBar}>
-                   {" "}
           <TouchableOpacity style={styles.plusBtn}>
-                        <Text style={styles.plusText}>＋</Text>         {" "}
+            <Text style={styles.plusText}>＋</Text>
           </TouchableOpacity>
-                   {" "}
+
           <View style={styles.inputWrap}>
-                       {" "}
             <TextInput
               placeholder="Message..."
               placeholderTextColor="#C7C7CC"
@@ -332,16 +353,14 @@ export default function ChatScreen() {
               onChangeText={setTextMessage}
               multiline
             />
-                       {" "}
+
             {!textMessage.trim() && (
               <TouchableOpacity style={styles.micBtn}>
-                                <Text style={styles.micText}>🎤</Text>         
-                   {" "}
+                <Text style={styles.micText}>🎤</Text>
               </TouchableOpacity>
             )}
-                     {" "}
           </View>
-                   {" "}
+
           <TouchableOpacity
             style={[
               styles.sendBtn,
@@ -350,13 +369,10 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!textMessage.trim()}
           >
-                        <Text style={styles.sendArrow}>›</Text>         {" "}
+            <Text style={styles.sendArrow}>›</Text>
           </TouchableOpacity>
-                 {" "}
         </View>
-             {" "}
       </KeyboardAvoidingView>
-         {" "}
     </SafeAreaView>
   );
 }
@@ -418,12 +434,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   dateSepWrap: { alignItems: "center", marginVertical: 14 },
-  dateSepText: {
-    fontSize: 12,
-    color: "#8E8E93",
-    backgroundColor: "transparent",
-    fontWeight: "500",
-  },
+  dateSepText: { fontSize: 12, color: "#8E8E93", fontWeight: "500" },
   row: { flexDirection: "row", marginBottom: 6, alignItems: "flex-end" },
   rowRight: { justifyContent: "flex-end" },
   rowLeft: { justifyContent: "flex-start" },
@@ -501,8 +512,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: "#1C1C1E",
     maxHeight: 100,
-    paddingTop: 0,
-    paddingBottom: 0,
   },
   micBtn: { marginLeft: 6, marginBottom: 1 },
   micText: { fontSize: 16 },

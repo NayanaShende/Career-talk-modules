@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const BASE_URL = "http://192.168.1.26:3000"; // ✅ NEW
+const BASE_URL = "http://192.168.1.26:3000";
 
 export default function Home() {
   const router = useRouter();
@@ -40,13 +40,14 @@ export default function Home() {
     }
   };
 
-  // ✅ Build full image URL
   const getImageUri = (image, name) => {
-    if (image) return `${BASE_URL}/uploads/${image}`;
+    if (image) {
+      const cleanImage = image.replace(/^uploads\//, "");
+      return `${BASE_URL}/uploads/${cleanImage}`;
+    }
     return null;
   };
 
-  // ✅ FIXED: get correct domain from DB — check domain, then skills, then role
   const getExpertDomain = (item) => {
     if (item?.domain) return item.domain;
     if (Array.isArray(item?.skills) && item.skills.length > 0) {
@@ -55,7 +56,6 @@ export default function Home() {
     return item?.role || "Expert";
   };
 
-  // Logic to filter experts based on search input
   const filteredExperts = experts.filter((e) => {
     const matchesSearch =
       e?.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -75,6 +75,7 @@ export default function Home() {
 
     return matchesSearch && matchesSkill;
   });
+
   const skills = [
     "All",
     "React",
@@ -102,7 +103,7 @@ export default function Home() {
         <Ionicons name="notifications-outline" size={24} color="#fff" />
       </View>
 
-      {/* --- SEARCH BAR SECTION --- */}
+      {/* --- SEARCH BAR --- */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
           <Ionicons
@@ -126,6 +127,7 @@ export default function Home() {
         </View>
       </View>
 
+      {/* --- SKILL FILTER --- */}
       <View style={styles.skillContainer}>
         <FlatList
           data={skills}
@@ -196,8 +198,6 @@ export default function Home() {
                 {/* --- INFO --- */}
                 <View style={styles.infoContainer}>
                   <Text style={styles.name}>{item?.name}</Text>
-
-                  {/* ✅ FIXED: show real domain from DB */}
                   <Text style={styles.role}>{getExpertDomain(item)}</Text>
 
                   <View style={styles.ratingRow}>
@@ -232,7 +232,7 @@ export default function Home() {
                   </View>
                 </View>
 
-                {/* ✅ FIXED: View + Chat buttons */}
+                {/* ✅ FIXED: View + Chat buttons — Chat now goes to expert's chatscreen */}
                 <View style={styles.btnColumn}>
                   <TouchableOpacity
                     style={styles.viewBtn}
@@ -243,7 +243,16 @@ export default function Home() {
 
                   <TouchableOpacity
                     style={styles.chatBtn}
-                    onPress={() => router.push("/(tabs)/chat")}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/home/chatscreen",
+                        params: {
+                          expertId: item.userId || item.id,
+                          expertName: item.name,
+                          expertImage: item.image || "",
+                        },
+                      })
+                    }
                   >
                     <Ionicons
                       name="chatbubble-outline"
@@ -263,16 +272,8 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  /* HEADER */
+  container: { flex: 1, backgroundColor: "#FFFFFF" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
   header: {
     backgroundColor: "#0B2D72",
     height: 60,
@@ -281,12 +282,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 15,
   },
-  headerTitle: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  /* SEARCH BAR */
+  headerTitle: { color: "#fff", fontSize: 20, fontWeight: "600" },
   searchContainer: {
     paddingHorizontal: 15,
     paddingVertical: 15,
@@ -302,15 +298,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E0E0E0",
   },
-  searchIcon: {
-    marginRight: 10,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: "#333",
-  },
-  /* CARD LIST */
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, fontSize: 16, color: "#333" },
   card: {
     flexDirection: "row",
     paddingHorizontal: 15,
@@ -318,57 +307,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     alignItems: "center",
   },
-  separator: {
-    height: 1,
-    backgroundColor: "#F0F0F0",
-  },
-  imageContainer: {
-    marginRight: 15,
-  },
-  image: {
-    width: 80,
-    height: 85,
-    borderRadius: 8,
-  },
+  separator: { height: 1, backgroundColor: "#F0F0F0" },
+  imageContainer: { marginRight: 15 },
+  image: { width: 80, height: 85, borderRadius: 8 },
   placeholderImg: {
     backgroundColor: "#E0E0E0",
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarText: {
-    fontSize: 24,
-    color: "#757575",
-    fontWeight: "bold",
-  },
-  infoContainer: {
-    flex: 1,
-    paddingHorizontal: 10,
-    justifyContent: "center",
-  },
-  name: {
-    fontSize: 17,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  role: {
-    fontSize: 14,
-    color: "#666",
-  },
-  ratingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  ratingText: {
-    fontSize: 14,
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-  expText: {
-    fontSize: 14,
-    color: "#333",
-    marginLeft: 10,
-  },
+  avatarText: { fontSize: 24, color: "#757575", fontWeight: "bold" },
+  infoContainer: { flex: 1, paddingHorizontal: 10, justifyContent: "center" },
+  name: { fontSize: 17, fontWeight: "bold", color: "#000" },
+  role: { fontSize: 14, color: "#666" },
+  ratingRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+  ratingText: { fontSize: 14, fontWeight: "600", marginLeft: 4 },
+  expText: { fontSize: 14, color: "#333", marginLeft: 10 },
   badge: {
     flexDirection: "row",
     alignItems: "center",
@@ -379,17 +332,8 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginTop: 8,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  /* ✅ FIXED: two buttons stacked vertically */
+  dot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  badgeText: { fontSize: 12, fontWeight: "600" },
   btnColumn: {
     flexDirection: "column",
     alignItems: "center",
@@ -398,18 +342,13 @@ const styles = StyleSheet.create({
   },
   viewBtn: {
     backgroundColor: "#0B2D72",
-    paddingHorizontal: 0,
     paddingVertical: 9,
     borderRadius: 10,
     width: 80,
     alignItems: "center",
     justifyContent: "center",
   },
-  viewBtnText: {
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 14,
-  },
+  viewBtnText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
   chatBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -421,16 +360,8 @@ const styles = StyleSheet.create({
     width: 80,
     justifyContent: "center",
   },
-  chatBtnText: {
-    color: "#0B2D72",
-    fontWeight: "bold",
-    fontSize: 13,
-  },
-  skillContainer: {
-    paddingHorizontal: 15,
-    paddingBottom: 10,
-  },
-
+  chatBtnText: { color: "#0B2D72", fontWeight: "bold", fontSize: 13 },
+  skillContainer: { paddingHorizontal: 15, paddingBottom: 10 },
   skillChip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -440,17 +371,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
     backgroundColor: "#fff",
   },
-
-  activeChip: {
-    backgroundColor: "#0B2D72",
-  },
-
-  skillText: {
-    color: "#0B2D72",
-    fontWeight: "500",
-  },
-
-  activeChipText: {
-    color: "#fff",
-  },
+  activeChip: { backgroundColor: "#0B2D72" },
+  skillText: { color: "#0B2D72", fontWeight: "500" },
+  activeChipText: { color: "#fff" },
 });
