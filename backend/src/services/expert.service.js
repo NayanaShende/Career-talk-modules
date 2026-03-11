@@ -75,6 +75,8 @@ const getExpertsBySkill = async (skill) => {
 // ✅ FIXED: saves image filename to DB so dashboard can show it
 // ✅ FIXED: sets is_online = true immediately after profile creation
 // ✅ FIXED: saves skills from comma-separated string in profileData.skills
+// ✅ FIXED: map both "certification" AND "certifications" so either works
+// ✅ FIXED: language_spoken now also checks profileData.languages
 const createExpertProfile = async (
   userId,
   profileData,
@@ -92,26 +94,30 @@ const createExpertProfile = async (
   }
 
   const data = {
-    name: profileData.fullName || null,
-    email: profileData.email || null,
-    bio: profileData.bio || null,
-    experience: profileData.experience || null,
-    domain: profileData.domain || null,
-    certification: profileData.certificate || null, // ✅ FIXED: was profileData.certifications
-    location: profileData.location || null,
-    language_spoken: profileData.languages || null, // ✅ FIXED: was profileData.language_spoken
-    qualification: profileData.qualification || null,
+    name:               profileData.fullName        || profileData.name        || null,  // ✅ Expert.name
+    email:              profileData.email            || null,                             // ✅ via User, kept for reference
+    bio:                profileData.bio              || null,                             // ✅ Expert.bio
+    experience:         profileData.experience       || null,                             // ✅ Expert.experience
+    domain:             profileData.domain           || null,                             // ✅ Expert.domain
+    // ✅ FIXED: checks both "certification" and "certifications"
+    certification:      profileData.certification    || profileData.certifications || null,  // ✅ Expert.certification
+    location:           profileData.location         || null,                             // ✅ Expert.location
+    // ✅ FIXED: checks both "language_spoken" and "languages"
+    language_spoken:    profileData.language_spoken  || profileData.languages    || null, // ✅ Expert.language_spoken
+    qualification:      profileData.qualification    || null,                             // ✅ Expert.qualification
     // ✅ FIXED: save actual filenames from multer — these were all null before
-    cv: cvFile ? cvFile.filename : null,
-    image: imageFile ? imageFile.filename : null,
-    certificate_file: certificateFile ? certificateFile.filename : null,
-    certificate_domain: profileData.certificateDomain || null,
+    cv:                 cvFile        ? cvFile.filename        : null,                    // ✅ Expert.cv
+    image:              imageFile     ? imageFile.filename     : null,                    // ✅ Expert.image
+    certificate_file:   certificateFile ? certificateFile.filename : null,               // ✅ Expert.certificate_file
+    certificate_domain: profileData.certificateDomain || null,                           // ✅ Expert.certificate_domain
     // ✅ FIXED: set is_online = true so expert appears in Live Experts immediately
-    is_online: true,
-    isVerified: true,
+    is_online:          true,
+    isVerified:         true,
     verificationStatus: "approved",
-    userId,
+    userId,                                                                               // ✅ FK link to Users table
   };
+
+  console.log("📝 createExpertProfile — data to save:", JSON.stringify(data));
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);
   if (profile) {
