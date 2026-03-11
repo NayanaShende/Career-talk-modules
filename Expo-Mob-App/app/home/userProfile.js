@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.27:3000";
+const BASE_URL = "http://192.168.1.26:3000";
 
 const SKILL_OPTIONS = [
   "React",

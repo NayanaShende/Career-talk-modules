@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://192.168.1.27:3000/api", // ⚠️ change this
+  baseURL: "http://192.168.1.26:3000/api", // ⚠️ change this
 });
 
 // Initiate Call

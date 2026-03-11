@@ -1,11 +1,24 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, Animated, AppState } from "react-native";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  AppState,
+} from "react-native";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 console.log("🚀 NotificationContext.js FILE LOADED");
 
-const BASE_URL = "http://192.168.1.27:3000";
+const BASE_URL = "http://192.168.1.26:3000";
 
 const NotificationContext = createContext({
   unreadCounts: {},
@@ -38,7 +51,9 @@ export function NotificationProvider({ children }) {
               const u = JSON.parse(str);
               uid = u?.id || u?.userId || u?.user?.id;
               if (uid) {
-                console.log(`👤 NotificationContext found userId ${uid} in key "${key}"`);
+                console.log(
+                  `👤 NotificationContext found userId ${uid} in key "${key}"`,
+                );
                 break;
               }
             } catch {
@@ -100,14 +115,22 @@ export function NotificationProvider({ children }) {
     });
 
     socketRef.current.on("connect", () => {
-      console.log("🌐 Global socket connected:", socketRef.current.id, "for user:", currentUserId);
+      console.log(
+        "🌐 Global socket connected:",
+        socketRef.current.id,
+        "for user:",
+        currentUserId,
+      );
       socketRef.current.emit("joinRoom", { userId: currentUserId });
       console.log("🏠 Global joinRoom emitted for:", currentUserId);
     });
 
     // ✅ Rejoin room on reconnect
     socketRef.current.on("reconnect", () => {
-      console.log("🔄 Global socket reconnected, rejoining room:", currentUserId);
+      console.log(
+        "🔄 Global socket reconnected, rejoining room:",
+        currentUserId,
+      );
       socketRef.current.emit("joinRoom", { userId: currentUserId });
     });
 
@@ -147,7 +170,10 @@ export function NotificationProvider({ children }) {
         appState.current.match(/inactive|background/) &&
         nextAppState === "active"
       ) {
-        console.log("📱 App foregrounded, rejoining socket room:", currentUserId);
+        console.log(
+          "📱 App foregrounded, rejoining socket room:",
+          currentUserId,
+        );
         if (socketRef.current?.connected && currentUserId) {
           socketRef.current.emit("joinRoom", { userId: currentUserId });
         } else if (currentUserId) {

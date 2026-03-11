@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useNotification } from "../../context/NotificationContext";
 
-const BASE_URL = "http://192.168.1.27:3000";
+const BASE_URL = "http://192.168.1.26:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 const formatTime = (dateStr) => {
@@ -106,7 +106,9 @@ export default function ChatLogs() {
               {item.name}
             </Text>
             <View style={styles.rightCol}>
-              <Text style={styles.date}>{formatTime(item.lastMessageTime)}</Text>
+              <Text style={styles.date}>
+                {formatTime(item.lastMessageTime)}
+              </Text>
               {unread > 0 && (
                 <View style={styles.unreadBadge}>
                   <Text style={styles.unreadText}>

@@ -21,7 +21,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.27:3000";
+const BASE_URL = "http://192.168.1.26:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 const sortMessages = (msgs) =>
