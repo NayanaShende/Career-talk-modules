@@ -89,9 +89,8 @@ export default function ChatScreen() {
         setCurrentUserId(Number(uid));
       }
     });
-  }, []);
+  }, []); // ✅ Clear unread when opening this chat
 
-  // ✅ Clear unread when opening this chat
   useEffect(() => {
     if (RECEIVER_ID) clearUnread(RECEIVER_ID);
   }, [RECEIVER_ID]);
@@ -180,7 +179,8 @@ export default function ChatScreen() {
     if (item.type === "date") {
       return (
         <View style={styles.dateSepWrap}>
-          <Text style={styles.dateSepText}>{item.label}</Text>
+                    <Text style={styles.dateSepText}>{item.label}</Text>     
+           {" "}
         </View>
       );
     }
@@ -189,36 +189,43 @@ export default function ChatScreen() {
 
     return (
       <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
+               {" "}
         {!isUser && (
           <Image source={{ uri: expertAvatarUrl }} style={styles.msgAvatar} />
         )}
+               {" "}
         <View
           style={[
             styles.bubble,
             isUser ? styles.bubbleMine : styles.bubbleTheirs,
           ]}
         >
+                   {" "}
           <Text
             style={[
               styles.msgText,
               isUser ? styles.msgTextMine : styles.msgTextTheirs,
             ]}
           >
-            {item.message}
+                        {item.message}         {" "}
           </Text>
+                   {" "}
           <View style={styles.metaRow}>
+                       {" "}
             <Text
               style={[
                 styles.timeText,
                 isUser ? styles.timeMine : styles.timeTheirs,
               ]}
             >
-              {formatTime(item.created_at)}
+                            {formatTime(item.created_at)}           {" "}
             </Text>
-            {isUser && <Text style={styles.ticks}> ✓✓</Text>}
+                        {isUser && <Text style={styles.ticks}> ✓✓</Text>}       
+             {" "}
           </View>
+                 {" "}
         </View>
-        {!isUser && <View style={{ width: 48 }} />}
+                {!isUser && <View style={{ width: 48 }} />}     {" "}
       </View>
     );
   };
@@ -226,52 +233,63 @@ export default function ChatScreen() {
   if (!currentUserId) {
     return (
       <View style={styles.loadingScreen}>
-        <ActivityIndicator size="large" color="#4A6CF7" />
+                <ActivityIndicator size="large" color="#4A6CF7" />     {" "}
       </View>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar backgroundColor="#fff" barStyle="dark-content" />
-
-      {/* HEADER */}
+            <StatusBar backgroundColor="#fff" barStyle="dark-content" />     {" "}
+      {/* HEADER */}     {" "}
       <View style={styles.header}>
+               {" "}
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backArrow}>‹</Text>
+                    <Text style={styles.backArrow}>‹</Text>       {" "}
         </TouchableOpacity>
+               {" "}
         <View style={styles.headerCenter}>
+                   {" "}
           <Image
             source={{ uri: expertAvatarUrl }}
             style={styles.headerAvatar}
           />
-          <View style={styles.onlineDot} />
+                    <View style={styles.onlineDot} />       {" "}
         </View>
+               {" "}
         <View style={styles.headerInfo}>
+                   {" "}
           <Text style={styles.headerName} numberOfLines={1}>
-            {expertName}
+                        {expertName}         {" "}
           </Text>
+                   {" "}
           <Text
             style={[
               styles.headerStatus,
               { color: isOnline ? "#34C759" : "#8E8E93" },
             ]}
           >
-            {isOnline ? "Active now" : "Offline"}
+                        {isOnline ? "Active now" : "Offline"}         {" "}
           </Text>
+                 {" "}
         </View>
+               {" "}
         <View style={styles.headerActions}>
+                   {" "}
           <TouchableOpacity style={styles.iconBtn}>
-            <Text style={styles.iconText}>📹</Text>
+                        <Text style={styles.iconText}>📹</Text>         {" "}
           </TouchableOpacity>
+                   {" "}
           <TouchableOpacity style={styles.iconBtn}>
-            <Text style={styles.iconText}>📞</Text>
+                        <Text style={styles.iconText}>📞</Text>         {" "}
           </TouchableOpacity>
+                 {" "}
         </View>
+             {" "}
       </View>
-
-      {/* MESSAGES */}
+            {/* MESSAGES */}     {" "}
       <View style={styles.chatBg}>
+               {" "}
         {loading && messages.length === 0 ? (
           <ActivityIndicator
             style={{ marginTop: 40 }}
@@ -282,8 +300,7 @@ export default function ChatScreen() {
           <FlatList
             ref={flatListRef}
             data={groupByDate(messages)}
-            renderItem={renderItem}
-            // ✅ FIXED: unique key to avoid duplicate key warning
+            renderItem={renderItem} // ✅ FIXED: unique key to avoid duplicate key warning
             keyExtractor={(item, index) => `msg_${item.id}_${index}`}
             contentContainerStyle={styles.listContent}
             onContentSizeChange={() =>
@@ -292,17 +309,21 @@ export default function ChatScreen() {
             showsVerticalScrollIndicator={false}
           />
         )}
+             {" "}
       </View>
-
-      {/* INPUT BAR */}
+            {/* INPUT BAR */}     {" "}
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+               {" "}
         <View style={styles.inputBar}>
+                   {" "}
           <TouchableOpacity style={styles.plusBtn}>
-            <Text style={styles.plusText}>＋</Text>
+                        <Text style={styles.plusText}>＋</Text>         {" "}
           </TouchableOpacity>
+                   {" "}
           <View style={styles.inputWrap}>
+                       {" "}
             <TextInput
               placeholder="Message..."
               placeholderTextColor="#C7C7CC"
@@ -311,12 +332,16 @@ export default function ChatScreen() {
               onChangeText={setTextMessage}
               multiline
             />
+                       {" "}
             {!textMessage.trim() && (
               <TouchableOpacity style={styles.micBtn}>
-                <Text style={styles.micText}>🎤</Text>
+                                <Text style={styles.micText}>🎤</Text>         
+                   {" "}
               </TouchableOpacity>
             )}
+                     {" "}
           </View>
+                   {" "}
           <TouchableOpacity
             style={[
               styles.sendBtn,
@@ -325,10 +350,13 @@ export default function ChatScreen() {
             onPress={handleSend}
             disabled={!textMessage.trim()}
           >
-            <Text style={styles.sendArrow}>›</Text>
+                        <Text style={styles.sendArrow}>›</Text>         {" "}
           </TouchableOpacity>
+                 {" "}
         </View>
+             {" "}
       </KeyboardAvoidingView>
+         {" "}
     </SafeAreaView>
   );
 }

@@ -898,10 +898,7 @@ export default function ProfileScreen() {
       );
     } catch (e) {
       console.log("Save role error:", e.response?.data || e.message);
-      Alert.alert(
-        "Error",
-        e.response?.data?.message || "Could not save role",
-      );
+      Alert.alert("Error", e.response?.data?.message || "Could not save role");
     }
   };
 

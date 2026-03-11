@@ -128,7 +128,8 @@ function InfoModal({ visible, onClose, content }) {
           {/* ✅ FIXED: ScrollView fills remaining space using flex: 1 inside fixed-height container */}
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 30 }}>
+            contentContainerStyle={{ paddingBottom: 30 }}
+          >
             {content.sections.map((section, idx) => (
               <View key={idx} style={{ marginBottom: 16 }}>
                 {section.heading && (

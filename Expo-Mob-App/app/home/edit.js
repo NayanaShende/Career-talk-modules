@@ -696,7 +696,7 @@ const EditProfile = () => {
         expertFormData.append("domain", form.domain);
         expertFormData.append("bio", form.bio);
         expertFormData.append("location", form.location);
-        expertFormData.append("certification", form.certification);  // ✅ controller maps this correctly
+        expertFormData.append("certification", form.certification); // ✅ controller maps this correctly
         expertFormData.append("certifications", form.certification); // ✅ send both just in case
         expertFormData.append("expertise", form.expertise);
         expertFormData.append(
@@ -721,16 +721,12 @@ const EditProfile = () => {
           });
         }
 
-        await axios.put(
-          `${BASE_URL}/api/experts/profile/me`,
-          expertFormData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "multipart/form-data",
-            },
+        await axios.put(`${BASE_URL}/api/experts/profile/me`, expertFormData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "multipart/form-data",
           },
-        );
+        });
         console.log("✅ Expert profile updated successfully");
       }
 
@@ -1126,7 +1122,7 @@ const styles = StyleSheet.create({
   },
 
   saveBtn: {
-    backgroundColor: "#007bff",
+    backgroundColor: "#0B2D72",
     padding: 15,
     borderRadius: 10,
     alignItems: "center",

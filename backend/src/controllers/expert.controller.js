@@ -28,22 +28,20 @@ exports.createExpertProfile = async (req, res) => {
 // ================= SUBMIT EXPERT PROFILE FORM =================
 // ✅ called when expert fills out the profile form
 // saves to Experts table using userId from JWT token
+// ✅ FIXED: multer.fields() puts files in req.files (object), not req.file
+// req.file is only set when using upload.single()
 exports.submitExpertProfileForm = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // ✅ FIXED: multer.fields() puts files in req.files (object), not req.file
-    // req.file is only set when using upload.single()
-    const files = req.files || {};
-
-    const cvFile = files.cv ? files.cv[0] : null;
-    const imageFile = files.image ? files.image[0] : null;
-    const certificateFile = files.certificate ? files.certificate[0] : null;
+    const cvFile = req.files?.cv?.[0] || null;
+    const imageFile = req.files?.image?.[0] || null;
+    const certificateFiles = req.files?.certificates || [];
 
     console.log("📁 Uploaded files:", {
       cv: cvFile?.filename,
       image: imageFile?.filename,
-      certificate: certificateFile?.filename,
+      certificates: certificateFiles.map((f) => f.filename),
     });
 
     const expert = await expertService.createExpertProfile(
@@ -51,7 +49,7 @@ exports.submitExpertProfileForm = async (req, res) => {
       req.body,
       cvFile,
       imageFile,
-      certificateFile,
+      certificateFiles,
     );
 
     res.status(200).json({
@@ -86,26 +84,17 @@ exports.getMyExpertProfile = async (req, res) => {
   }
 };
 
-// ================= UPDATE MY EXPERT PROFILE (Protected) =================
-// ✅ NEW: PUT /api/experts/profile/me
-// Updates Experts table using userId from JWT — fixes language_spoken & certification not saving
+// ================= UPDATE MY EXPERT PROFILE =================
 exports.updateMyExpertProfile = async (req, res) => {
   try {
-    const userId = req.user.id; // ✅ from auth middleware (JWT)
-
-    // ✅ Support both multipart/form-data (with file) and JSON
+    const userId = req.user.id;
     const file = req.file || null;
 
-    // ✅ FIXED: map both "certification" AND "certifications" so either works
     const body = {
       ...req.body,
       certifications: req.body.certification || req.body.certifications || null,
     };
 
-    console.log("📝 updateMyExpertProfile — userId:", userId);
-    console.log("📝 body:", JSON.stringify(body));
-
-    // ✅ reuse createExpertProfile which already does upsert (update or create)
     const expert = await expertService.createExpertProfile(userId, body, file);
 
     res.status(200).json({
@@ -209,6 +198,86 @@ exports.getExpertById = async (req, res) => {
     res.status(200).json({ success: true, data: expert });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ================= SUBMIT RATING ✅ =================
+// POST /api/experts/:id/rate
+// Requires auth — saves userId, rating, comment
+// Enforces one rating per user per expert
+exports.submitRating = async (req, res) => {
+  try {
+    const expertId = Number(req.params.id);
+    const userId = req.user.id; // ✅ from JWT middleware
+    const { rating, comment } = req.body;
+
+    if (!expertId || isNaN(expertId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid expert id" });
+    }
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Rating must be between 1 and 5" });
+    }
+
+    if (!comment || !comment.trim()) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Comment is required" });
+    }
+
+    const result = await expertService.submitRating(
+      expertId,
+      userId,
+      rating,
+      comment.trim(),
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Rating submitted successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("submitRating error:", error.message);
+
+    // ✅ Return 409 Conflict for duplicate rating — frontend checks this
+    if (error.message === "ALREADY_RATED") {
+      return res.status(409).json({
+        success: false,
+        message: "You have already rated this expert",
+      });
+    }
+
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// ================= GET RATINGS ✅ =================
+// GET /api/experts/:id/ratings
+// Returns avgRating, totalReviews, and reviews with user name + image
+exports.getRatings = async (req, res) => {
+  try {
+    const expertId = Number(req.params.id);
+
+    if (!expertId || isNaN(expertId)) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid expert id" });
+    }
+
+    const data = await expertService.getRatings(expertId);
+
+    res.status(200).json({
+      success: true,
+      data,
+    });
+  } catch (err) {
+    console.error("getRatings error:", err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 };

@@ -13,6 +13,7 @@ import {
   Alert,
   Modal,
   TouchableOpacity,
+  TextInput,
 } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -43,6 +44,8 @@ function StarRating({ rating, size = 20 }) {
 
 function RatingModal({ visible, onClose, onSubmit }) {
   const [selectedRating, setSelectedRating] = useState(0);
+  // ✅ FIXED: added comment field — backend requires it
+  const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
@@ -50,10 +53,16 @@ function RatingModal({ visible, onClose, onSubmit }) {
       Alert.alert("Please select a rating");
       return;
     }
+    // ✅ FIXED: validate comment before submitting
+    if (!comment.trim()) {
+      Alert.alert("Please add a comment");
+      return;
+    }
     setSubmitting(true);
-    await onSubmit(selectedRating);
+    await onSubmit(selectedRating, comment.trim());
     setSubmitting(false);
     setSelectedRating(0);
+    setComment("");
     onClose();
   };
 
@@ -90,6 +99,16 @@ function RatingModal({ visible, onClose, onSubmit }) {
                       ? "Excellent!"
                       : "Tap a star"}
           </Text>
+          {/* ✅ FIXED: comment input added — required by backend */}
+          <TextInput
+            style={styles.commentInput}
+            placeholder="Write your comment here..."
+            placeholderTextColor="#aaa"
+            value={comment}
+            onChangeText={setComment}
+            multiline
+            numberOfLines={3}
+          />
           <View style={styles.modalBtns}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
@@ -172,7 +191,8 @@ export default function ExpertProfile() {
     }
   };
 
-  const handleSubmitRating = async (rating) => {
+  // ✅ FIXED: now receives comment from RatingModal and sends it to backend
+  const handleSubmitRating = async (rating, comment) => {
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) {
@@ -181,14 +201,19 @@ export default function ExpertProfile() {
       }
       await axiosInstance.post(
         `/experts/${id}/rate`,
-        { rating },
+        { rating, comment }, // ✅ FIXED: comment now sent to backend
         { headers: { Authorization: `Bearer ${token}` } },
       );
       Alert.alert("Thank you!", "Your rating has been submitted.");
       fetchRatings();
     } catch (err) {
       console.log("Rating submit error:", err.response?.data || err.message);
-      Alert.alert("Error", "Could not submit rating");
+      // ✅ FIXED: show specific message if already rated
+      if (err.response?.status === 409) {
+        Alert.alert("Already Rated", "You have already rated this expert.");
+      } else {
+        Alert.alert("Error", "Could not submit rating");
+      }
     }
   };
 
@@ -287,9 +312,19 @@ export default function ExpertProfile() {
               source={{
                 uri: expert.image
                   ? `${BASE_URL}/uploads/${expert.image}`
-                  : `https://ui-avatars.com/api/?name=${expert.name}&background=1A2B4C&color=fff`,
+                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(expert.name || "Expert")}&background=1A2B4C&color=fff`,
               }}
               style={styles.avatar}
+              // ✅ FIXED: fallback to ui-avatars if image fails to load
+              onError={(e) => {
+                e.currentTarget.setNativeProps({
+                  src: [
+                    {
+                      uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(expert.name || "Expert")}&background=1A2B4C&color=fff`,
+                    },
+                  ],
+                });
+              }}
             />
           </View>
 
@@ -536,6 +571,19 @@ const styles = StyleSheet.create({
     color: "#C5A059",
     marginBottom: 24,
     height: 24,
+  },
+  // ✅ FIXED: comment input style
+  commentInput: {
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#DDD",
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 14,
+    color: "#333",
+    marginBottom: 20,
+    textAlignVertical: "top",
+    minHeight: 80,
   },
   modalBtns: { flexDirection: "row", gap: 12, width: "100%" },
   cancelBtn: {
