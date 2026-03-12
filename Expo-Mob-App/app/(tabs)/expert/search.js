@@ -203,7 +203,7 @@ export default function Home() {
                   <View style={styles.ratingRow}>
                     <Ionicons name="star" size={16} color="#FFD700" />
                     <Text style={styles.ratingText}>
-                      {item?.rating || "0"}({item?.reviews || "0"})
+                      {item?.rating || "0"}
                     </Text>
                     <Text style={styles.expText}>
                       {item?.experience || 0} years exp

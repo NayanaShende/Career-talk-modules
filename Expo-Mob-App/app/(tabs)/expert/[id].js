@@ -25,6 +25,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const { width } = Dimensions.get("window");
 const BASE_URL = "http://192.168.1.19:3000";
 
+// ─────────────────────────────────────────────
+// Star Rating Display
+// ─────────────────────────────────────────────
 function StarRating({ rating, size = 20 }) {
   const roundedRating = Math.round(parseFloat(rating) || 0);
   return (
@@ -42,9 +45,11 @@ function StarRating({ rating, size = 20 }) {
   );
 }
 
+// ─────────────────────────────────────────────
+// Rating Modal
+// ─────────────────────────────────────────────
 function RatingModal({ visible, onClose, onSubmit }) {
   const [selectedRating, setSelectedRating] = useState(0);
-  // ✅ FIXED: added comment field — backend requires it
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,7 +58,6 @@ function RatingModal({ visible, onClose, onSubmit }) {
       Alert.alert("Please select a rating");
       return;
     }
-    // ✅ FIXED: validate comment before submitting
     if (!comment.trim()) {
       Alert.alert("Please add a comment");
       return;
@@ -99,7 +103,6 @@ function RatingModal({ visible, onClose, onSubmit }) {
                       ? "Excellent!"
                       : "Tap a star"}
           </Text>
-          {/* ✅ FIXED: comment input added — required by backend */}
           <TextInput
             style={styles.commentInput}
             placeholder="Write your comment here..."
@@ -129,18 +132,108 @@ function RatingModal({ visible, onClose, onSubmit }) {
   );
 }
 
+// ─────────────────────────────────────────────
+// Individual Review Card
+// ─────────────────────────────────────────────
+const ReviewCard = ({ review }) => {
+  const userName =
+    review.user?.name || review.userName || review.reviewer_name || "Anonymous";
+
+  const userImage =
+    review.user?.image || review.userImage || review.reviewer_image || null;
+
+  const avatarUri = userImage
+    ? `${BASE_URL}/uploads/${userImage}`
+    : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0B2D72&color=fff&size=80`;
+
+  const reviewDate = review.createdAt || review.created_at || null;
+
+  return (
+    <View style={reviewStyles.card}>
+      {/* Header: Avatar + Name + Stars + Date */}
+      <View style={reviewStyles.header}>
+        <Image
+          source={{ uri: avatarUri }}
+          style={reviewStyles.avatar}
+          onError={(e) => {
+            e.currentTarget.setNativeProps({
+              src: [
+                {
+                  uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=0B2D72&color=fff&size=80`,
+                },
+              ],
+            });
+          }}
+        />
+        <View style={{ flex: 1, marginLeft: 10 }}>
+          <Text style={reviewStyles.name}>{userName}</Text>
+          <StarRating rating={review.rating} size={14} />
+        </View>
+        {reviewDate && (
+          <Text style={reviewStyles.date}>
+            {new Date(reviewDate).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </Text>
+        )}
+      </View>
+
+      {/* Comment */}
+      {review.comment ? (
+        <Text style={reviewStyles.comment}>{review.comment}</Text>
+      ) : null}
+    </View>
+  );
+};
+
+// ─────────────────────────────────────────────
+// Reviews Section
+// ─────────────────────────────────────────────
+const ReviewsSection = ({ reviews }) => {
+  if (!reviews || reviews.length === 0) return null;
+
+  return (
+    <View style={{ marginTop: 25 }}>
+      <Text style={styles.sectionTitle}>Reviews ({reviews.length})</Text>
+      {reviews.map((review, index) => (
+        <ReviewCard key={review.id || index} review={review} />
+      ))}
+    </View>
+  );
+};
+
+// ─────────────────────────────────────────────
+// Detail Row Item
+// ─────────────────────────────────────────────
+const DetailItem = ({ icon, label, value }) => (
+  <View style={styles.detailRow}>
+    <View style={styles.detailLeft}>
+      <MaterialCommunityIcons name={icon} size={20} color="#C5A059" />
+      <Text style={styles.detailLabel}>{label}</Text>
+    </View>
+    <Text style={styles.detailValue}>{value}</Text>
+  </View>
+);
+
+// ─────────────────────────────────────────────
+// Main Screen
+// ─────────────────────────────────────────────
 export default function ExpertProfile() {
   const { id } = useLocalSearchParams();
   const [expert, setExpert] = useState(null);
   const [loading, setLoading] = useState(true);
   const [ratingModal, setRatingModal] = useState(false);
-  const [currentUserId, setCurrentUserId] = useState(null); // ✅ real logged in user
+  const [currentUserId, setCurrentUserId] = useState(null);
   const [ratingData, setRatingData] = useState({
     avgRating: 0,
     totalReviews: 0,
   });
+  // ✅ NEW: state to hold all individual reviews
+  const [reviews, setReviews] = useState([]);
 
-  // ✅ Load real logged-in userId from AsyncStorage
+  // Load real logged-in userId from AsyncStorage
   useEffect(() => {
     AsyncStorage.getItem("user").then((str) => {
       if (str) {
@@ -182,16 +275,22 @@ export default function ExpertProfile() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = res?.data?.data || res?.data || {};
+
       setRatingData({
         avgRating: parseFloat(data.avgRating) || 0,
         totalReviews: parseInt(data.totalReviews) || 0,
       });
+
+      // ✅ NEW: capture the individual reviews array from backend response
+      // Adjust field name if your backend uses a different key
+      const reviewList = data.reviews || data.ratings || data.ratingsList || [];
+      console.log("✅ Reviews fetched:", reviewList.length);
+      setReviews(reviewList);
     } catch (err) {
       console.log("Ratings fetch error:", err.message);
     }
   };
 
-  // ✅ FIXED: now receives comment from RatingModal and sends it to backend
   const handleSubmitRating = async (rating, comment) => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -201,14 +300,14 @@ export default function ExpertProfile() {
       }
       await axiosInstance.post(
         `/experts/${id}/rate`,
-        { rating, comment }, // ✅ FIXED: comment now sent to backend
+        { rating, comment },
         { headers: { Authorization: `Bearer ${token}` } },
       );
       Alert.alert("Thank you!", "Your rating has been submitted.");
+      // ✅ Refresh both avg rating AND individual reviews
       fetchRatings();
     } catch (err) {
       console.log("Rating submit error:", err.response?.data || err.message);
-      // ✅ FIXED: show specific message if already rated
       if (err.response?.status === 409) {
         Alert.alert("Already Rated", "You have already rated this expert.");
       } else {
@@ -230,16 +329,12 @@ export default function ExpertProfile() {
     }
   };
 
-  // ✅ FIXED: pass expert.userId (User table ID) not expert.id (Expert table ID)
   const handleChatPress = () => {
     if (!expert) {
       Alert.alert("Error", "Expert data not loaded");
       return;
     }
 
-    // ✅ expert.userId is the correct ID to use for chat
-    // expert.id = Experts table primary key (e.g. 1,2,3)
-    // expert.userId = Users table foreign key (the actual user account ID)
     const receiverUserId = expert?.userId || expert?.user_id || id;
 
     console.log(
@@ -257,13 +352,16 @@ export default function ExpertProfile() {
     router.push({
       pathname: "/home/chatscreen",
       params: {
-        expertId: receiverUserId, // ✅ expert's USER id not expert table id
+        expertId: receiverUserId,
         name: expert?.name,
         avatar: expert?.image,
       },
     });
   };
 
+  // ─────────────────────────────────────────────
+  // Loading / Not Found States
+  // ─────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.loader}>
@@ -291,6 +389,9 @@ export default function ExpertProfile() {
   const skills = Array.isArray(expert?.skills) ? expert.skills : [];
   const displayDomain = expert?.domain || "Expert";
 
+  // ─────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -305,7 +406,7 @@ export default function ExpertProfile() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 130 }}
       >
-        {/* PROFILE HEADER */}
+        {/* ── PROFILE HEADER ── */}
         <View style={styles.profileHeader}>
           <View style={styles.avatarWrapper}>
             <Image
@@ -315,7 +416,6 @@ export default function ExpertProfile() {
                   : `https://ui-avatars.com/api/?name=${encodeURIComponent(expert.name || "Expert")}&background=1A2B4C&color=fff`,
               }}
               style={styles.avatar}
-              // ✅ FIXED: fallback to ui-avatars if image fails to load
               onError={(e) => {
                 e.currentTarget.setNativeProps({
                   src: [
@@ -357,7 +457,7 @@ export default function ExpertProfile() {
           </TouchableOpacity>
         </View>
 
-        {/* CONTENT SECTION */}
+        {/* ── CONTENT SECTION ── */}
         <View style={styles.contentCard}>
           <View style={styles.tabContainer}>
             <Text style={styles.activeTab}>Overview</Text>
@@ -365,6 +465,7 @@ export default function ExpertProfile() {
             <Text style={styles.inactiveTab}>Articles</Text>
           </View>
 
+          {/* About */}
           <View style={styles.aboutBox}>
             <Text style={styles.sectionTitle}>About Me</Text>
             <Text style={styles.aboutText}>
@@ -373,8 +474,8 @@ export default function ExpertProfile() {
             </Text>
           </View>
 
+          {/* Details */}
           <Text style={[styles.sectionTitle, { marginTop: 25 }]}>Details</Text>
-
           <View style={styles.detailsList}>
             <DetailItem icon="domain" label="Domain" value={displayDomain} />
             <DetailItem
@@ -399,6 +500,7 @@ export default function ExpertProfile() {
             />
           </View>
 
+          {/* Skills */}
           {skills.length > 0 && (
             <View style={styles.skillsSection}>
               <Text style={styles.sectionTitle}>Skills</Text>
@@ -416,10 +518,13 @@ export default function ExpertProfile() {
               </View>
             </View>
           )}
+
+          {/* ✅ NEW: Reviews Section — shows each user's rating + comment */}
+          <ReviewsSection reviews={reviews} />
         </View>
       </ScrollView>
 
-      {/* BOTTOM BAR */}
+      {/* ── BOTTOM BAR ── */}
       <View style={styles.bottomBarContainer}>
         <Pressable style={styles.chatAction} onPress={handleChatPress}>
           <MaterialCommunityIcons
@@ -434,16 +539,51 @@ export default function ExpertProfile() {
   );
 }
 
-const DetailItem = ({ icon, label, value }) => (
-  <View style={styles.detailRow}>
-    <View style={styles.detailLeft}>
-      <MaterialCommunityIcons name={icon} size={20} color="#C5A059" />
-      <Text style={styles.detailLabel}>{label}</Text>
-    </View>
-    <Text style={styles.detailValue}>{value}</Text>
-  </View>
-);
+// ─────────────────────────────────────────────
+// Review Card Styles
+// ─────────────────────────────────────────────
+const reviewStyles = StyleSheet.create({
+  card: {
+    backgroundColor: "#F9F9F9",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#EEE",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  avatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1.5,
+    borderColor: "#C5A059",
+  },
+  name: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#0B2D72",
+    marginBottom: 3,
+  },
+  date: {
+    fontSize: 11,
+    color: "#AAA",
+  },
+  comment: {
+    fontSize: 13,
+    color: "#555",
+    lineHeight: 20,
+    marginTop: 4,
+  },
+});
 
+// ─────────────────────────────────────────────
+// Main Styles
+// ─────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF" },
   loader: { flex: 1, justifyContent: "center", alignItems: "center" },
@@ -572,7 +712,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     height: 24,
   },
-  // ✅ FIXED: comment input style
   commentInput: {
     width: "100%",
     borderWidth: 1,

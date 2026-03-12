@@ -1,8 +1,7 @@
 const { User } = require("../models");
 const authService = require("../services/auth.service");
 const expertRepository = require("../repositories/expert.repository");
-const uploadToCloudinary = require("../utils/uploadToCloudinary");
-
+const uploadToCloudinary = require("../utils/cloudinaryUpload");
 /* =========================================
    SAVE PROFILE
 ========================================= */
@@ -195,6 +194,30 @@ const updateProfile = async (req, res) => {
   } catch (err) {
     console.error("❌ UPDATE PROFILE ERROR:", err);
     return res.status(500).json({ success: false, message: err.message || "Server error" });
+  }
+};
+/* =========================================
+   GET PROFILE (logged in user)
+========================================= */
+const getProfile = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    return res.json({
+      success: true,
+      user: req.user,
+    });
+  } catch (err) {
+    console.error("❌ GET PROFILE ERROR:", err);
+    return res.status(500).json({
+      success: false,
+      message: err.message || "Server error",
+    });
   }
 };
 

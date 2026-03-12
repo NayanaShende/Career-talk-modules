@@ -75,7 +75,6 @@ const DOMAIN_OPTIONS = [
   { label: "Other", value: "Other" },
 ];
 
-// Per-domain certificate guidance shown to the expert
 const DOMAIN_CERTIFICATE_GUIDE = {
   "Career Counseling":
     "Upload your Certified Career Counselor (CCC), NCDA certificate, or a relevant degree/diploma certificate (PDF or image).",
@@ -116,7 +115,6 @@ function DropdownPicker({ label, value, options, onChange }) {
         </Text>
         <Text style={{ color: "#777" }}>▼</Text>
       </TouchableOpacity>
-
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
           style={styles.modalOverlay}
@@ -469,12 +467,11 @@ function FieldError({ message }) {
   );
 }
 
-// ─── Certificate upload section (domain-aware) ────────────────────────────────
+// ─── Certificate upload section ───────────────────────────────────────────────
 function CertificateUploadSection({ domain, certFile, onPick, error }) {
   const guide = domain ? DOMAIN_CERTIFICATE_GUIDE[domain] : null;
   return (
     <View style={{ marginTop: 6 }}>
-      {/* Instruction box */}
       {domain ? (
         <View style={styles.certInfoBox}>
           <Ionicons
@@ -484,9 +481,9 @@ function CertificateUploadSection({ domain, certFile, onPick, error }) {
             style={{ marginTop: 2 }}
           />
           <View style={{ flex: 1 }}>
-            <Text style={styles.certInfoTitle}>
-              {`Required proof for "${domain}"`}
-            </Text>
+            <Text
+              style={styles.certInfoTitle}
+            >{`Required proof for "${domain}"`}</Text>
             <Text style={styles.certInfoText}>{guide}</Text>
           </View>
         </View>
@@ -509,8 +506,6 @@ function CertificateUploadSection({ domain, certFile, onPick, error }) {
           </Text>
         </View>
       )}
-
-      {/* Upload button */}
       <TouchableOpacity
         style={[
           styles.certUploadBtn,
@@ -573,9 +568,11 @@ export default function ProfileScreen() {
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
 
+  // ✅ FIX: gender is now initialized in formData
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
+    gender: "", // ✅ ADDED HERE
     dob: "",
     qualification: "",
     customQualification: "",
@@ -601,7 +598,6 @@ export default function ProfileScreen() {
     setErrors((prev) => ({ ...prev, [field]: "" }));
   };
 
-  // Name — letters + spaces only, strip everything else
   const handleNameChange = (value) => {
     const cleaned = value.replace(/[^a-zA-Z\s]/g, "");
     setField("fullName", cleaned);
@@ -613,7 +609,6 @@ export default function ProfileScreen() {
     else setErrors((p) => ({ ...p, fullName: "" }));
   };
 
-  // Email — force lowercase + format validation
   const handleEmailChange = (value) => {
     const lower = value.toLowerCase();
     setField("email", lower);
@@ -643,7 +638,6 @@ export default function ProfileScreen() {
     if (!result.canceled) setField("cv", result.assets[0]);
   };
 
-  // Certificate: PDF or image only
   const pickCertificate = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
@@ -672,7 +666,7 @@ export default function ProfileScreen() {
     if (!result.canceled) setField("image", result.assets[0]);
   };
 
-  // ── Full validation ──────────────────────────────────────────────────────────
+  // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
 
@@ -684,6 +678,9 @@ export default function ProfileScreen() {
     if (!formData.email) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       e.email = "Enter a valid email address";
+
+    // ✅ FIX: gender validation now works because gender is in formData
+    if (!formData.gender) e.gender = "Gender is required";
 
     if (!formData.dob) e.dob = "Birth date is required";
 
@@ -736,7 +733,6 @@ export default function ProfileScreen() {
       const token = await AsyncStorage.getItem("token");
       if (!token) return Alert.alert("Login Required");
 
-      // Set role
       await axios.post(
         `${BASE_URL}/api/auth/set-role`,
         { role: role.toLowerCase() },
@@ -745,6 +741,9 @@ export default function ProfileScreen() {
 
       const form = new FormData();
       form.append("role", role.toLowerCase());
+
+      // ✅ FIX: gender sent as lowercase to match DB ENUM/VARCHAR
+      form.append("gender", formData.gender?.toLowerCase());
 
       const resolvedDomain =
         formData.domain === "Other" ? formData.customDomain : formData.domain;
@@ -768,7 +767,6 @@ export default function ProfileScreen() {
           selectedLanguages.length > 0
             ? selectedLanguages.join(", ")
             : formData.languages,
-        // Auto-approve on submit
         isVerified: role === "Expert" ? true : false,
         verificationStatus: role === "Expert" ? "approved" : "none",
       };
@@ -782,6 +780,7 @@ export default function ProfileScreen() {
         "customExperience",
         "customLanguages",
         "customDomain",
+        "gender", // ✅ skip gender here because we already appended it above manually
       ];
 
       Object.keys(resolvedData).forEach((key) => {
@@ -798,7 +797,6 @@ export default function ProfileScreen() {
       if (selectedSkills.length > 0)
         form.append("skills", selectedSkills.join(", "));
 
-      // CV
       if (formData.cv) {
         const cleanUri = formData.cv.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -809,7 +807,6 @@ export default function ProfileScreen() {
         });
       }
 
-      // Profile image
       if (formData.image) {
         const cleanUri = formData.image.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -820,7 +817,6 @@ export default function ProfileScreen() {
         });
       }
 
-      // Certificate (expert only) — tells backend which domain this cert belongs to
       if (role === "Expert" && formData.certFile) {
         const cleanUri = formData.certFile.uri.split("?")[0];
         const ext = cleanUri.split(".").pop().toLowerCase();
@@ -838,9 +834,8 @@ export default function ProfileScreen() {
         form.append("certificateDomain", resolvedDomain);
       }
 
-      // ✅ Single API call — removed duplicate
-      const res = await axios.post(
-        "http://192.168.1.18:3000/api/users/save-profile",
+      await axios.post(
+        "http://192.168.1.19:3000/api/users/save-profile",
         form,
         {
           headers: {
@@ -850,7 +845,6 @@ export default function ProfileScreen() {
         },
       );
 
-      // Update local storage
       const userStr = await AsyncStorage.getItem("user");
       const existingUser = userStr ? JSON.parse(userStr) : {};
       await AsyncStorage.setItem(
@@ -884,25 +878,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const saveRole = async (selectedRole) => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      await axios.post(
-        "http://192.168.1.18:3000/api/auth/set-role",
-        { role: selectedRole },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-    } catch (e) {
-      console.log("Save role error:", e.response?.data || e.message);
-      Alert.alert("Error", e.response?.data?.message || "Could not save role");
-    }
-  };
-
-  // Resolved display domain (for passing to CertificateUploadSection)
   const displayDomain =
     formData.domain === "Other"
       ? formData.customDomain || "Other"
@@ -974,6 +949,62 @@ export default function ProfileScreen() {
           />
           <FieldError message={errors.email} />
 
+          {/* ── Gender ── */}
+          {/* ✅ FIX: onPress now uses setField instead of setFormData to also clear errors */}
+          <Text style={styles.label}>Gender *</Text>
+          <View
+            style={[
+              styles.input,
+              errors.gender && styles.inputError,
+              {
+                flexDirection: "row",
+                justifyContent: "space-around",
+                alignItems: "center",
+              },
+            ]}
+          >
+            {["male", "female", "other"].map((option) => (
+              <TouchableOpacity
+                key={option}
+                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+                onPress={() => setField("gender", option)} // ✅ uses setField to clear error too
+              >
+                <View
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 9,
+                    borderWidth: 2,
+                    borderColor: "#0B2D72",
+                    justifyContent: "center",
+                    alignItems: "center",
+                  }}
+                >
+                  {formData.gender === option && (
+                    <View
+                      style={{
+                        width: 9,
+                        height: 9,
+                        borderRadius: 5,
+                        backgroundColor: "#0B2D72",
+                      }}
+                    />
+                  )}
+                </View>
+                <Text
+                  style={{
+                    fontSize: 14,
+                    color: "#333",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {option}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <FieldError message={errors.gender} />
+
           {/* ── DOB ── */}
           <Text style={styles.label}>Birth Date *</Text>
           <TouchableOpacity
@@ -994,14 +1025,14 @@ export default function ProfileScreen() {
             />
           )}
 
-          {/* ── Domain (with Other option) ── */}
+          {/* ── Domain ── */}
           <Text style={styles.label}>Domain * (Your Expertise Area)</Text>
           <DropdownPicker
             label="Select Domain"
             value={formData.domain}
             onChange={(v) => {
               setField("domain", v);
-              setField("certFile", null); // reset cert when domain changes
+              setField("certFile", null);
               setField("customDomain", "");
             }}
             options={DOMAIN_OPTIONS}
@@ -1112,10 +1143,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <FieldError message={errors.cv} />
 
-          {/* ══ EXPERT ONLY ══════════════════════════════════════════ */}
+          {/* ══ EXPERT ONLY ══ */}
           {role === "Expert" && (
             <>
-              {/* ── Skills ── */}
               <Text style={styles.label}>Skills * (select up to 5)</Text>
               <SkillsPicker
                 selectedSkills={selectedSkills}
@@ -1123,7 +1153,6 @@ export default function ProfileScreen() {
               />
               <FieldError message={errors.skills} />
 
-              {/* ── Certificate upload — domain aware ── */}
               <Text style={styles.label}>
                 Domain Certificate / Proof of Expertise *
               </Text>
@@ -1134,14 +1163,12 @@ export default function ProfileScreen() {
                 error={errors.certFile}
               />
 
-              {/* ── Languages ── */}
               <Text style={styles.label}>Languages Known</Text>
               <LanguagesPicker
                 selectedLanguages={selectedLanguages}
                 onChange={setSelectedLanguages}
               />
 
-              {/* ── City ── */}
               <Text style={styles.label}>City</Text>
               <DropdownPicker
                 label="Select Location"
@@ -1172,7 +1199,6 @@ export default function ProfileScreen() {
                 </>
               )}
 
-              {/* ── Bio ── */}
               <Text style={styles.label}>Bio</Text>
               <TextInput
                 style={[styles.input, { height: 100 }]}
@@ -1183,7 +1209,6 @@ export default function ProfileScreen() {
             </>
           )}
 
-          {/* ── Submit ── */}
           <TouchableOpacity style={styles.submitBtn} onPress={submitProfile}>
             <Text style={styles.submitText}>
               {role === "Expert" ? "Submit & Get Verified ✓" : "Submit"}
@@ -1345,7 +1370,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     justifyContent: "center",
   },
-  // Certificate
   certInfoBox: {
     flexDirection: "row",
     gap: 10,
