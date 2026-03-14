@@ -4,42 +4,28 @@ const router = express.Router();
 const userController = require("../controllers/user.controller");
 const protect = require("../middleware/protect");
 
-// ✅ SAFE IMPORT (works for both export styles)
-const uploadMiddleware = require("../middleware/upload");
-const uploadFields =
-  uploadMiddleware.uploadFields || uploadMiddleware;
-
+const { uploadFields } = require("../middleware/upload");
 const { Expert } = require("../models");
 
-/* =========================================
-   USER PROFILE ROUTES
-========================================= */
+/* ======================================
+   PROFILE ROUTES
+====================================== */
 
-// SAVE / UPDATE PROFILE
-router.post(
-  "/save-profile",
-  protect,
-  uploadFields,
-  userController.saveProfile
-);
+// Save or update profile
+router.post("/save-profile", protect, uploadFields, userController.saveProfile);
 
-// GET LOGGED-IN USER PROFILE
+// Get logged in user
 router.get("/me", protect, userController.getProfile);
 
-// GET PROFILE BY EMAIL
+// Get profile by email
 router.get("/profile/:email", userController.getUserByEmail);
 
-// OPTIONAL update route (can keep)
-router.put(
-  "/profile",
-  protect,
-  uploadFields,
-  userController.updateProfile
-);
+// Update profile
+router.put("/profile", protect, uploadFields, userController.updateProfile);
 
-/* =========================================
+/* ======================================
    ROLE SELECTION
-========================================= */
+====================================== */
 
 router.put("/set-role", protect, async (req, res) => {
   try {
@@ -75,8 +61,9 @@ router.put("/set-role", protect, async (req, res) => {
       message: "Role updated successfully",
       role,
     });
-  } catch (err) {
-    console.error("SET ROLE ERROR:", err);
+  } catch (error) {
+    console.error("SET ROLE ERROR:", error);
+
     res.status(500).json({
       success: false,
       message: "Server error",

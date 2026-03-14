@@ -1,39 +1,49 @@
-'use strict';
+"use strict";
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('Chats', {
+    await queryInterface.createTable("chats", {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
-      senderId: {
+
+      sender_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
-      receiverId: {
+
+      receiver_id: {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
+
       message: {
         type: Sequelize.TEXT,
         allowNull: false,
       },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+
+      is_seen: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
       },
-      updatedAt: {
-        allowNull: false,
+
+      created_at: {
         type: Sequelize.DATE,
-        defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
+        allowNull: false,
+        defaultValue: Sequelize.NOW,
+      },
+
+      updated_at: {
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.NOW,
       },
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable('chats');
+    await queryInterface.dropTable("chats");
   },
 };

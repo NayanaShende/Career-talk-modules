@@ -9,13 +9,16 @@ import {
   Image,
   TextInput,
   Animated,
+  TouchableOpacity,
 } from "react-native";
 import { useEffect, useState, useRef } from "react";
 import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.17:3000";
+
+const BASE_URL = "http://192.168.1.19:3000";
+
 
 export default function Recommended() {
   const [experts, setExperts] = useState([]);
@@ -34,10 +37,16 @@ export default function Recommended() {
 
       const normalized = data.map((e) => ({
         ...e,
-        exp: e.experience ?? e.experience_years ?? e.yearsOfExperience ?? e.total_experience ?? 0,
+        exp:
+          e.experience ??
+          e.experience_years ??
+          e.yearsOfExperience ??
+          e.total_experience ??
+          0,
         realRating: parseFloat(e.rating) || 0,
-        // ✅ NEW: normalize skills array
-        skillsList: Array.isArray(e.skills) ? e.skills.map((s) => s.skill_name) : [],
+        skillsList: Array.isArray(e.skills)
+          ? e.skills.map((s) => s.skill_name)
+          : [],
       }));
 
       const sorted = [...normalized].sort((a, b) => {
@@ -55,13 +64,16 @@ export default function Recommended() {
   };
 
   const filteredExperts = experts.filter((e) =>
-    e.name?.toLowerCase().includes(search.toLowerCase())
+    e.name?.toLowerCase().includes(search.toLowerCase()),
   );
 
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const animateIn = () => {
-    Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true }).start();
+    Animated.spring(scaleAnim, {
+      toValue: 0.98,
+      useNativeDriver: true,
+    }).start();
   };
 
   const animateOut = () => {
@@ -69,7 +81,10 @@ export default function Recommended() {
   };
 
   const getImageUri = (image, name) => {
-    if (image) return `${BASE_URL}/uploads/${image}`;
+    if (image) {
+      const cleanImage = image.replace(/^uploads\//, "");
+      return `${BASE_URL}/uploads/${cleanImage}`;
+    }
     return `https://ui-avatars.com/api/?name=${name || "Expert"}&background=0B2D72&color=fff`;
   };
 
@@ -107,7 +122,9 @@ export default function Recommended() {
       ) : (
         <FlatList
           data={filteredExperts}
-          keyExtractor={(item, index) => (item.id ? item.id.toString() : index.toString())}
+          keyExtractor={(item, index) =>
+            item.id ? item.id.toString() : index.toString()
+          }
           contentContainerStyle={{ paddingBottom: 20 }}
           renderItem={({ item }) => (
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
@@ -125,7 +142,6 @@ export default function Recommended() {
                 <View style={styles.infoContainer}>
                   <Text style={styles.name}>{item.name || ""}</Text>
 
-                  {/* ✅ NEW: Show skills instead of domain */}
                   {item.skillsList.length > 0 ? (
                     <View style={styles.skillsRow}>
                       {item.skillsList.slice(0, 3).map((skill, index) => (
@@ -142,32 +158,74 @@ export default function Recommended() {
                       )}
                     </View>
                   ) : (
-                    // fallback to domain if no skills
                     <Text style={styles.role}>
                       {item.domain || item.role || "Expert"}
                     </Text>
                   )}
 
                   <View style={styles.statsRow}>
-                    {/* Real stars from DB */}
                     {renderStars(item.realRating)}
                     <Text style={styles.ratingText}>
-                      {item.realRating > 0 ? item.realRating.toFixed(1) : "No rating"}
+                      {item.realRating > 0
+                        ? item.realRating.toFixed(1)
+                        : "No rating"}
                     </Text>
-                    {/* Real experience from DB */}
                     <Text style={styles.expText}>
                       {item.exp > 0 ? `${item.exp} yrs exp` : "New"}
                     </Text>
                   </View>
 
                   <View style={styles.statusBadge}>
-                    <View style={styles.dot} />
-                    <Text style={styles.statusText}>Available Now</Text>
+                    <View
+                      style={[
+                        styles.dot,
+                        {
+                          backgroundColor: item?.is_online
+                            ? "#22C55E"
+                            : "#9CA3AF",
+                        },
+                      ]}
+                    />
+                    <Text
+                      style={[
+                        styles.statusText,
+                        { color: item?.is_online ? "#16A34A" : "#6B7280" },
+                      ]}
+                    >
+                      {item?.is_online ? "Available Now" : "Offline"}
+                    </Text>
                   </View>
                 </View>
 
-                <View style={styles.viewBtn}>
-                  <Text style={styles.viewBtnText}>View</Text>
+                {/* ✅ FIXED: View + Chat buttons stacked */}
+                <View style={styles.btnColumn}>
+                  <TouchableOpacity
+                    style={styles.viewBtn}
+                    onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
+                  >
+                    <Text style={styles.viewBtnText}>View</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.chatBtn}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/home/chatscreen",
+                        params: {
+                          expertId: item.userId || item.id,
+                          expertName: item.name,
+                          expertImage: item.image || "",
+                        },
+                      })
+                    }
+                  >
+                    <Ionicons
+                      name="chatbubble-outline"
+                      size={14}
+                      color="#0B2D72"
+                    />
+                    <Text style={styles.chatBtnText}>Chat</Text>
+                  </TouchableOpacity>
                 </View>
               </Pressable>
             </Animated.View>
@@ -190,25 +248,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   headerTitle: { color: "#fff", fontSize: 20, fontWeight: "600" },
-  filterContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-  },
-  filterTab: {
-    flex: 1,
-    height: 35,
-    marginHorizontal: 5,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#0B2D72",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  filterTabActive: { backgroundColor: "#0B2D72" },
-  filterText: { color: "#0B2D72", fontWeight: "500" },
-  filterTextActive: { color: "#fff" },
   card: {
     flexDirection: "row",
     padding: 15,
@@ -220,8 +259,6 @@ const styles = StyleSheet.create({
   infoContainer: { flex: 1, marginLeft: 15 },
   name: { fontSize: 16, fontWeight: "bold", color: "#000" },
   role: { fontSize: 14, color: "#666", marginVertical: 2 },
-
-  // ✅ NEW: Skills chips styles
   skillsRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -244,7 +281,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   skillChipMoreText: { fontSize: 11, color: "#fff", fontWeight: "600" },
-
   statsRow: { flexDirection: "row", alignItems: "center", marginVertical: 4 },
   ratingText: { fontSize: 13, fontWeight: "600", marginLeft: 4, color: "#333" },
   expText: { fontSize: 13, color: "#333", marginLeft: 10 },
@@ -258,19 +294,34 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     marginTop: 5,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "#0B2D72",
-    marginRight: 6,
+  dot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
+  statusText: { fontSize: 11, fontWeight: "600" },
+  // ✅ NEW: button column styles
+  btnColumn: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 8,
+    minWidth: 80,
   },
-  statusText: { fontSize: 11, color: "#0B2D72", fontWeight: "600" },
   viewBtn: {
     backgroundColor: "#0B2D72",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 6,
+    paddingVertical: 9,
+    borderRadius: 10,
+    width: 80,
+    alignItems: "center",
+    justifyContent: "center",
   },
   viewBtnText: { color: "#fff", fontWeight: "bold", fontSize: 14 },
+  chatBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    borderWidth: 1.5,
+    borderColor: "#0B2D72",
+    paddingVertical: 8,
+    borderRadius: 10,
+    width: 80,
+    justifyContent: "center",
+  },
+  chatBtnText: { color: "#0B2D72", fontWeight: "bold", fontSize: 13 },
 });

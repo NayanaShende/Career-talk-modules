@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -7,216 +7,265 @@ import {
   FlatList,
   TouchableOpacity,
   SafeAreaView,
+  ActivityIndicator,
+  RefreshControl,
+  StatusBar,
 } from "react-native";
+import { router, useFocusEffect } from "expo-router";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import axios from "axios";
+import { useNotification } from "../../context/NotificationContext";
 
-/* ---------------- CALL LOG DATA ---------------- */
-const callData = [
-  {
-    id: "1",
-    name: "Happy Tails Animal Rescue",
-    status: "Outgoing",
-    date: "Yesterday",
-    avatar: "https://i.pravatar.cc/100?img=12",
-  },
-  {
-    id: "2",
-    name: "City Critters Adoption Center",
-    status: "Missed",
-    date: "Sunday",
-    avatar: "https://i.pravatar.cc/100?img=22",
-  },
-  {
-    id: "3",
-    name: "Purr Haven Shelter",
-    status: "Outgoing",
-    date: "Sunday",
-    avatar: "https://i.pravatar.cc/100?img=32",
-  },
-];
+const BASE_URL = "http://192.168.1.19:3000";
+const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
-/* ---------------- CHAT DATA ---------------- */
-const chatData = [
-  {
-    id: "1",
-    name: "Dr. Sarah Williams",
-    lastMessage: "Try reducing screen time before bed.",
-    time: "2:30 PM",
-    avatar: "https://i.pravatar.cc/100?img=5",
-  },
-  {
-    id: "2",
-    name: "Mindfulness Coach Alex",
-    lastMessage: "How did the breathing exercise go?",
-    time: "Yesterday",
-    avatar: "https://i.pravatar.cc/100?img=15",
-  },
-  {
-    id: "3",
-    name: "Therapist John",
-    lastMessage: "Let's review your progress tomorrow.",
-    time: "Sunday",
-    avatar: "https://i.pravatar.cc/100?img=25",
-  },
-];
+const formatTime = (dateStr) => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(Date.now() - 86400000);
+  if (date.toDateString() === today.toDateString())
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return date.toLocaleDateString([], { day: "numeric", month: "short" });
+};
 
 export default function ChatLogs() {
-  const [activeTab, setActiveTab] = useState("Calls");
+  const [chatData, setChatData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const { unreadCounts, clearUnread, totalUnread } = useNotification();
 
-  /* ---------- CALL ITEM ---------- */
-  const renderCallItem = ({ item }) => (
-    <View style={styles.row}>
-      <Image source={{ uri: item.avatar }} style={styles.avatar} />
+  useEffect(() => {
+    AsyncStorage.getItem("user").then((str) => {
+      if (str) {
+        const u = JSON.parse(str);
+        const uid = u?.id || u?.userId || u?.user?.id;
+        setCurrentUserId(Number(uid));
+      }
+    });
+  }, []);
 
-      <View style={{ flex: 1 }}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.status}>{item.status}</Text>
-      </View>
+  const loadConversations = async () => {
+    if (!currentUserId) return;
+    try {
+      setLoading(true);
+      const res = await API.get(`/chat/conversations/${currentUserId}`);
+      setChatData(res?.data?.data || []);
+    } catch (error) {
+      console.log("Load conversations error:", error.message);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
-      <Text style={styles.date}>{item.date}</Text>
-    </View>
+  useFocusEffect(
+    useCallback(() => {
+      if (currentUserId) loadConversations();
+    }, [currentUserId]),
   );
 
-  /* ---------- CHAT ITEM ---------- */
-  const renderChatItem = ({ item }) => (
-    <TouchableOpacity style={styles.row}>
-      <Image source={{ uri: item.avatar }} style={styles.avatar} />
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadConversations();
+  };
 
-      <View style={{ flex: 1 }}>
-        <Text style={styles.name}>{item.name}</Text>
-        <Text style={styles.status}>{item.lastMessage}</Text>
-      </View>
+  const renderChatItem = ({ item }) => {
+    const avatarUri = item.avatar
+      ? `${BASE_URL}/uploads/${item.avatar}`
+      : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=0B2D72&color=fff`;
 
-      <Text style={styles.date}>{item.time}</Text>
-    </TouchableOpacity>
-  );
+    const unread = unreadCounts[item.otherUserId] || 0;
+
+    return (
+      <TouchableOpacity
+        style={styles.row}
+        activeOpacity={0.7}
+        onPress={() => {
+          clearUnread(item.otherUserId);
+          router.push({
+            pathname: "/home/chatscreen",
+            params: {
+              expertId: item.otherUserId,
+              name: item.name,
+              avatar: item.avatar || "",
+            },
+          });
+        }}
+      >
+        <View style={styles.avatarWrap}>
+          <Image source={{ uri: avatarUri }} style={styles.avatar} />
+          <View style={styles.onlineDot} />
+        </View>
+
+        <View style={styles.textWrap}>
+          <View style={styles.topRow}>
+            <Text style={styles.name} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <View style={styles.rightCol}>
+              <Text style={styles.date}>
+                {formatTime(item.lastMessageTime)}
+              </Text>
+              {unread > 0 && (
+                <View style={styles.unreadBadge}>
+                  <Text style={styles.unreadText}>
+                    {unread > 99 ? "99+" : unread}
+                  </Text>
+                </View>
+              )}
+            </View>
+          </View>
+          <Text
+            style={[styles.status, unread > 0 && styles.statusUnread]}
+            numberOfLines={1}
+          >
+            {item.lastMessage || "No messages yet"}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      <StatusBar backgroundColor="#0B2D72" barStyle="light-content" />
+
+      {/* HEADER */}
       <View style={styles.header}>
-        <Text style={styles.back}>←</Text>
         <Text style={styles.title}>Messages</Text>
-        <Text style={styles.filter}>⚙️</Text>
+        {totalUnread > 0 ? (
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>
+              {totalUnread > 99 ? "99+" : totalUnread}
+            </Text>
+          </View>
+        ) : chatData.length > 0 ? (
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{chatData.length}</Text>
+          </View>
+        ) : null}
       </View>
 
-      {/* Tabs */}
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === "Chats" && styles.activeTab]}
-          onPress={() => setActiveTab("Chats")}
-        >
-          <Text
-            style={[styles.tabText, activeTab === "Chats" && styles.activeText]}
-          >
-            Chats (3)
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabButton, activeTab === "Calls" && styles.activeTab]}
-          onPress={() => setActiveTab("Calls")}
-        >
-          <Text
-            style={[styles.tabText, activeTab === "Calls" && styles.activeText]}
-          >
-            Calls
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* List Switch */}
-      <FlatList
-        data={activeTab === "Calls" ? callData : chatData}
-        renderItem={activeTab === "Calls" ? renderCallItem : renderChatItem}
-        keyExtractor={(item) => item.id}
-        ItemSeparatorComponent={() => <View style={styles.divider} />}
-      />
+      {loading && chatData.length === 0 ? (
+        <ActivityIndicator
+          style={{ marginTop: 40 }}
+          color="#0B2D72"
+          size="large"
+        />
+      ) : (
+        <FlatList
+          data={chatData}
+          renderItem={renderChatItem}
+          // ✅ FIXED: unique key using index to avoid duplicate key warning
+          keyExtractor={(item, index) => `chat_${item.otherUserId}_${index}`}
+          contentContainerStyle={{ paddingBottom: 24 }}
+          ItemSeparatorComponent={() => <View style={styles.divider} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#0B2D72"]}
+              tintColor="#0B2D72"
+            />
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyIcon}>💬</Text>
+              <Text style={styles.emptyText}>No conversations yet</Text>
+              <Text style={styles.emptySubText}>
+                Start chatting with an expert!
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f4f4f4",
-  },
-
+  container: { flex: 1, backgroundColor: "#F5F6FA" },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 15,
-    backgroundColor: "#fff",
+    backgroundColor: "#0B2D72",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
   },
-
-  back: { fontSize: 20 },
-  filter: { fontSize: 18 },
-
   title: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-
-  tabs: {
-    flexDirection: "row",
-    backgroundColor: "#e9e9e9",
-    margin: 12,
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-
-  tabButton: {
     flex: 1,
-    paddingVertical: 10,
-    alignItems: "center",
-  },
-
-  activeTab: {
-    backgroundColor: "#F3A847",
-  },
-
-  tabText: {
-    color: "#444",
-    fontWeight: "500",
-  },
-
-  activeText: {
+    fontSize: 20,
+    fontWeight: "700",
     color: "#fff",
-    fontWeight: "600",
+    letterSpacing: 0.3,
   },
-
+  countBadge: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+  },
+  countText: { fontSize: 12, fontWeight: "700", color: "#0B2D72" },
   row: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 15,
     backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 13,
   },
-
+  avatarWrap: { position: "relative", marginRight: 14 },
   avatar: {
-    width: 45,
-    height: 45,
-    borderRadius: 22,
-    marginRight: 12,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    borderWidth: 2,
+    borderColor: "#E8EAF6",
   },
-
+  onlineDot: {
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: "#25D366",
+    borderWidth: 2,
+    borderColor: "#fff",
+  },
+  textWrap: { flex: 1 },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 4,
+  },
   name: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "700",
+    color: "#1A1A2E",
+    flex: 1,
+    marginRight: 8,
   },
-
-  status: {
-    color: "#777",
-    marginTop: 2,
+  rightCol: { alignItems: "flex-end", gap: 4 },
+  date: { fontSize: 11, color: "#9E9E9E" },
+  unreadBadge: {
+    backgroundColor: "#0B2D72",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 5,
   },
-
-  date: {
-    color: "#999",
-    fontSize: 12,
-  },
-
-  divider: {
-    height: 1,
-    backgroundColor: "#eee",
-    marginLeft: 72,
-  },
+  unreadText: { fontSize: 11, fontWeight: "700", color: "#fff" },
+  status: { fontSize: 13, color: "#757575", lineHeight: 18 },
+  statusUnread: { fontWeight: "700", color: "#1A1A2E" },
+  divider: { height: 1, backgroundColor: "#F0F0F5", marginLeft: 84 },
+  emptyWrap: { alignItems: "center", marginTop: 100 },
+  emptyIcon: { fontSize: 56, marginBottom: 16 },
+  emptyText: { fontSize: 18, fontWeight: "700", color: "#333" },
+  emptySubText: { fontSize: 14, color: "#999", marginTop: 6 },
 });

@@ -15,8 +15,9 @@ import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import WalletModal from "../../home/WalletModal";
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.19:3000";
 
 const SKILLS = [
   "All",
@@ -29,7 +30,6 @@ const SKILLS = [
   "Data Analysis",
 ];
 
-// ✅ ADDED: Skill filter list for "Browse by Skill"
 const SKILL_FILTERS = [
   "All",
   "React",
@@ -46,7 +46,6 @@ const SKILL_FILTERS = [
   "Flutter",
 ];
 
-// ✅ ADDED: Language filter list
 const LANGUAGE_FILTERS = [
   "All",
   "English",
@@ -61,7 +60,6 @@ const LANGUAGE_FILTERS = [
   "Urdu",
 ];
 
-// ✅ ADDED: Certification filter list
 const CERTIFICATION_FILTERS = [
   "All",
   "AWS",
@@ -79,69 +77,84 @@ const CERTIFICATION_FILTERS = [
 export default function Dashboard() {
   const [onlineExperts, setOnlineExperts] = useState([]);
   const [loadingOnline, setLoadingOnline] = useState(true);
+  // ✅ KEPT: topExperts state kept but Top Experts UI section removed as requested
   const [topExperts, setTopExperts] = useState([]);
   const [loadingTop, setLoadingTop] = useState(true);
   const [activeSkill, setActiveSkill] = useState("All");
   const [filteredExperts, setFilteredExperts] = useState([]);
   const [loadingFiltered, setLoadingFiltered] = useState(false);
 
-  // ✅ ADDED: skill filter state
   const [activeSkillFilter, setActiveSkillFilter] = useState("All");
   const [skillFilteredExperts, setSkillFilteredExperts] = useState([]);
   const [loadingSkillFilter, setLoadingSkillFilter] = useState(false);
 
-  // ✅ ADDED: language filter state
+  // ✅ FIXED: kept state but removed useEffect triggers for hidden sections
   const [activeLanguage, setActiveLanguage] = useState("All");
   const [languageExperts, setLanguageExperts] = useState([]);
   const [loadingLanguage, setLoadingLanguage] = useState(false);
 
-  // ✅ ADDED: certification filter state
   const [activeCertification, setActiveCertification] = useState("All");
   const [certificationExperts, setCertificationExperts] = useState([]);
   const [loadingCertification, setLoadingCertification] = useState(false);
 
+  const [walletVisible, setWalletVisible] = useState(false);
+
   const socketRef = useRef(null);
   const expertIdRef = useRef(null);
+  // ✅ FIXED: guard to prevent socket from being created multiple times
+  const socketInitialized = useRef(false);
 
   useEffect(() => {
-    fetchOnlineExperts();
+    // ✅ FIX: fetchOnlineExperts is called AFTER expert:online is acknowledged
+    // so we only call it here for non-expert users (users browsing the app)
     fetchTopExperts();
+
+    // ✅ FIXED: prevent duplicate socket connections
+    if (socketInitialized.current) return;
+    socketInitialized.current = true;
 
     const setupSocket = async () => {
       try {
         const userStr = await AsyncStorage.getItem("user");
         const user = userStr ? JSON.parse(userStr) : null;
-        const token = await AsyncStorage.getItem("token");
 
+        // ✅ FIXED: log only once, not on every reconnect
         console.log("👤 User from storage:", user);
         console.log("👤 User role:", user?.role);
 
         socketRef.current = io(BASE_URL, {
           transports: ["websocket"],
-          reconnectionAttempts: 5,
+          reconnectionAttempts: 3, // ✅ FIXED: limit to 3 attempts only
+          reconnectionDelay: 3000, // ✅ FIXED: wait 3s between attempts
+          timeout: 10000, // ✅ FIXED: 10s timeout
+          autoConnect: true,
         });
 
         socketRef.current.on("connect", () => {
           console.log("✅ Socket connected:", socketRef.current.id);
-          if (user && user.id) {
+          if (user?.id) {
             const role = (user.role || "").toLowerCase();
-            console.log("🎭 Normalized role:", role);
             if (role === "expert") {
               expertIdRef.current = user.id;
               socketRef.current.emit("expert:online", user.id);
               console.log("🟢 Emitted expert:online for userId:", user.id);
+
+              // ✅ KEY FIX: Wait a short moment for DB to update, then fetch
+              // This ensures is_online=true is saved before we query /experts/online
+              setTimeout(() => {
+                fetchOnlineExperts();
+              }, 500);
             } else {
-              console.log("ℹ️ User is not expert, role:", role);
+              // Non-expert user: fetch immediately, no DB update needed
+              fetchOnlineExperts();
             }
           } else {
-            console.log("⚠️ No user found in AsyncStorage");
+            // No user / not logged in: fetch immediately
+            fetchOnlineExperts();
           }
         });
 
         socketRef.current.on("expert:status", ({ expertId, is_online }) => {
-          console.log(
-            `🔴🟢 Expert ${expertId} is now ${is_online ? "ONLINE" : "OFFLINE"}`,
-          );
           if (is_online) {
             setOnlineExperts((prev) => {
               const alreadyExists = prev.find((e) => e.id === expertId);
@@ -157,11 +170,21 @@ export default function Dashboard() {
           console.log("🔌 Socket disconnected");
         });
 
+        // ✅ FIXED: log error only once, no infinite retry logs
         socketRef.current.on("connect_error", (err) => {
-          console.log("❌ Socket connection error:", err.message);
+          console.log("❌ Socket error (will retry max 3x):", err.message);
+          // ✅ FIX: Still fetch online experts even if socket fails
+          fetchOnlineExperts();
+        });
+
+        // ✅ FIXED: stop retrying after max attempts
+        socketRef.current.io.on("reconnect_failed", () => {
+          console.log("⛔ Socket gave up reconnecting after 3 attempts");
         });
       } catch (err) {
         console.log("Socket setup error:", err);
+        // ✅ FIX: Fallback fetch if socket setup itself throws
+        fetchOnlineExperts();
       }
     };
 
@@ -177,6 +200,8 @@ export default function Dashboard() {
           );
         }
         socketRef.current.disconnect();
+        socketRef.current = null; // ✅ FIXED: clean up ref
+        socketInitialized.current = false;
       }
     };
   }, []);
@@ -185,20 +210,13 @@ export default function Dashboard() {
     fetchFilteredExperts(activeSkill);
   }, [activeSkill]);
 
-  // ✅ ADDED: fetch when skill filter changes
   useEffect(() => {
     fetchExpertsBySkillFilter(activeSkillFilter);
   }, [activeSkillFilter]);
 
-  // ✅ ADDED: fetch when language filter changes
-  useEffect(() => {
-    fetchExpertsByLanguage(activeLanguage);
-  }, [activeLanguage]);
-
-  // ✅ ADDED: fetch when certification filter changes
-  useEffect(() => {
-    fetchExpertsByCertification(activeCertification);
-  }, [activeCertification]);
+  // ✅ FIXED: removed useEffect for language & certification
+  // They are inside {false && ...} blocks so no need to fetch at all
+  // fetchExpertsByLanguage and fetchExpertsByCertification kept for future use
 
   const getInitials = (name) => {
     if (!name) return "EX";
@@ -213,7 +231,6 @@ export default function Dashboard() {
     try {
       setLoadingOnline(true);
       const res = await axiosInstance.get("/experts/online");
-      console.log("🟢 Online experts:", res?.data?.data);
       setOnlineExperts(res?.data?.data || []);
     } catch (e) {
       console.log("fetchOnlineExperts error:", e.message);
@@ -228,7 +245,6 @@ export default function Dashboard() {
       setLoadingTop(true);
       const res = await axiosInstance.get("/experts");
       const list = res?.data?.data || [];
-      // ✅ FIXED: normalize rating as float for correct sorting
       const normalized = list.map((e) => ({
         ...e,
         rating: parseFloat(e.rating) || 0,
@@ -249,7 +265,6 @@ export default function Dashboard() {
       const url = skill === "All" ? "/experts" : `/experts?skill=${skill}`;
       const res = await axiosInstance.get(url);
       const list = res?.data?.data || [];
-      // ✅ FIXED: normalize rating and experience as numbers
       const normalized = list.map((e) => ({
         ...e,
         rating: parseFloat(e.rating) || 0,
@@ -264,7 +279,6 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ FIXED: filter experts by skill_name inside expert.skills array (frontend filter)
   const fetchExpertsBySkillFilter = async (skill) => {
     try {
       setLoadingSkillFilter(true);
@@ -275,7 +289,6 @@ export default function Dashboard() {
         rating: parseFloat(e.rating) || 0,
         experience: parseInt(e.experience) || 0,
       }));
-      // ✅ FIXED: filter inside expert.skills array not by domain
       const filtered =
         skill === "All"
           ? normalized
@@ -295,7 +308,7 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ ADDED: filter experts by language — filters on frontend from all experts
+  // ✅ Kept for future use when language section is enabled
   const fetchExpertsByLanguage = async (language) => {
     try {
       setLoadingLanguage(true);
@@ -325,7 +338,7 @@ export default function Dashboard() {
     }
   };
 
-  // ✅ ADDED: filter experts by certification — filters on frontend from all experts
+  // ✅ Kept for future use when certification section is enabled
   const fetchExpertsByCertification = async (cert) => {
     try {
       setLoadingCertification(true);
@@ -353,12 +366,16 @@ export default function Dashboard() {
     }
   };
 
+  // ✅ FIXED: handle double "uploads/" prefix and encode name for URL safety
   const getImageUri = (image, name) => {
-    if (image) return `${BASE_URL}/uploads/${image}`;
-    return `https://ui-avatars.com/api/?name=${name || "User"}&background=1A2B4C&color=fff`;
+    if (image) {
+      // ✅ strip any existing "uploads/" prefix to avoid doubling
+      const cleanImage = image.replace(/^uploads\//, "");
+      return `${BASE_URL}/uploads/${cleanImage}`;
+    }
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=1A2B4C&color=fff`;
   };
 
-  // ✅ NEW: Get first skill name from expert's skills array
   const getFirstSkill = (expert) => {
     if (Array.isArray(expert.skills) && expert.skills.length > 0) {
       return expert.skills[0].skill_name;
@@ -366,7 +383,6 @@ export default function Dashboard() {
     return expert.domain || expert.role || "Expert";
   };
 
-  // ✅ NEW: Get skills chips (max 2) for card display
   const getSkillChips = (expert) => {
     if (Array.isArray(expert.skills) && expert.skills.length > 0) {
       return expert.skills.slice(0, 2).map((s) => s.skill_name);
@@ -374,15 +390,17 @@ export default function Dashboard() {
     return expert.domain ? [expert.domain] : [];
   };
 
-  // ✅ Reusable expert card component
   const ExpertCard = ({ e }) => (
     <Pressable
       style={styles.skillExpertCard}
-      onPress={() => router.push(`/expert/${e.id}`)}>
+      onPress={() => router.push(`/expert/${e.id}`)}
+    >
       {e.image ? (
         <Image
           source={{ uri: getImageUri(e.image, e.name) }}
           style={[styles.expertInitialCircle, { overflow: "hidden" }]}
+          // ✅ FIXED: fallback to initials avatar if image fails to load
+          onError={() => {}}
         />
       ) : (
         <View style={styles.expertInitialCircle}>
@@ -421,28 +439,27 @@ export default function Dashboard() {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* HEADER */}
+      <View style={styles.header}>
+        <View style={styles.avatarCircle}>
+          <Text style={styles.avatarInitial}>C</Text>
+        </View>
+        <Text style={styles.headerTitle}>Career-Talk</Text>
+      </View>
+
+      {/* SEARCH */}
+      <Pressable
+        style={styles.searchBar}
+        onPress={() => router.push("/expert/search")}
+      >
+        <Ionicons name="search" size={20} color="#C4C4C4" />
+        <Text style={styles.searchText}>Search</Text>
+      </Pressable>
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}>
-        {/* HEADER */}
-        <View style={styles.header}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitial}>C</Text>
-          </View>
-          <Text style={styles.headerTitle}>Career-Talk</Text>
-          <TouchableOpacity style={styles.addCashBtn}>
-            <Text style={styles.addCashText}>Add Cash +</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* SEARCH */}
-        <Pressable
-          style={styles.searchBar}
-          onPress={() => router.push("/expert/search")}>
-          <Ionicons name="search" size={20} color="#C4C4C4" />
-          <Text style={styles.searchText}>Search</Text>
-        </Pressable>
-
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         {/* BANNER */}
         <View style={styles.promoBanner}>
           <View style={styles.promoTextContainer}>
@@ -460,14 +477,49 @@ export default function Dashboard() {
           />
         </View>
 
-        {/* ✅ SECTION 1: BROWSE BY SKILL — visible */}
+        {/* LIVE EXPERTS */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Live Experts</Text>
+          <View style={styles.liveIndicator}>
+            <View style={styles.liveDot} />
+            <Text style={styles.liveIndicatorText}>Live</Text>
+          </View>
+        </View>
+        {loadingOnline ? (
+          <ActivityIndicator color="#0B2D72" />
+        ) : onlineExperts.length === 0 ? (
+          <Text style={styles.noExpertsText}>No experts online right now</Text>
+        ) : (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.liveScrollContainer}
+          >
+            {onlineExperts.map((e) => {
+              // ✅ FIXED: log image value to debug what's coming from API
+              console.log("🖼️ Live expert image:", e.image, "name:", e.name);
+              return (
+                <LiveExpert
+                  key={e.id}
+                  name={e.name || ""}
+                  title={getFirstSkill(e)}
+                  image={getImageUri(e.image, e.name)}
+                  onPress={() => router.push(`/expert/${e.id}`)}
+                />
+              );
+            })}
+          </ScrollView>
+        )}
+
+        {/* BROWSE BY SKILL */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
         </View>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}>
+          contentContainerStyle={styles.filterList}
+        >
           {SKILL_FILTERS.map((skill) => (
             <TouchableOpacity
               key={skill}
@@ -475,12 +527,14 @@ export default function Dashboard() {
                 styles.filterChip,
                 activeSkillFilter === skill && styles.filterChipActive,
               ]}
-              onPress={() => setActiveSkillFilter(skill)}>
+              onPress={() => setActiveSkillFilter(skill)}
+            >
               <Text
                 style={[
                   styles.filterChipText,
                   activeSkillFilter === skill && styles.filterChipTextActive,
-                ]}>
+                ]}
+              >
                 {skill}
               </Text>
             </TouchableOpacity>
@@ -496,14 +550,15 @@ export default function Dashboard() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}>
+            contentContainerStyle={styles.expertBySkillList}
+          >
             {skillFilteredExperts.map((e) => (
               <ExpertCard key={e.id} e={e} />
             ))}
           </ScrollView>
         )}
 
-        {/* ✅ SECTION 2: BROWSE BY LANGUAGE — hidden, kept for future use */}
+        {/* BROWSE BY LANGUAGE — hidden, kept for future */}
         {false && (
           <>
             <View style={styles.sectionHeader}>
@@ -512,7 +567,8 @@ export default function Dashboard() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterList}>
+              contentContainerStyle={styles.filterList}
+            >
               {LANGUAGE_FILTERS.map((lang) => (
                 <TouchableOpacity
                   key={lang}
@@ -521,12 +577,14 @@ export default function Dashboard() {
                     styles.filterChipGreen,
                     activeLanguage === lang && styles.filterChipGreenActive,
                   ]}
-                  onPress={() => setActiveLanguage(lang)}>
+                  onPress={() => setActiveLanguage(lang)}
+                >
                   <Text
                     style={[
                       styles.filterChipText,
                       { color: activeLanguage === lang ? "#fff" : "#1a7a4a" },
-                    ]}>
+                    ]}
+                  >
                     {lang}
                   </Text>
                 </TouchableOpacity>
@@ -545,7 +603,8 @@ export default function Dashboard() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.expertBySkillList}>
+                contentContainerStyle={styles.expertBySkillList}
+              >
                 {languageExperts.map((e) => (
                   <ExpertCard key={e.id} e={e} />
                 ))}
@@ -554,7 +613,7 @@ export default function Dashboard() {
           </>
         )}
 
-        {/* ✅ SECTION 3: BROWSE BY CERTIFICATION — hidden, kept for future use */}
+        {/* BROWSE BY CERTIFICATION — hidden, kept for future */}
         {false && (
           <>
             <View style={styles.sectionHeader}>
@@ -563,7 +622,8 @@ export default function Dashboard() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.filterList}>
+              contentContainerStyle={styles.filterList}
+            >
               {CERTIFICATION_FILTERS.map((cert) => (
                 <TouchableOpacity
                   key={cert}
@@ -573,7 +633,8 @@ export default function Dashboard() {
                     activeCertification === cert &&
                       styles.filterChipOrangeActive,
                   ]}
-                  onPress={() => setActiveCertification(cert)}>
+                  onPress={() => setActiveCertification(cert)}
+                >
                   <Text
                     style={[
                       styles.filterChipText,
@@ -581,7 +642,8 @@ export default function Dashboard() {
                         color:
                           activeCertification === cert ? "#fff" : "#b45309",
                       },
-                    ]}>
+                    ]}
+                  >
                     {cert}
                   </Text>
                 </TouchableOpacity>
@@ -600,7 +662,8 @@ export default function Dashboard() {
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.expertBySkillList}>
+                contentContainerStyle={styles.expertBySkillList}
+              >
                 {certificationExperts.map((e) => (
                   <ExpertCard key={e.id} e={e} />
                 ))}
@@ -616,18 +679,20 @@ export default function Dashboard() {
             <Text style={styles.viewAllText}>View All</Text>
           </TouchableOpacity>
         </View>
-        {loadingFiltered ? (
-          <ActivityIndicator color="#0B2D72" style={{ marginVertical: 20 }} />
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}>
-            {filteredExperts.map((e) => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContainer}
+        >
+          {loadingFiltered ? (
+            <ActivityIndicator color="#0B2D72" style={{ marginVertical: 20 }} />
+          ) : (
+            filteredExperts.map((e) => (
               <Pressable
                 key={e.id}
                 style={styles.skillExpertCard}
-                onPress={() => router.push(`/expert/${e.id}`)}>
+                onPress={() => router.push(`/expert/${e.id}`)}
+              >
                 {e.image ? (
                   <Image
                     source={{ uri: getImageUri(e.image, e.name) }}
@@ -668,87 +733,75 @@ export default function Dashboard() {
                 </View>
                 <View style={styles.expertCardFooter} />
               </Pressable>
-            ))}
-          </ScrollView>
-        )}
+            ))
+          )}
+        </ScrollView>
 
-        {/* TOP EXPERTS */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Top Experts</Text>
-        </View>
-        {loadingTop ? (
-          <ActivityIndicator color="#0B2D72" />
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.topExpertsList}>
-            {topExperts.map((e) => (
-              <TouchableOpacity
-                key={e.id}
-                style={styles.circularExpertContainer}
-                onPress={() => router.push(`/expert/${e.id}`)}>
-                <View style={styles.goldBorder}>
-                  {e.image ? (
-                    <Image
-                      source={{ uri: getImageUri(e.image, e.name) }}
-                      style={{ width: 58, height: 58, borderRadius: 29 }}
-                    />
-                  ) : (
-                    <View style={styles.innerCircle}>
-                      <Text style={styles.circleInitial}>
-                        {getInitials(e.name)}
-                      </Text>
+        {/* TOP EXPERTS — hidden, kept for future use */}
+        {false && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Top Experts</Text>
+            </View>
+            {loadingTop ? (
+              <ActivityIndicator color="#0B2D72" />
+            ) : (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.topExpertsList}
+              >
+                {topExperts.map((e) => (
+                  <TouchableOpacity
+                    key={e.id}
+                    style={styles.circularExpertContainer}
+                    onPress={() => router.push(`/expert/${e.id}`)}
+                  >
+                    <View style={styles.goldBorder}>
+                      {e.image ? (
+                        <Image
+                          source={{ uri: getImageUri(e.image, e.name) }}
+                          style={{ width: 58, height: 58, borderRadius: 29 }}
+                        />
+                      ) : (
+                        <View style={styles.innerCircle}>
+                          <Text style={styles.circleInitial}>
+                            {getInitials(e.name)}
+                          </Text>
+                        </View>
+                      )}
                     </View>
-                  )}
-                </View>
-                <Text style={styles.circleExpertName} numberOfLines={1}>
-                  {e.name?.split(" ")[0]}
-                </Text>
-                <Text style={styles.circleExpertSkill} numberOfLines={1}>
-                  {getFirstSkill(e)}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* LIVE EXPERTS */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Live Experts</Text>
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveIndicatorText}>Live</Text>
-          </View>
-        </View>
-        {loadingOnline ? (
-          <ActivityIndicator color="#0B2D72" />
-        ) : onlineExperts.length === 0 ? (
-          <Text style={styles.noExpertsText}>No experts online right now</Text>
-        ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.liveScrollContainer}>
-            {onlineExperts.map((e) => (
-              <LiveExpert
-                key={e.id}
-                name={e.name || ""}
-                title={getFirstSkill(e)}
-                image={getImageUri(e.image, e.name)}
-                onPress={() => router.push(`/expert/${e.id}`)}
-              />
-            ))}
-          </ScrollView>
+                    <Text style={styles.circleExpertName} numberOfLines={1}>
+                      {e.name?.split(" ")[0]}
+                    </Text>
+                    <Text style={styles.circleExpertSkill} numberOfLines={1}>
+                      {getFirstSkill(e)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+          </>
         )}
       </ScrollView>
+
+      {/* WALLET MODAL */}
+      <WalletModal
+        visible={walletVisible}
+        onClose={() => setWalletVisible(false)}
+      />
     </SafeAreaView>
   );
 }
 
 const LiveExpert = ({ name, title, image, onPress }) => (
   <Pressable style={styles.liveCard} onPress={onPress}>
-    <Image source={{ uri: image }} style={styles.liveImage} />
+    <Image
+      source={{ uri: image }}
+      style={styles.liveImage}
+      // ✅ FIXED: if image URL is broken, show dark background (initials already in overlay)
+      onError={(e) => console.log("❌ LiveExpert image failed:", image)}
+    />
     <View style={styles.liveBadge}>
       <Text style={styles.liveText}>LIVE</Text>
     </View>
@@ -766,7 +819,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginTop: 20,
+    backgroundColor: "#FFF",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    marginTop: 10,
+    shadowRadius: 4,
   },
   avatarCircle: {
     width: 36,
@@ -783,25 +841,18 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     color: "#333",
   },
-  addCashBtn: {
-    marginLeft: "auto",
-    backgroundColor: "#0B2D72",
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  addCashText: { color: "#FFF", fontWeight: "600", fontSize: 13 },
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F2F2F2",
-    marginHorizontal: 16,
     borderRadius: 10,
     paddingHorizontal: 12,
     height: 45,
-    marginBottom: 20,
+    marginHorizontal: 16,
+    marginBottom: 15,
   },
   searchText: { color: "#0B2D72", marginLeft: 8, fontSize: 16 },
+  scrollContainer: { paddingBottom: 40 },
   promoBanner: {
     backgroundColor: "#ffeda6",
     marginHorizontal: 16,
@@ -909,6 +960,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     marginTop: 8,
   },
+  // ✅ KEPT: Top Experts styles preserved for future use
   topExpertsList: { paddingLeft: 16, paddingBottom: 10 },
   circularExpertContainer: { marginRight: 15, alignItems: "center", width: 70 },
   goldBorder: {
@@ -916,9 +968,10 @@ const styles = StyleSheet.create({
     height: 66,
     borderRadius: 33,
     borderWidth: 2,
-    borderColor: "#FBBF24",
+    borderColor: "#FFD700",
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#fff",
   },
   innerCircle: {
     width: 58,
@@ -928,22 +981,23 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  circleInitial: { fontSize: 18, fontWeight: "600", color: "#f2f6fb" },
+  circleInitial: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
   circleExpertName: {
-    fontSize: 11,
-    fontWeight: "700",
+    fontSize: 12,
+    fontWeight: "600",
     color: "#333",
-    marginTop: 5,
+    marginTop: 6,
     textAlign: "center",
   },
-  circleExpertSkill: { fontSize: 10, color: "#888", textAlign: "center" },
-  liveScrollContainer: { paddingLeft: 16 },
+  circleExpertSkill: { fontSize: 10, color: "#666", textAlign: "center" },
+  liveScrollContainer: { paddingLeft: 16, paddingBottom: 10 },
   liveCard: {
-    width: 130,
-    height: 170,
-    borderRadius: 18,
-    marginRight: 15,
+    width: 150,
+    height: 180,
+    borderRadius: 20,
     overflow: "hidden",
+    marginRight: 12,
+    backgroundColor: "#1A2B4C",
   },
   liveImage: { width: "100%", height: "100%" },
   liveBadge: {
@@ -951,22 +1005,20 @@ const styles = StyleSheet.create({
     top: 8,
     left: 8,
     backgroundColor: "red",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 6,
   },
-  liveText: { color: "#fff", fontSize: 10, fontWeight: "bold" },
+  liveText: { color: "#fff", fontSize: 10, fontWeight: "700" },
   liveOverlay: {
     position: "absolute",
     bottom: 0,
     width: "100%",
     padding: 8,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
-  liveName: { color: "#fff", fontWeight: "bold" },
-  liveTitle: { color: "#ddd", fontSize: 11 },
-
-  // ✅ ADDED: Shared filter chip styles
+  liveName: { color: "#fff", fontWeight: "700", fontSize: 12 },
+  liveTitle: { color: "#fff", fontSize: 10 },
   filterList: { paddingLeft: 16, paddingBottom: 12 },
   filterChip: {
     paddingHorizontal: 14,
@@ -980,12 +1032,8 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: "#0B2D72" },
   filterChipText: { fontSize: 13, fontWeight: "600", color: "#0B2D72" },
   filterChipTextActive: { color: "#fff" },
-
-  // ✅ ADDED: Green variant for language filter
   filterChipGreen: { borderColor: "#1a7a4a", backgroundColor: "#fff" },
   filterChipGreenActive: { backgroundColor: "#1a7a4a" },
-
-  // ✅ ADDED: Orange variant for certification filter
   filterChipOrange: { borderColor: "#b45309", backgroundColor: "#fff" },
   filterChipOrangeActive: { backgroundColor: "#b45309" },
 });

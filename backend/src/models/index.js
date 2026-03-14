@@ -21,22 +21,18 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 /* =========================
-   LOAD MODELS (ORDER SAFE)
+   LOAD MODELS
 ========================= */
 
-// Load User FIRST (since Expert depends on it)
 db.User = require("./user")(sequelize, DataTypes);
-
-// Load Expert (depends on User)
+db.Chat = require('./chat')(sequelize, DataTypes);
+db.Call = require('./call')(sequelize, DataTypes);
+db.Notification = require('./notification.model')(sequelize, DataTypes);
 db.Expert = require("./expert")(sequelize, DataTypes);
-
-// Load Review ✅ NEW
 db.Review = require("./review")(sequelize, DataTypes);
-
-// ✅ Load Payment
+db.WalletTransaction = require("./walletTransaction")(sequelize, DataTypes);
 db.Payment = require("./payment")(sequelize, DataTypes);
 
-// Load ExpertSkill (if exists)
 try {
   db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);
 } catch (err) {
@@ -44,7 +40,7 @@ try {
 }
 
 /* =========================
-   AUTO ASSOCIATE (SAFE)
+   AUTO ASSOCIATE
 ========================= */
 
 Object.keys(db).forEach((modelName) => {
@@ -52,21 +48,5 @@ Object.keys(db).forEach((modelName) => {
     db[modelName].associate(db);
   }
 });
-
-/* =========================
-   TEST CONNECTION ONLY
-   ✅ Sync is handled in app.js — removed from here to avoid duplicate
-========================= */
-
-sequelize
-  .authenticate()
-  .then(() => {
-    console.log("✅ Database connection successful");
-  })
-  .catch((err) => {
-    console.error("❌ Unable to connect to database:", err);
-  });
-
-// ✅ REMOVED db.sequelize.sync() from here — already done in app.js
 
 module.exports = db;

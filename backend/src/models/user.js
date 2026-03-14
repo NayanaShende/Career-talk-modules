@@ -23,7 +23,6 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
-      // ✅ Role default added (important)
       role: {
         type: DataTypes.STRING,
         allowNull: false,
@@ -35,7 +34,6 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: false,
       },
 
-      // ✅ PROFILE DATA
       fullName: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -45,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
         validate: {
-          isEmail: true, // prevents invalid email format
+          isEmail: true,
         },
       },
 
@@ -69,30 +67,24 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
 
-      cvFile: {
-        type: DataTypes.STRING,
+      gender: {
+        type: DataTypes.STRING(10),
         allowNull: true,
       },
       image: {
         type: DataTypes.STRING,
         allowNull: true,
       },
+
+      cvFile: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
     },
     {
-      timestamps: true, // ensures createdAt & updatedAt
+      timestamps: true,
     },
   );
-
-  // ✅ ADDED ASSOCIATION (DO NOT REMOVE)
-  User.associate = (models) => {
-    if (models.Expert) {
-      User.hasOne(models.Expert, {
-        foreignKey: "userId",
-        as: "expert",
-        onDelete: "CASCADE",
-      });
-    }
-  };
 
   return User;
 };

@@ -1,73 +1,85 @@
 require("dotenv").config();
 var express = require("express");
-const http = require("http");
 var logger = require("morgan");
 const cors = require("cors");
-const { Server } = require("socket.io"); // ✅ IMPORTANT
+const http = require("http");
 const { initSocket } = require("./socket");
 const path = require("path");
+const helmet = require("helmet");
 
 const routes = require("./routes");
 const { sequelize } = require("./models");
 
-sequelize
-  .sync({ alter: true })
-  .then(() => console.log("✅ Database synced"))
-  .catch((err) => console.log("❌ Sync error:", err));
-
 var app = express();
 
-// ------------------------------------------------------
-// CORS
-// ------------------------------------------------------
+/* ---------------- SECURITY MIDDLEWARE ---------------- */
+app.use(helmet());
+
+/* ---------------- CORS ---------------- */
 app.use(
   cors({
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// ------------------------------------------------------
-// MIDDLEWARE
-// ------------------------------------------------------
+/* ---------------- MIDDLEWARE ---------------- */
 app.use(logger("dev"));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// ✅ Serve uploaded files (cv, images) as static
-app.use("/uploads", express.static(path.join(__dirname, "../uploads"))); // ✅ FIXED PATH
+// ✅ Webhook route needs raw body — register BEFORE express.json()
+app.use("/api/payment/webhook", express.raw({ type: "application/json" }));
 
-// ------------------------------------------------------
-// ROUTES
-// ------------------------------------------------------
+// ✅ All other routes use normal JSON parsing
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
+/* ---------------- STATIC FILES ---------------- */
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+
+/* ---------------- DATABASE ---------------- */
+// ✅ Single database connection check
+sequelize
+  .authenticate()
+  .then(() => console.log("✅ Database connection successful"))
+  .catch((err) => console.log("❌ Database connection error:", err));
+
+/* ---------------- API ROUTES ---------------- */
+app.use("/api", (req, res, next) => {
+  console.log(`API Request: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
 app.use("/api", routes);
 
-// ------------------------------------------------------
-// CREATE SERVER
-// ------------------------------------------------------
+/* ---------------- HEALTH CHECK ---------------- */
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Career Talk Backend API Running 🚀",
+  });
+});
+
+/* ---------------- 404 HANDLER ---------------- */
+app.use(function (req, res) {
+  res.status(404).json({
+    success: false,
+    message: "API Route Not Found",
+  });
+});
+
+/* ---------------- GLOBAL ERROR HANDLER ---------------- */
+app.use((err, req, res, next) => {
+  console.error("Server Error:", err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error",
+  });
+});
+
+/* ---------------- SERVER & SOCKET ---------------- */
 const server = http.createServer(app);
+const io = initSocket(server); // ✅ FIXED: get io from initSocket
+app.set("io", io);              // ✅ FIXED: set io on app so controllers can use req.app.get("io")
 
-// ------------------------------------------------------
-// SOCKET.IO
-// ------------------------------------------------------
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
-
-// ✅ Initialize socket logic
-initSocket(io);
-
-// ------------------------------------------------------
-// 404 HANDLER
-// ------------------------------------------------------
-app.use(function (req, res, next) {
-  res.status(404).json({ error: "Not Found" });
-});
-
-// ------------------------------------------------------
-// ✅ REMOVED server.listen() from here — now handled in bin/www
-// ------------------------------------------------------
-
-module.exports = { app, server }; // ✅ Export both app and server
+module.exports = { app, server };

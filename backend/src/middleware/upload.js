@@ -1,28 +1,40 @@
 const multer = require("multer");
-const path = require("path");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../../uploads"));
-  },
+// memory storage (needed for cloudinary)
+const storage = multer.memoryStorage();
 
-  filename: function (req, file, cb) {
-    // ✅ remove spaces & special characters
-    const cleanName = file.originalname.replace(/[^a-zA-Z0-9.]/g, "_");
+// file validation
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/jpg",
+    "application/pdf",
+  ];
 
-    const uniqueName = Date.now() + "-" + cleanName;
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type"));
+  }
+};
 
-    cb(null, uniqueName);
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
   },
 });
 
-const upload = multer({ storage });
-
-// accept cv & image
+// multiple file upload
 const uploadFields = upload.fields([
-  { name: "cv", maxCount: 1 },
   { name: "image", maxCount: 1 },
+  { name: "cv", maxCount: 1 },
+  { name: "certificate", maxCount: 1 },
 ]);
 
-module.exports = upload;
-module.exports.uploadFields = uploadFields;
+module.exports = {
+  upload,
+  uploadFields,
+};

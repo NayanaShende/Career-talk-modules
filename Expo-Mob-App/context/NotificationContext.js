@@ -1,0 +1,260 @@
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  AppState,
+} from "react-native";
+import { io } from "socket.io-client";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
+console.log("🚀 NotificationContext.js FILE LOADED");
+
+const BASE_URL = "http://192.168.1.26:3000";
+
+const NotificationContext = createContext({
+  unreadCounts: {},
+  clearUnread: () => {},
+  totalUnread: 0,
+  currentUserId: null,
+});
+
+export function NotificationProvider({ children }) {
+  const [currentUserId, setCurrentUserId] = useState(null);
+  const [banner, setBanner] = useState(null);
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const socketRef = useRef(null);
+  const bannerTimer = useRef(null);
+  const slideAnim = useRef(new Animated.Value(-100)).current;
+  const appState = useRef(AppState.currentState);
+
+  // ✅ FIXED: try all possible storage keys + retry until found
+  useEffect(() => {
+    const tryLoadUser = async () => {
+      try {
+        // ✅ Try all possible keys your app uses
+        const keys = ["user", "userData", "currentUser", "token"];
+        let uid = null;
+
+        for (const key of keys) {
+          const str = await AsyncStorage.getItem(key);
+          if (str) {
+            try {
+              const u = JSON.parse(str);
+              uid = u?.id || u?.userId || u?.user?.id;
+              if (uid) {
+                console.log(
+                  `👤 NotificationContext found userId ${uid} in key "${key}"`,
+                );
+                break;
+              }
+            } catch {
+              // not JSON, skip
+            }
+          }
+        }
+
+        if (uid) {
+          setCurrentUserId(Number(uid));
+          return;
+        }
+      } catch (e) {
+        console.log("AsyncStorage error:", e.message);
+      }
+      // retry after 1s if user not found yet
+      setTimeout(tryLoadUser, 1000);
+    };
+    tryLoadUser();
+  }, []);
+
+  const showBanner = (notif) => {
+    setBanner(notif);
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      useNativeDriver: true,
+      tension: 80,
+      friction: 10,
+    }).start();
+    if (bannerTimer.current) clearTimeout(bannerTimer.current);
+    bannerTimer.current = setTimeout(() => hideBanner(), 4000);
+  };
+
+  const hideBanner = () => {
+    Animated.timing(slideAnim, {
+      toValue: -100,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => setBanner(null));
+  };
+
+  // ✅ connect socket and JOIN ROOM immediately on userId load
+  useEffect(() => {
+    if (!currentUserId) return;
+
+    console.log("🔌 Connecting global socket for user:", currentUserId);
+
+    // cleanup previous socket if any
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+
+    socketRef.current = io(BASE_URL, {
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: 20,
+      reconnectionDelay: 1000,
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log(
+        "🌐 Global socket connected:",
+        socketRef.current.id,
+        "for user:",
+        currentUserId,
+      );
+      socketRef.current.emit("joinRoom", { userId: currentUserId });
+      console.log("🏠 Global joinRoom emitted for:", currentUserId);
+    });
+
+    // ✅ Rejoin room on reconnect
+    socketRef.current.on("reconnect", () => {
+      console.log(
+        "🔄 Global socket reconnected, rejoining room:",
+        currentUserId,
+      );
+      socketRef.current.emit("joinRoom", { userId: currentUserId });
+    });
+
+    socketRef.current.on("newNotification", (notif) => {
+      console.log("🔔 Global newNotification received:", notif);
+      if (Number(notif.sender_id) !== Number(currentUserId)) {
+        showBanner(notif);
+        setUnreadCounts((prev) => ({
+          ...prev,
+          [notif.sender_id]: (prev[notif.sender_id] || 0) + 1,
+        }));
+      }
+    });
+
+    socketRef.current.on("disconnect", (reason) => {
+      console.log("🔌 Global socket disconnected:", reason);
+    });
+
+    socketRef.current.on("connect_error", (err) => {
+      console.log("❌ Global socket connect error:", err.message);
+    });
+
+    return () => {
+      socketRef.current?.off("newNotification");
+      socketRef.current?.off("connect");
+      socketRef.current?.off("reconnect");
+      socketRef.current?.off("disconnect");
+      socketRef.current?.off("connect_error");
+      socketRef.current?.disconnect();
+    };
+  }, [currentUserId]);
+
+  // ✅ rejoin room when app comes back to foreground
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        console.log(
+          "📱 App foregrounded, rejoining socket room:",
+          currentUserId,
+        );
+        if (socketRef.current?.connected && currentUserId) {
+          socketRef.current.emit("joinRoom", { userId: currentUserId });
+        } else if (currentUserId) {
+          socketRef.current?.connect();
+        }
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => subscription.remove();
+  }, [currentUserId]);
+
+  const clearUnread = (userId) => {
+    setUnreadCounts((prev) => ({ ...prev, [userId]: 0 }));
+  };
+
+  const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
+
+  return (
+    <NotificationContext.Provider
+      value={{ unreadCounts, clearUnread, totalUnread, currentUserId }}
+    >
+      {children}
+
+      {banner && (
+        <Animated.View
+          style={[styles.banner, { transform: [{ translateY: slideAnim }] }]}
+        >
+          <Text style={styles.bannerIcon}>🔔</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.bannerTitle}>
+              {banner.title || "New Message"}
+            </Text>
+            <Text style={styles.bannerMsg} numberOfLines={1}>
+              {banner.message}
+            </Text>
+          </View>
+          <TouchableOpacity onPress={hideBanner}>
+            <Text style={styles.bannerClose}>✕</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+    </NotificationContext.Provider>
+  );
+}
+
+export function useNotification() {
+  return useContext(NotificationContext);
+}
+
+// ✅ Required by Expo Router
+export default function NotificationContextScreen() {
+  return null;
+}
+
+const styles = StyleSheet.create({
+  banner: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 9999,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#1C1C1E",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    paddingTop: 50,
+    gap: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  bannerIcon: { fontSize: 22 },
+  bannerTitle: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#fff",
+    marginBottom: 2,
+  },
+  bannerMsg: { fontSize: 13, color: "#ccc" },
+  bannerClose: { fontSize: 16, color: "#fff", paddingLeft: 8 },
+});

@@ -2,40 +2,27 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("Reviews", {
-      id: {
-        allowNull: false,
-        autoIncrement: true,
-        primaryKey: true,
-        type: Sequelize.INTEGER
+    // ✅ Add comment column
+    await queryInterface.addColumn("Reviews", "comment", {
+      type: Sequelize.TEXT,
+      allowNull: true,
+    });
+
+    // ✅ Add user_id column with FK to Users table
+    await queryInterface.addColumn("Reviews", "user_id", {
+      type: Sequelize.INTEGER,
+      allowNull: true,
+      references: {
+        model: "Users",
+        key: "id",
       },
-      rating: {
-        type: Sequelize.INTEGER,
-        allowNull: false
-      },
-      expert_id: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: "Experts",
-          key: "id"
-        },
-        onUpdate: "CASCADE",
-        onDelete: "CASCADE"
-      },
-      createdAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP")
-      },
-      updatedAt: {
-        allowNull: false,
-        type: Sequelize.DATE,
-        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP")
-      }
+      onUpdate: "CASCADE",
+      onDelete: "SET NULL",
     });
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable("Reviews");
-  }
+    await queryInterface.removeColumn("Reviews", "comment");
+    await queryInterface.removeColumn("Reviews", "user_id");
+  },
 };

@@ -62,7 +62,6 @@ const searchExpertsByHeadline = async (domain) => {
   return await expertRepo.searchExpertsByHeadline(domain);
 };
 
-// ✅ FIXED: filter by ExpertSkills table not domain column
 const getExpertsBySkill = async (skill) => {
   if (!skill || skill === "All") return await expertRepo.findAllExperts();
   return await expertRepo.findExpertsBySkillName(skill);
@@ -72,20 +71,40 @@ const getExpertsBySkill = async (skill) => {
    EXPERT PROFILE
 ================================ */
 
-const createExpertProfile = async (userId, profileData, file) => {
-  // ✅ FIXED: field names now match Experts table columns (not Users table)
+// ✅ FIXED: now accepts imageFile and certificateFile separately
+// ✅ FIXED: saves image filename to DB so dashboard can show it
+// ✅ FIXED: sets is_online = true immediately after profile creation
+// ✅ FIXED: saves skills from comma-separated string OR array in profileData.skills
+// ✅ FIXED: map both "certification" AND "certifications" so either works
+// ✅ FIXED: language_spoken now also checks profileData.languages
+const createExpertProfile = async (
+  userId,
+  profileData,
+  cvFile,
+  imageFile,
+  certificateFile,
+) => {
   const data = {
-    name:            profileData.fullName        || null,  // ✅ Expert.name
-    email:           profileData.email           || null,  // ✅ via User, kept for reference
-    bio:             profileData.bio             || null,  // ✅ Expert.bio
-    experience:      profileData.experience      || null,  // ✅ Expert.experience
-    domain:          profileData.domain          || null,  // ✅ Expert.domain
-    certification:   profileData.certifications  || null,  // ✅ Expert.certification
-    location:        profileData.location        || null,  // ✅ Expert.location
-    language_spoken: profileData.language_spoken || null,  // ✅ Expert.language_spoken
-    cv:              file ? file.filename         : null,  // ✅ Expert.cv (was cvFile)
-    userId,                                                // ✅ FK link to Users table
+    name:               profileData.fullName        || profileData.name        || null,
+    email:              profileData.email            || null,
+    bio:                profileData.bio              || null,
+    experience:         profileData.experience       || null,
+    domain:             profileData.domain           || null,
+    certification:      profileData.certification    || profileData.certifications || null,
+    location:           profileData.location         || null,
+    language_spoken:    profileData.language_spoken  || profileData.languages    || null,
+    qualification:      profileData.qualification    || null,
+    cv:                 cvFile        ? cvFile.filename        : null,
+    image:              imageFile     ? imageFile.filename     : null,
+    certificate_file:   certificateFile ? certificateFile.filename : null,
+    certificate_domain: profileData.certificateDomain || null,
+    is_online:          true,
+    isVerified:         true,
+    verificationStatus: "approved",
+    userId,
   };
+
+  console.log("📝 createExpertProfile — data to save:", JSON.stringify(data));
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);
   if (profile) {
@@ -93,14 +112,27 @@ const createExpertProfile = async (userId, profileData, file) => {
   } else {
     profile = await expertRepo.createExpertProfile(data);
   }
+
+  // ✅ Save skills — supports both array and comma-separated string
+  const skillsRaw = profileData.skills || "";
+  const skillsArray = Array.isArray(skillsRaw)
+    ? skillsRaw
+    : skillsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+
+  if (skillsArray.length > 0 && profile?.id) {
+    await expertRepo.deleteSkillsByExpertId(profile.id);
+    const skillRows = skillsArray.map((skill) => ({
+      expert_id: profile.id,
+      skill_name: skill,
+    }));
+    await expertRepo.bulkCreateSkills(skillRows);
+  }
+
   return profile;
 };
 
-// ✅ FIXED: return null instead of throwing — lets frontend handle empty profile gracefully
 const getExpertProfile = async (userId) => {
-  const profile = await expertRepo.findExpertProfileByUserId(userId);
-  if (!profile) return null; // ✅ no longer throws "Profile not found"
-  return profile;
+  return await expertRepo.findExpertProfileByUserId(userId);
 };
 
 const getExpertById = async (id) => {
@@ -108,39 +140,54 @@ const getExpertById = async (id) => {
 };
 
 /* ===============================
-   RATINGS
+   RATINGS ✅ FIXED
 ================================ */
 
-const submitRating = async (expertId, rating) => {
+const submitRating = async (expertId, userId, rating, comment) => {
   const { Review, Expert } = require("../models");
 
-  // ✅ FIXED: only save fields that exist in DB (no comment, no user_id)
-  await Review.create({
-    expert_id: expertId,
-    rating,
+  // ✅ Check if this user already rated this expert
+  const existing = await Review.findOne({
+    where: { expert_id: expertId, userId },
   });
 
-  const reviews = await Review.findAll({ where: { expert_id: expertId } });
+  if (existing) {
+    throw new Error("ALREADY_RATED");
+  }
+
+  await Review.create({ expert_id: expertId, userId, rating, comment });
+
+  const allReviews = await Review.findAll({ where: { expert_id: expertId } });
   const avgRating =
-    reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length;
 
   await Expert.update(
     { rating: parseFloat(avgRating.toFixed(1)) },
-    { where: { id: expertId } }
+    { where: { id: expertId } },
   );
 
   return {
     avgRating: parseFloat(avgRating.toFixed(1)),
-    totalReviews: reviews.length,
+    totalReviews: allReviews.length,
   };
 };
 
+// ✅ FIXED: Users table uses "fullName" not "name", and "image" from later migration
 const getRatings = async (expertId) => {
-  const { Review } = require("../models");
+  const { Review, User } = require("../models");
 
   const reviews = await Review.findAll({
     where: { expert_id: expertId },
     order: [["createdAt", "DESC"]],
+    include: [
+      {
+        model: User,
+        as: "user",
+        // ✅ FIXED: "fullName" instead of "name" — matches Users table migration
+        // ✅ FIXED: "image" is safe — added in later migration (20260302071602)
+        attributes: ["id", "fullName", "image"],
+      },
+    ],
   });
 
   const avgRating =
@@ -148,10 +195,21 @@ const getRatings = async (expertId) => {
       ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
       : 0;
 
+  const mappedReviews = reviews.map((r) => ({
+    id: r.id,
+    rating: r.rating,
+    comment: r.comment,
+    createdAt: r.createdAt,
+    userId: r.user?.id || r.userId,
+    // ✅ FIXED: fullName not name
+    userName: r.user?.fullName || "Anonymous",
+    userImage: r.user?.image || null,
+  }));
+
   return {
     avgRating: parseFloat(avgRating.toFixed(1)),
     totalReviews: reviews.length,
-    reviews,
+    reviews: mappedReviews,
   };
 };
 

@@ -1,6 +1,5 @@
 // src/repositories/expert.repository.js
 
-// ✅ REMOVED ExpertProfile — model does not exist
 const { Expert, ExpertSkill, User } = require("../models");
 const { Op } = require("sequelize");
 
@@ -22,7 +21,6 @@ const createExpert = async (data) => {
   return await Expert.create(data);
 };
 
-// ✅ Used in auth.service
 const findExpertByUserId = async (userId) => {
   return await Expert.findOne({ where: { userId } });
 };
@@ -31,11 +29,20 @@ const updateExpertById = async (id, data) => {
   return await Expert.update(data, { where: { id } });
 };
 
+// ✅ FIXED: now returns userId field explicitly so chat works correctly
 const findExpertById = async (id) => {
-  return await Expert.findOne({
+  const expert = await Expert.findOne({
     where: { id },
     include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
   });
+
+  if (!expert) return null;
+
+  // ✅ Return plain object with userId explicitly included
+  return {
+    ...expert.toJSON(),
+    userId: expert.userId, // ✅ expert's User table ID for chat routing
+  };
 };
 
 /* ===============================
@@ -44,7 +51,6 @@ const findExpertById = async (id) => {
 
 const findRecommendedExperts = async (limit) => {
   return await Expert.findAll({
-    // ✅ FIXED: now includes skills + sorted by rating and experience
     include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
     order: [
       ["rating", "DESC"],
@@ -55,16 +61,35 @@ const findRecommendedExperts = async (limit) => {
   });
 };
 
+// ✅ FIXED: include User model so we can fallback to User.image if Expert.image is null
+// This fixes the Live Expert card on dashboard not showing profile photo
 const findOnlineExperts = async (limit) => {
-  return await Expert.findAll({
+  const experts = await Expert.findAll({
     where: { is_online: true },
-    include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
+    include: [
+      ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
+      {
+        model: User,
+        as: "user",
+        attributes: ["id", "fullName", "image"], // ✅ pull user's image and fullName
+      },
+    ],
     order: [
       ["rating", "DESC"],
       ["experience", "DESC"],
       ["id", "DESC"],
     ],
     limit,
+  });
+
+  // ✅ FIXED: if Expert.image is null, use User.image as fallback
+  return experts.map((e) => {
+    const plain = e.toJSON();
+    return {
+      ...plain,
+      image: plain.image || plain.user?.image || null,
+      name: plain.name || plain.user?.fullName || null,
+    };
   });
 };
 
@@ -73,19 +98,16 @@ const findOnlineExperts = async (limit) => {
 ================================ */
 
 const bulkCreateSkills = async (skillRows) => {
-  // ✅ FIXED: delete old skills first to avoid duplicates on re-save
   if (skillRows.length > 0) {
     await ExpertSkill.destroy({ where: { expert_id: skillRows[0].expert_id } });
   }
   return await ExpertSkill.bulkCreate(skillRows);
 };
 
-// ✅ NEW: delete all skills for an expert before re-saving
 const deleteSkillsByExpertId = async (expertId) => {
   return await ExpertSkill.destroy({ where: { expert_id: expertId } });
 };
 
-// ✅ NEW: Filter experts by skill_name in ExpertSkills table
 const findExpertsBySkillName = async (skillName) => {
   return await Expert.findAll({
     include: [
@@ -93,7 +115,7 @@ const findExpertsBySkillName = async (skillName) => {
         model: ExpertSkill,
         as: "skills",
         where: { skill_name: { [Op.iLike]: `%${skillName}%` } },
-        required: true, // INNER JOIN — only experts who have this skill
+        required: true,
       },
     ],
     order: [
@@ -104,25 +126,17 @@ const findExpertsBySkillName = async (skillName) => {
 };
 
 /* ===============================
-   DOMAIN SEARCH (UPDATED)
+   DOMAIN SEARCH
 ================================ */
 
-// 🔥 Search by domain OR skills
 const searchExpertsByHeadline = async (domain) => {
   try {
     console.log("🔍 Filtering by domain:", domain);
-
     const result = await Expert.findAll({
-      where: {
-        domain: { [Op.iLike]: `%${domain}%` },
-      },
+      where: { domain: { [Op.iLike]: `%${domain}%` } },
       include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
-      order: [
-        ["rating", "DESC"],
-        ["experience", "DESC"],
-      ],
+      order: [["rating", "DESC"], ["experience", "DESC"]],
     });
-
     console.log("✅ Found:", result.length, "experts for domain:", domain);
     return result;
   } catch (err) {
@@ -135,35 +149,20 @@ const searchExpertsBySkill = async (domain) => {
   if (!domain) return await Expert.findAll({
     include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
   });
-
   return await Expert.findAll({
-    where: {
-      domain: { [Op.iLike]: `%${domain}%` },
-    },
-    include: [
-      // ✅ FIXED: also search inside ExpertSkills table
-      {
-        model: ExpertSkill,
-        as: "skills",
-        required: false,
-      },
-    ],
+    where: { domain: { [Op.iLike]: `%${domain}%` } },
+    include: [{ model: ExpertSkill, as: "skills", required: false }],
   });
 };
 
 const findExpertsBySkill = async (domain) => {
   try {
     console.log("🔍 Searching domain:", domain);
-
     const result = await Expert.findAll({
       where: { domain: { [Op.iLike]: `%${domain}%` } },
       include: ExpertSkill ? { model: ExpertSkill, as: "skills" } : [],
-      order: [
-        ["rating", "DESC"],
-        ["experience", "DESC"],
-      ],
+      order: [["rating", "DESC"], ["experience", "DESC"]],
     });
-
     console.log("✅ Found:", result.length, "experts");
     return result;
   } catch (err) {
@@ -173,11 +172,9 @@ const findExpertsBySkill = async (domain) => {
 };
 
 /* ===============================
-   PROFILE — ✅ FIXED: now uses Expert table via userId FK
+   PROFILE
 ================================ */
 
-// ✅ FIXED: search in Expert table, not ExpertProfile
-// ✅ Returns null instead of throwing if not found
 const findExpertProfileByUserId = async (userId) => {
   return await Expert.findOne({
     where: { userId },
@@ -185,12 +182,10 @@ const findExpertProfileByUserId = async (userId) => {
   });
 };
 
-// ✅ FIXED: create row in Expert table
 const createExpertProfile = async (data) => {
   return await Expert.create(data);
 };
 
-// ✅ FIXED: update the expert instance directly
 const updateExpertProfile = async (expert, data) => {
   return await expert.update(data);
 };
@@ -215,13 +210,13 @@ module.exports = {
   findRecommendedExperts,
   findOnlineExperts,
   bulkCreateSkills,
-  deleteSkillsByExpertId,     // ✅ NEW: used in user.controller saveProfile
-  findExpertsBySkillName,     // ✅ NEW
+  deleteSkillsByExpertId,
+  findExpertsBySkillName,
   searchExpertsBySkill,
   searchExpertsByHeadline,
   findExpertsBySkill,
-  findExpertProfileByUserId,  // ✅ now queries Expert table
-  createExpertProfile,        // ✅ now creates in Expert table
-  updateExpertProfile,        // ✅ now updates Expert instance
+  findExpertProfileByUserId,
+  createExpertProfile,
+  updateExpertProfile,
   deleteExpert,
 };

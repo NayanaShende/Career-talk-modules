@@ -63,6 +63,18 @@ router.get(
 );
 
 // ============================
+// ✅ NEW: UPDATE MY EXPERT PROFILE (Protected + Upload)
+// Called from edit profile screen to update language_spoken, certification etc.
+// Uses userId from JWT — no need to pass expert ID from frontend
+// ============================
+router.put(
+  "/profile/me",
+  protect,
+  uploadFields,
+  expertController.updateMyExpertProfile
+);
+
+// ============================
 // ADD SKILLS
 // ============================
 router.post("/:expertId/skills", expertController.addSkills);

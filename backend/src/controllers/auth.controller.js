@@ -1,9 +1,10 @@
 // src/controllers/auth.controller.js
 
 const authService = require("../services/auth.service");
-const { User } = require("../models");   
-const jwt = require("jsonwebtoken");     
-const { normalizeMobile } = require("../utils/normalizeMobile"); 
+const { User } = require("../models");
+const jwt = require("jsonwebtoken");
+const { normalizeMobile } = require("../utils/normalizeMobile");
+const uploadToCloudinary = require("../utils/cloudinaryUpload");
 
 // ---------------------------------------
 // SEND OTP
@@ -177,6 +178,29 @@ exports.setRole = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error",
+    });
+  }
+};
+
+
+exports.uploadProfileImage = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        message: "File required",
+      });
+    }
+
+    const result = await uploadToCloudinary(req.file.buffer);
+
+    return res.json({
+      success: true,
+      imageUrl: result.secure_url,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Upload failed",
     });
   }
 };
