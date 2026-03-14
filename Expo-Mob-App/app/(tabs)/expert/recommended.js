@@ -18,7 +18,7 @@ import { Ionicons } from "@expo/vector-icons";
 
 const BASE_URL = "http://192.168.1.19:3000";
 
-// ─── Design Tokens ────────────────────────────────────────────────────────────
+const BASE_URL = "http://192.168.1.15:3000";
 const GREEN = "#574964";
 const GREEN_DARK = "#574964";
 const GREEN_LIGHT = "#f5ecfe";

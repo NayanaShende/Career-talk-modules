@@ -12,6 +12,7 @@ import {
   Platform,
   StatusBar,
   Dimensions,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -115,20 +116,31 @@ export default function ChatScreen() {
         )}&background=2d6a5e&color=fff`;
 
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [userRole, setUserRole] = useState(null); // ✅ NEW: track role to skip billing for expert
   const [messages, setMessages] = useState([]);
   const [textMessage, setTextMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [isOnline, setIsOnline] = useState(false);
 
+  const [chatActive, setChatActive] = useState(false);
+  const [minutesUsed, setMinutesUsed] = useState(0);
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [expertDbId, setExpertDbId] = useState(null);
+
   const flatListRef = useRef(null);
   const socketRef = useRef(null);
+  const preauthDone = useRef(false);
+  const tickIntervalRef = useRef(null);
+  const minutesRef = useRef(0);
 
   useEffect(() => {
     AsyncStorage.getItem("user").then((str) => {
       if (str) {
         const u = JSON.parse(str);
         const uid = u?.id || u?.userId || u?.user?.id;
+        const role = (u?.role || u?.userType || "user").toLowerCase(); // ✅ NEW: read role
         setCurrentUserId(Number(uid));
+        setUserRole(role); // ✅ NEW: set role
       }
     });
   }, []);
@@ -136,6 +148,114 @@ export default function ChatScreen() {
   useEffect(() => {
     if (RECEIVER_ID) clearUnread(RECEIVER_ID);
   }, [RECEIVER_ID]);
+
+  const findExpertId = async () => {
+    try {
+      const expertRes = await API.get("/experts");
+      const allExperts = expertRes?.data?.data || [];
+      const expert = allExperts.find(
+        (e) => Number(e.userId) === Number(RECEIVER_ID)
+      );
+      const eId = expert ? expert.id : RECEIVER_ID;
+      console.log("✅ Expert found — Expert.id:", eId);
+      return eId;
+    } catch (e) {
+      console.log("findExpertId error:", e.message);
+      return RECEIVER_ID;
+    }
+  };
+
+  const startChatBilling = async (userId) => {
+    if (preauthDone.current) return;
+    preauthDone.current = true;
+
+    try {
+      const eId = await findExpertId();
+      setExpertDbId(eId);
+
+      const res = await API.post("/wallet/chat-start", {
+        userId: userId,
+        expertId: eId,
+      });
+
+      if (res?.data?.success) {
+        setChatActive(true);
+        setWalletBalance(res.data.balance);
+        console.log("✅ Chat billing started. Balance:", res.data.balance);
+        startTickTimer(userId, eId);
+      }
+    } catch (e) {
+      const err = e?.response?.data;
+      if (err?.error === "insufficient_balance") {
+        Alert.alert(
+          "Insufficient Balance",
+          err.message || `You need at least ₹50 to start chat.\nYour balance: ₹${err.balance?.toFixed(2) || 0}`,
+          [
+            { text: "Add Money", onPress: () => router.push("/(tabs)/wallet") },
+            { text: "Cancel", style: "cancel", onPress: () => router.back() },
+          ]
+        );
+      } else {
+        console.log("chatStart error:", e.message);
+      }
+    }
+  };
+
+  const startTickTimer = (userId, eId) => {
+    tickIntervalRef.current = setInterval(async () => {
+      try {
+        const res = await API.post("/wallet/chat-tick", {
+          userId: userId,
+          expertId: eId,
+        });
+
+        if (res?.data?.success) {
+          minutesRef.current += 1;
+          setMinutesUsed(minutesRef.current);
+          setWalletBalance(res.data.balance);
+          console.log("⏱️ Minute", minutesRef.current, "— Balance:", res.data.balance);
+        }
+      } catch (e) {
+        const err = e?.response?.data;
+        if (err?.error === "insufficient_balance") {
+          endChatBilling(userId, eId, true);
+        }
+        console.log("chatTick error:", e?.message);
+      }
+    }, 60000);
+  };
+
+  const endChatBilling = async (userId, eId, autoEnded = false) => {
+    if (tickIntervalRef.current) {
+      clearInterval(tickIntervalRef.current);
+      tickIntervalRef.current = null;
+    }
+
+    setChatActive(false);
+
+    try {
+      const res = await API.post("/wallet/chat-end", {
+        userId: userId,
+        expertId: eId || expertDbId,
+        minutesUsed: minutesRef.current,
+      });
+
+      if (res?.data?.success) {
+        const { totalCharged, released, duration } = res.data;
+        console.log("✅ Chat ended — charged: ₹" + totalCharged + ", released: ₹" + released);
+
+        if (autoEnded) {
+          Alert.alert(
+            "Chat Ended — Balance Empty",
+            `Duration: ${duration} min\nTotal charged: ₹${totalCharged}\n₹${released} released back to wallet.`,
+            [{ text: "OK", onPress: () => router.back() }]
+          );
+        }
+      }
+    } catch (e) {
+      console.log("chatEnd error:", e.message);
+    }
+  };
 
   const loadChats = async () => {
     if (!RECEIVER_ID || !currentUserId) return;
@@ -184,6 +304,11 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
     loadChats();
+    // ✅ UPDATED: Only start billing for users — experts earn, they don't pay
+    if (userRole !== "expert") {
+      startChatBilling(currentUserId);
+    }
+
     socketRef.current = io(BASE_URL, {
       transports: ["websocket"],
       reconnection: true,
@@ -210,8 +335,12 @@ export default function ChatScreen() {
       socketRef.current.off("connect");
       socketRef.current.off("disconnect");
       socketRef.current.disconnect();
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
     };
-  }, [currentUserId, RECEIVER_ID]);
+  }, [currentUserId, RECEIVER_ID, userRole]); // ✅ added userRole to deps
 
   // ── Render item ───────────────────────────────────────────────────────────
   const renderItem = ({ item }) => {
@@ -238,24 +367,12 @@ export default function ChatScreen() {
           <Image source={{ uri: expertAvatarUrl }} style={styles.msgAvatar} />
         )}
 
-        <View
+        <View style={[ styles.bubble, isUser ? styles.bubbleMine : styles.bubbleTheirs ]}>
           style={[styles.bubble, isUser ? styles.bubbleMe : styles.bubbleThem]}
-        >
-          <Text
-            style={[
-              styles.msgText,
               isUser ? styles.msgTextMe : styles.msgTextThem,
-            ]}
-          >
             {msgText}
           </Text>
           <View style={styles.metaRow}>
-            <Text
-              style={[
-                styles.timeText,
-                isUser ? styles.timeMine : styles.timeTheirs,
-              ]}
-            >
               {timeText}
             </Text>
             {isUser && (
@@ -290,10 +407,62 @@ export default function ChatScreen() {
       <StatusBar backgroundColor={TEAL} barStyle="light-content" />
 
       {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      {chatActive && (
+        <View style={styles.billingBar}>
+          <View style={styles.billingLeft}>
+            <Text style={styles.billingTimer}>⏱️ {minutesUsed} min</Text>
+            <Text style={styles.billingRate}>₹10/min</Text>
+          </View>
+          <Text style={styles.billingBalance}>₹{walletBalance.toFixed(2)}</Text>
+          <TouchableOpacity
+            style={styles.endChatBtn}
+            onPress={() => {
+              Alert.alert(
+                "End Chat?",
+                `Duration: ${minutesUsed} min\nCharged: ₹${minutesUsed * 10}\nRemaining hold will be released.`,
+                [
+                  {
+                    text: "End Chat",
+                    style: "destructive",
+                    onPress: () => {
+                      endChatBilling(currentUserId, expertDbId);
+                      router.back();
+                    },
+                  },
+                  { text: "Continue", style: "cancel" },
+                ]
+              );
+            }}>
+            <Text style={styles.endChatTxt}>End</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <View style={styles.header}>
         {/* Back */}
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity
           <Ionicons name="chevron-back" size={22} color={TEXT_1} />
+            if (chatActive) {
+              Alert.alert(
+                "End Chat?",
+                `Duration: ${minutesUsed} min\nCharged: ₹${minutesUsed * 10}`,
+                [
+                  {
+                    text: "End & Leave",
+                    style: "destructive",
+                    onPress: () => {
+                      endChatBilling(currentUserId, expertDbId);
+                      router.back();
+                    },
+                  },
+                  { text: "Stay", style: "cancel" },
+                ]
+              );
+            } else {
+              router.back();
+            }
+          }}
+          style={styles.backBtn}>
         </TouchableOpacity>
 
         {/* Avatar + online dot */}
@@ -308,13 +477,21 @@ export default function ChatScreen() {
               { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
             ]}
           />
-        </View>
-
+                },
+              });
+            } else {
+              // User clicking → show expert's profile
+              router.push({
+                pathname: `/expert/${RECEIVER_ID}`,
+              });
+            }
+          }}>
+          </View>
         {/* Name + status */}
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerName} numberOfLines={1}>
-            {expertName}
-          </Text>
+          <View style={styles.headerInfo}>
+            <Text style={styles.headerName} numberOfLines={1}>
+              {expertName}
+            </Text>
           <View style={styles.statusRow}>
             <View
               style={[
@@ -380,9 +557,6 @@ export default function ChatScreen() {
       </View>
 
       {/* ── INPUT BAR ──────────────────────────────────────────────────── */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
         <View style={styles.inputBar}>
           {/* Attachment */}
           <TouchableOpacity style={styles.attachBtn}>
@@ -408,13 +582,9 @@ export default function ChatScreen() {
 
           {/* Send */}
           <TouchableOpacity
-            style={[
-              styles.sendBtn,
-              !textMessage.trim() && styles.sendBtnDisabled,
-            ]}
+            style={[ styles.sendBtn, !textMessage.trim() && styles.sendBtnDisabled ]}
             onPress={handleSend}
-            disabled={!textMessage.trim()}
-          >
+            disabled={!textMessage.trim()}>
             <Ionicons
               name="send"
               size={17}
@@ -453,6 +623,18 @@ const styles = StyleSheet.create({
   },
 
   // ── Header ──
+  },
+  billingLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  billingTimer: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  billingRate: { color: "rgba(255,255,255,0.6)", fontSize: 11 },
+  billingBalance: { color: "#4ADE80", fontSize: 15, fontWeight: "800" },
+  endChatBtn: {
+    backgroundColor: "#ef4444",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+  },
+  endChatTxt: { color: "#fff", fontWeight: "700", fontSize: 13 },
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -476,7 +658,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#f4f5f7",
     justifyContent: "center",
     alignItems: "center",
-  },
   headerAvatarWrap: {
     position: "relative",
   },
@@ -540,7 +721,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: CHAT_BG,
   },
-  listContent: {
     paddingHorizontal: 14,
     paddingVertical: 14,
     paddingBottom: 10,
@@ -560,7 +740,6 @@ const styles = StyleSheet.create({
   },
   dateSepPill: {
     backgroundColor: "#e5e7eb",
-    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 20,
   },
@@ -575,18 +754,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 8,
     alignItems: "flex-end",
-  },
   rowRight: { justifyContent: "flex-end" },
   rowLeft: { justifyContent: "flex-start" },
-  msgAvatar: {
+  msgAvatar: { width: 30, height: 30, borderRadius: 15, marginRight: 6, marginBottom: 2 },
     width: 32,
     height: 32,
     borderRadius: 16,
     marginRight: 8,
-    marginBottom: 2,
     borderWidth: 1.5,
     borderColor: TEAL_LIGHT,
-  },
 
   // ── Bubble ──
   bubble: {
@@ -598,12 +774,10 @@ const styles = StyleSheet.create({
   },
   bubbleMe: {
     backgroundColor: BUBBLE_ME,
-    borderBottomRightRadius: 4,
     elevation: 1,
     shadowColor: TEAL,
     shadowOpacity: 0.2,
     shadowRadius: 4,
-  },
   bubbleThem: {
     backgroundColor: BUBBLE_THEM,
     borderBottomLeftRadius: 4,
@@ -689,17 +863,13 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     minHeight: 42,
   },
-  input: {
-    flex: 1,
-    fontSize: 15,
+  input: { flex: 1, fontSize: 15, color: "#1C1C1E", maxHeight: 100 },
     color: TEXT_1,
-    maxHeight: 100,
     fontWeight: "400",
   },
   micBtn: {
     marginLeft: 6,
     marginBottom: 1,
-  },
   sendBtn: {
     width: 40,
     height: 40,
@@ -711,5 +881,4 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor:TEAL,
-  },
 });

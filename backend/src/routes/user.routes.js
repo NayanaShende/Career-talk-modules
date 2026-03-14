@@ -23,6 +23,38 @@ router.get("/profile/:email", userController.getUserByEmail);
 // Update profile
 router.put("/profile", protect, uploadFields, userController.updateProfile);
 
+// ✅ NEW: Get user profile by ID — used by expert to view user profile in chat
+router.get("/view/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const db = require("../models");
+
+    const user = await db.User.findOne({
+      where: { id: Number(userId) },
+      attributes: [
+        "id",
+        "fullName",
+        "email",
+        "image",
+        "dob",
+        "qualification",
+        "experience",
+        "domain",
+        "gender",
+      ],
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+
+    res.json({ success: true, data: user });
+  } catch (e) {
+    console.error("getUserById error:", e.message);
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 /* ======================================
    ROLE SELECTION
 ====================================== */

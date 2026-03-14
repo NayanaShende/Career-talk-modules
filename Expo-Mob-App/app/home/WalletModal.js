@@ -47,6 +47,9 @@ export default function WalletModal({ visible, onClose }) {
   const [userId, setUserId] = useState(null);
   const [activeTab, setActiveTab] = useState("topup");
   const [userData, setUserData] = useState(null); // ✅ user name + image
+  // ✅ Transaction detail modal state
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [txDetailVisible, setTxDetailVisible] = useState(false);
 
   const isTabMode = visible === undefined;
 
@@ -324,6 +327,58 @@ export default function WalletModal({ visible, onClose }) {
 
   // ── Balance card ───────────────────────────────────────────────────────────
   const BalanceCard = () => (
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailRowLabel}>Type</Text>
+              <View
+                style={[styles.detailBadge, { backgroundColor: color + "20" }]}>
+                <Text style={[styles.detailBadgeText, { color: color }]}>
+                  {selectedTx.type.toUpperCase()}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailRowLabel}>Currency</Text>
+              <Text style={styles.detailRowValue}>
+                {selectedTx.currency || "INR"}
+              </Text>
+            </View>
+
+            <View style={styles.detailRow}>
+              <Text style={styles.detailRowLabel}>Status</Text>
+              <View
+                style={[styles.detailBadge, { backgroundColor: "#e8f5e9" }]}>
+                <Text style={[styles.detailBadgeText, { color: "#27ae60" }]}>
+                  COMPLETED
+                </Text>
+              </View>
+            </View>
+
+            <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+              <Text style={styles.detailRowLabel}>Transaction ID</Text>
+              <Text
+                style={[
+                  styles.detailRowValue,
+                  { fontSize: 10, color: "#aaa", maxWidth: "55%" },
+                ]}
+                numberOfLines={2}>
+                {selectedTx.id}
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.detailCloseBtn}
+            onPress={() => setTxDetailVisible(false)}>
+            <Text style={styles.detailCloseBtnText}>Close</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
+    );
+  };
+
     <View style={styles.balanceCard}>
       <View style={styles.balanceCardBg} />
       <View style={styles.balanceInner}>
@@ -356,6 +411,8 @@ export default function WalletModal({ visible, onClose }) {
           <Text style={styles.payingText}>
             Paying as{" "}
             <Text style={{ fontWeight: "800" }}>{getUserDisplayName()}</Text>
+              activeTab === "topup" && styles.tabTextActive,
+            ]}>
           </Text>
         </View>
       )}
@@ -373,7 +430,6 @@ export default function WalletModal({ visible, onClose }) {
           key={t.key}
           style={[styles.tabBtn, activeTab === t.key && styles.tabBtnActive]}
           onPress={() => setActiveTab(t.key)}
-        >
           <Ionicons
             name={t.icon}
             size={16}
@@ -451,6 +507,9 @@ export default function WalletModal({ visible, onClose }) {
 
       <TouchableOpacity
         style={[styles.addBtn, (!amount || loading) && styles.addBtnDisabled]}
+              styles.addBtn,
+              (!amount || loading) && styles.addBtnDisabled,
+            ]}
         onPress={handleAddMoney}
         disabled={!amount || loading}
       >
@@ -498,6 +557,11 @@ export default function WalletModal({ visible, onClose }) {
                 style={[styles.txIconWrap, { backgroundColor: color + "18" }]}
               >
                 <Ionicons name={icon} size={22} color={color} />
+                    setTxDetailVisible(true);
+                  }}
+                  activeOpacity={0.7}>
+                  <View
+                    style={[styles.txIcon, { backgroundColor: color + "20" }]}>
               </View>
               <View style={styles.txInfo}>
                 <Text style={styles.txLabel}>
@@ -507,6 +571,11 @@ export default function WalletModal({ visible, onClose }) {
                 {tx.ref_id && (
                   <Text style={styles.txRef} numberOfLines={1}>
                     Ref: {tx.ref_id}
+                      </Text>
+                    )}
+                    {tx.from_user_name && (
+                      <Text style={styles.txRef} numberOfLines={1}>
+                        From: {tx.from_user_name}
                   </Text>
                 )}
               </View>
@@ -528,6 +597,7 @@ export default function WalletModal({ visible, onClose }) {
                 </View>
               </View>
             </View>
+                </TouchableOpacity>
           );
         })
       )}
@@ -562,8 +632,7 @@ export default function WalletModal({ visible, onClose }) {
           </View>
           <TouchableOpacity
             style={styles.headerRefreshBtn}
-            onPress={() => userId && loadUserAndBalance()}
-          >
+            onPress={() => userId && loadUserAndBalance()}>
             <Ionicons name="refresh" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -573,6 +642,7 @@ export default function WalletModal({ visible, onClose }) {
         >
           <WalletContent />
         </ScrollView>
+        <TransactionDetailModal />
       </SafeAreaView>
     );
   }
@@ -583,15 +653,13 @@ export default function WalletModal({ visible, onClose }) {
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
       </Animated.View>
 
       <Animated.View
-        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
-      >
+        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHeader}>
           <View>
@@ -604,6 +672,8 @@ export default function WalletModal({ visible, onClose }) {
         </View>
         <WalletContent />
       </Animated.View>
+
+      <TransactionDetailModal />
     </Modal>
   );
 }
@@ -611,10 +681,7 @@ export default function WalletModal({ visible, onClose }) {
 // ── STYLES ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   // ── Tab mode ──
-  tabContainer: {
-    flex: 1,
     backgroundColor: PAGE_BG,
-  },
   tabHeader: {
     backgroundColor: GREEN_DARK,
     flexDirection: "row",
@@ -665,7 +732,6 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 30,
   },
-
   // ── Modal mode ──
   backdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -701,15 +767,10 @@ const styles = StyleSheet.create({
   },
   sheetHeaderTitle: {
     fontSize: 20,
-    fontWeight: "800",
     color: TEXT_1,
     letterSpacing: -0.2,
-  },
   sheetHeaderSub: {
-    fontSize: 12,
     color: TEXT_2,
-    marginTop: 2,
-  },
   closeBtn: {
     width: 34,
     height: 34,
@@ -1112,4 +1173,44 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "700",
   },
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  detailAmount: { fontSize: 32, fontWeight: "800", marginBottom: 4 },
+  detailType: { fontSize: 15, color: "#888", fontWeight: "500" },
+  detailBody: {
+    backgroundColor: "#f8f9ff",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e8eeff",
+  },
+  detailRowLabel: { fontSize: 13, color: "#888", fontWeight: "600" },
+  detailRowValue: {
+    fontSize: 13,
+    color: "#1a1a2e",
+    fontWeight: "700",
+    textAlign: "right",
+  },
+  detailBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  detailBadgeText: { fontSize: 11, fontWeight: "700" },
+  detailCloseBtn: {
+    backgroundColor: "#0B2D72",
+    borderRadius: 14,
+    height: 52,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  detailCloseBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

@@ -36,9 +36,6 @@ const SKILL_FILTERS = [
   "Flutter",
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  EXPERT DASHBOARD
-// ─────────────────────────────────────────────────────────────────────────────
 function ExpertDashboard({
   onlineExperts,
   loadingOnline,
@@ -65,10 +62,14 @@ function ExpertDashboard({
 
   const fetchTransactions = async () => {
     try {
-      const res = await axiosInstance.get("/expert/transactions");
+      const token = await AsyncStorage.getItem("token");
+      const res = await axiosInstance.get("/experts/my/transactions", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setTransactions(res?.data?.data || []);
     } catch (e) {
-      console.log(e);
+      console.log("fetchTransactions error:", e.message);
+      setTransactions([]);
     } finally {
       setLoadingTxn(false);
     }
@@ -76,20 +77,38 @@ function ExpertDashboard({
 
   const fetchChats = async () => {
     try {
-      const res = await axiosInstance.get("/expert/chats");
+      const token = await AsyncStorage.getItem("token");
+      const res = await axiosInstance.get("/experts/my/chats", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       setChats(res?.data?.data || []);
     } catch (e) {
-      console.log(e);
+      console.log("fetchChats error:", e.message);
+      setChats([]);
     } finally {
       setLoadingChats(false);
     }
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getUserImageUri = (image, name) => {
+    if (image) return `${BASE_URL}/uploads/${image}`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=0B2D72&color=fff&size=80`;
+  };
+
   const ExpertCard = ({ e }) => (
     <Pressable
       style={styles.skillExpertCard}
-      onPress={() => router.push(`/expert/${e.id}`)}
-    >
+      onPress={() => router.push(`/expert/${e.id}`)}>
       {e.image ? (
         <Image
           source={{ uri: getImageUri(e.image, e.name) }}
@@ -100,11 +119,9 @@ function ExpertDashboard({
           <Text style={styles.expertInitialText}>{getInitials(e.name)}</Text>
         </View>
       )}
-
       <Text style={styles.expertCardName} numberOfLines={1}>
         {e.name}
       </Text>
-
       <View style={styles.starRow}>
         {[1, 2, 3, 4, 5].map((s) => (
           <Ionicons
@@ -115,11 +132,9 @@ function ExpertDashboard({
           />
         ))}
       </View>
-
       <Text style={styles.expText}>
         {e.experience > 0 ? `${e.experience} yrs exp` : "New"}
       </Text>
-
       <View style={styles.skillChipsRow}>
         {getSkillChips(e).map((skill, idx) => (
           <View key={idx} style={styles.expertSkillBadge}>
@@ -127,7 +142,6 @@ function ExpertDashboard({
           </View>
         ))}
       </View>
-
       <View style={styles.expertCardFooter}>
         <Text style={styles.viewProfileText}>View Profile</Text>
         <Ionicons name="chevron-forward" size={12} color="#1a1a2e" />
@@ -137,7 +151,6 @@ function ExpertDashboard({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.avatarCircle}>
           <Text style={styles.avatarInitial}>CT</Text>
@@ -150,19 +163,16 @@ function ExpertDashboard({
         </View>
       </View>
 
-      {/* SEARCH */}
       <Pressable
         style={styles.searchBar}
-        onPress={() => router.push("/expert/search")}
-      >
-        <Ionicons name="search-outline" size={18} color="#AAAAAA" />
+        onPress={() => router.push("/expert/search")}>
+        <Ionicons name="search" size={20} color="#C4C4C4" />
         <Text style={styles.searchText}>
           Search mentors, skills, careers...
         </Text>
       </Pressable>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* BANNER */}
         <View style={styles.promoBanner}>
           <View style={styles.promoTextContainer}>
             <Text style={styles.promoTitle}>
@@ -179,25 +189,23 @@ function ExpertDashboard({
           />
         </View>
 
-        {/* LIVE EXPERTS */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
             <Text style={styles.sectionTitle}>Live Experts</Text>
             <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
+            <View style={styles.liveDot} />
               <Text style={styles.liveIndicatorText}>Live</Text>
             </View>
           </View>
         </View>
 
         {loadingOnline ? (
-          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
+          <ActivityIndicator color="#0B2D72" />
         ) : (
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.liveScrollContainer}
-          >
+            contentContainerStyle={styles.liveScrollContainer}>
             {onlineExperts.map((e) => (
               <LiveExpert
                 key={e.id}
@@ -210,7 +218,6 @@ function ExpertDashboard({
           </ScrollView>
         )}
 
-        {/* BROWSE BY SKILL */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
         </View>
@@ -218,8 +225,7 @@ function ExpertDashboard({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}
-        >
+          contentContainerStyle={styles.filterList}>
           {SKILL_FILTERS.map((skill) => (
             <TouchableOpacity
               key={skill}
@@ -228,8 +234,8 @@ function ExpertDashboard({
                 activeSkillFilter === skill && styles.filterChipActive,
               ]}
               onPress={() => setActiveSkillFilter(skill)}
-            >
               <Text
+                style={[
                 style={[
                   styles.filterChipText,
                   activeSkillFilter === skill && styles.filterChipTextActive,
@@ -247,15 +253,13 @@ function ExpertDashboard({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}
-          >
+            contentContainerStyle={styles.expertBySkillList}>
             {skillFilteredExperts.map((e) => (
               <ExpertCard key={e.id} e={e} />
             ))}
           </ScrollView>
         )}
 
-        {/* TOP EXPERTS */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>🔥 Top Experts</Text>
         </View>
@@ -263,19 +267,11 @@ function ExpertDashboard({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContainer}
-        >
+          contentContainerStyle={styles.scrollContainer}>
           {filteredExperts.map((e) => (
             <ExpertCard key={e.id} e={e} />
           ))}
         </ScrollView>
-
-        {/* CHAT HISTORY */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Your Chats</Text>
-        </View>
-
-        {loadingChats ? (
           <ActivityIndicator />
         ) : (
           chats.map((c) => (
@@ -285,13 +281,6 @@ function ExpertDashboard({
             </View>
           ))
         )}
-
-        {/* TRANSACTION HISTORY */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Transaction History</Text>
-        </View>
-
-        {loadingTxn ? (
           <ActivityIndicator />
         ) : (
           transactions.map((t) => (
@@ -314,9 +303,7 @@ function ExpertDashboard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
 //  JOBSEEKER DASHBOARD
-// ─────────────────────────────────────────────────────────────────────────────
 function JobseekerDashboard({
   onlineExperts,
   topExperts,
@@ -341,8 +328,6 @@ function JobseekerDashboard({
         styles.skillExpertCard,
         isFeatured && styles.skillExpertCardFeatured,
       ]}
-      onPress={() => router.push(`/expert/${e.id}`)}
-    >
       {isFeatured && (
         <View style={styles.topBadge}>
           <Ionicons name="star" size={11} color="#B8860B" />
@@ -397,7 +382,6 @@ function JobseekerDashboard({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.avatarCircle}>
           <Text style={styles.avatarInitial}>CT</Text>
@@ -410,11 +394,9 @@ function JobseekerDashboard({
         </View>
       </View>
 
-      {/* SEARCH */}
       <Pressable
         style={styles.searchBar}
-        onPress={() => router.push("/expert/search")}
-      >
+        onPress={() => router.push("/expert/search")}>
         <Ionicons name="search-outline" size={18} color="#AAAAAA" />
         <Text style={styles.searchText}>
           Search mentors, skills, careers...
@@ -423,9 +405,7 @@ function JobseekerDashboard({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
-      >
-        {/* BANNER */}
+        contentContainerStyle={{ paddingBottom: 40 }}>
         <View style={styles.promoBanner}>
           <View style={styles.promoTextContainer}>
             <Text style={styles.promoTitle}>
@@ -442,7 +422,6 @@ function JobseekerDashboard({
           />
         </View>
 
-        {/* LIVE EXPERTS */}
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleRow}>
             <Text style={styles.sectionTitle}>Live Experts</Text>
@@ -460,8 +439,7 @@ function JobseekerDashboard({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.liveScrollContainer}
-          >
+            contentContainerStyle={styles.liveScrollContainer}>
             {onlineExperts.map((e) => (
               <LiveExpert
                 key={e.id}
@@ -474,7 +452,6 @@ function JobseekerDashboard({
           </ScrollView>
         )}
 
-        {/* BROWSE BY SKILL */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
           <TouchableOpacity onPress={() => router.push("/expert/recommended")}>
@@ -484,8 +461,7 @@ function JobseekerDashboard({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}
-        >
+          contentContainerStyle={styles.filterList}>
           {SKILL_FILTERS.map((skill) => (
             <TouchableOpacity
               key={skill}
@@ -493,14 +469,12 @@ function JobseekerDashboard({
                 styles.filterChip,
                 activeSkillFilter === skill && styles.filterChipActive,
               ]}
-              onPress={() => setActiveSkillFilter(skill)}
-            >
+              onPress={() => setActiveSkillFilter(skill)}>
               <Text
                 style={[
                   styles.filterChipText,
                   activeSkillFilter === skill && styles.filterChipTextActive,
-                ]}
-              >
+                ]}>
                 {skill}
               </Text>
             </TouchableOpacity>
@@ -516,15 +490,13 @@ function JobseekerDashboard({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}
-          >
+            contentContainerStyle={styles.expertBySkillList}>
             {skillFilteredExperts.map((e, idx) => (
               <ExpertCard key={e.id} e={e} isFeatured={idx === 0} />
             ))}
           </ScrollView>
         )}
 
-        {/* TOP EXPERT BY SKILL */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>🔥 Top Expert by Skill</Text>
           <TouchableOpacity onPress={() => router.push("/expert/recommended")}>
@@ -612,9 +584,6 @@ function JobseekerDashboard({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  LIVE EXPERT CARD (shared)
-// ─────────────────────────────────────────────────────────────────────────────
 const LiveExpert = ({ name, title, image, onPress }) => (
   <Pressable style={styles.liveCard} onPress={onPress}>
     <Image
@@ -633,20 +602,15 @@ const LiveExpert = ({ name, title, image, onPress }) => (
   </Pressable>
 );
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  MAIN EXPORT — role switcher + shared data fetching + socket
-// ─────────────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  // ── shared state ──
+  const [userRole, setUserRole] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [userData, setUserData] = useState(null);
   const [checking, setChecking] = useState(true);
-
   const [onlineExperts, setOnlineExperts] = useState([]);
   const [loadingOnline, setLoadingOnline] = useState(true);
   const [topExperts, setTopExperts] = useState([]);
   const [loadingTop, setLoadingTop] = useState(true);
-
   const [activeSkillFilter, setActiveSkillFilter] = useState("All");
   const [skillFilteredExperts, setSkillFilteredExperts] = useState([]);
   const [loadingSkillFilter, setLoadingSkillFilter] = useState(false);
@@ -657,7 +621,6 @@ export default function Dashboard() {
   const expertIdRef = useRef(null);
   const socketInitialized = useRef(false);
 
-  // ── helpers (shared by both dashboards) ──
   const getInitials = (name) => {
     if (!name) return "EX";
     const parts = name.trim().split(" ");
@@ -686,7 +649,6 @@ export default function Dashboard() {
     return expert.domain ? [expert.domain] : [];
   };
 
-  // ── data fetchers ──
   const fetchOnlineExperts = async () => {
     try {
       setLoadingOnline(true);
@@ -768,7 +730,6 @@ export default function Dashboard() {
     }
   };
 
-  // ── on mount: load user role + socket + shared data ──
   useEffect(() => {
     const init = async () => {
       try {
@@ -784,7 +745,6 @@ export default function Dashboard() {
       }
     };
     init();
-
     fetchTopExperts();
     fetchFilteredExperts("All");
 
@@ -833,7 +793,7 @@ export default function Dashboard() {
 
         socketRef.current.on("connect_error", () => fetchOnlineExperts());
         socketRef.current.io.on("reconnect_failed", () =>
-          console.log("⛔ Socket gave up"),
+          console.log("\u26d4 Socket gave up"),
         );
       } catch (err) {
         fetchOnlineExperts();
@@ -857,7 +817,6 @@ export default function Dashboard() {
     fetchExpertsBySkillFilter(activeSkillFilter);
   }, [activeSkillFilter]);
 
-  // ── loading screen ──
   if (checking) {
     return (
       <View
@@ -866,14 +825,12 @@ export default function Dashboard() {
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: "#fff",
-        }}
-      >
+        }}>
         <ActivityIndicator size="large" color={TEAL} />
       </View>
     );
   }
 
-  // ── shared props passed to both dashboards ──
   const sharedProps = {
     onlineExperts,
     topExperts,
@@ -885,7 +842,6 @@ export default function Dashboard() {
     getSkillChips,
   };
 
-  // ✅ ROLE SWITCH
   if (userRole === "expert") {
     return (
       <ExpertDashboard
@@ -912,9 +868,6 @@ export default function Dashboard() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  STYLES
-// ─────────────────────────────────────────────────────────────────────────────
 const TEAL = "#574964";
 const TEAL_LIGHT = "#efddff";
 const TEAL_TEXT = "#574964";
@@ -929,8 +882,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: PAGE_BG,
   },
-
-  // ── Header ──
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -990,8 +941,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "500",
   },
-
-  // ── Section Headers ──
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1021,8 +970,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: TEAL,
   },
-
-  // ── Live Indicator ──
   liveIndicator: {
     flexDirection: "row",
     alignItems: "center",
@@ -1043,8 +990,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
-
-  // ── Live Card ──
   liveScrollContainer: {
     paddingLeft: 18,
     paddingBottom: 8,
@@ -1086,11 +1031,39 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
   liveOverlay: {
-    position: "absolute",
-    bottom: 0,
-    width: "100%",
-    padding: 8,
-    backgroundColor: "rgba(0,0,0,0.45)",
+  chatItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#f0f0f0",
+  },
+  chatItemAvatar: { width: 44, height: 44, borderRadius: 22 },
+  chatItemName: { fontSize: 14, fontWeight: "700", color: "#111827" },
+  chatItemDate: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
+  chatItemAmount: { fontSize: 14, fontWeight: "700", color: "#0FA688" },
+  txnItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#f0f0f0",
+  },
+  txnItemAvatar: { width: 44, height: 44, borderRadius: 22 },
+  txnItemName: { fontSize: 14, fontWeight: "700", color: "#111827" },
+  txnTypeBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  txnTypeText: { fontSize: 10, fontWeight: "700" },
+  txnItemDate: { fontSize: 11, color: "#9CA3AF" },
+  txnItemAmount: { fontSize: 16, fontWeight: "800", color: "#0FA688" },
   },
   liveName: {
     color: "#fff",
@@ -1102,7 +1075,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 1,
   },
-
   // ── Skill Filter Chips ──
   filterList: {
     paddingLeft: 18,
@@ -1157,10 +1129,7 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
     alignItems: "center",
   },
-  skillExpertCardFeatured: {
-    borderColor: "#f2e9fb",
-    borderWidth: 1.5,
-  },
+  sectionTitle: { fontSize: 22, fontWeight: "700", color: "rgb(90, 91, 93)" },
   topBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -1307,18 +1276,13 @@ const styles = StyleSheet.create({
     gap: 5,
     marginBottom: 10,
   },
-  recTag: {
     backgroundColor: TEAL_LIGHT,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 50,
   },
-  recTagText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: TEAL_TEXT,
-  },
-  recFooter: {
+  statNumber: { fontSize: 22, fontWeight: "700", color: "#0FA688" },
+  statLabel: { fontSize: 12, color: "#777", marginTop: 4 },
     borderTopWidth: 1,
     borderTopColor: "#F0F0F3",
     paddingTop: 8,
@@ -1326,15 +1290,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
-  },
-  recViewText: {
-    fontSize: 12,
-    fontWeight: "700",
+  tabBtn: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20 },
+  tabActive: { backgroundColor: "#0FA688" },
+  tabText: { color: "#777" },
+  tabTextActive: { color: "#fff", fontWeight: "700" },
     color: TEXT_PRIMARY,
-  },
-
-  // ── Chat Row ──
-  chatRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -1343,39 +1303,23 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
     backgroundColor: CARD_BG,
-  },
-  chatName: {
-    fontSize: 14,
-    fontWeight: "700",
     color: TEXT_PRIMARY,
   },
   chatTime: {
     fontSize: 11,
     color: TEXT_MUTED,
-  },
-
   // ── Transaction Row ──
-  txnRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 18,
     paddingVertical: 14,
-    borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
     backgroundColor: CARD_BG,
-  },
-  txnUser: {
     fontSize: 14,
     fontWeight: "700",
     color: TEXT_PRIMARY,
-  },
-  txnDate: {
     fontSize: 11,
     color: TEXT_MUTED,
     marginTop: 2,
-  },
-  txnAmount: {
     fontSize: 16,
     fontWeight: "800",
     color: TEAL,
@@ -1418,7 +1362,6 @@ const styles = StyleSheet.create({
   askExpertBtnText: {
     color: "#fff",
     fontSize: 13,
-    fontWeight: "700",
   },
   promoImage: {
     width: 130,
@@ -1433,5 +1376,4 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     fontSize: 14,
     paddingHorizontal: 18,
-  },
 });
