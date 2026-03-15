@@ -77,6 +77,7 @@ const getExpertsBySkill = async (skill) => {
 // ✅ FIXED: saves skills from comma-separated string OR array in profileData.skills
 // ✅ FIXED: map both "certification" AND "certifications" so either works
 // ✅ FIXED: language_spoken now also checks profileData.languages
+// ✅ FIXED: gender now saved to Experts table
 const createExpertProfile = async (
   userId,
   profileData,
@@ -85,26 +86,31 @@ const createExpertProfile = async (
   certificateFile,
 ) => {
   const data = {
-    name:               profileData.fullName        || profileData.name        || null,
-    email:              profileData.email            || null,
-    bio:                profileData.bio              || null,
-    experience:         profileData.experience       || null,
-    domain:             profileData.domain           || null,
-    certification:      profileData.certification    || profileData.certifications || null,
-    location:           profileData.location         || null,
-    language_spoken:    profileData.language_spoken  || profileData.languages    || null,
-    qualification:      profileData.qualification    || null,
-    cv:                 cvFile        ? cvFile.filename        : null,
-    image:              imageFile     ? imageFile.filename     : null,
-    certificate_file:   certificateFile ? certificateFile.filename : null,
+    name: profileData.fullName || profileData.name || null,
+    email: profileData.email || null,
+    bio: profileData.bio || null,
+    experience: profileData.experience || null,
+    domain: profileData.domain || null,
+    certification:
+      profileData.certification || profileData.certifications || null,
+    location: profileData.location || null,
+    language_spoken:
+      profileData.language_spoken || profileData.languages || null,
+    qualification: profileData.qualification || null,
+    cv: cvFile ? cvFile.filename : null,
+    image: imageFile ? imageFile.filename : null,
+    certificate_file: certificateFile ? certificateFile.filename : null,
     certificate_domain: profileData.certificateDomain || null,
-    is_online:          true,
-    isVerified:         true,
+    is_online: true,
+    isVerified: true,
     verificationStatus: "approved",
+    // ✅ FIXED: gender added — was missing, causing null in Experts table
+    gender: profileData.gender || null,
     userId,
   };
 
   console.log("📝 createExpertProfile — data to save:", JSON.stringify(data));
+  console.log("👤 Gender being saved to Experts table:", data.gender); // ✅ debug log
 
   let profile = await expertRepo.findExpertProfileByUserId(userId);
   if (profile) {
@@ -117,7 +123,10 @@ const createExpertProfile = async (
   const skillsRaw = profileData.skills || "";
   const skillsArray = Array.isArray(skillsRaw)
     ? skillsRaw
-    : skillsRaw.split(",").map((s) => s.trim()).filter(Boolean);
+    : skillsRaw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
 
   if (skillsArray.length > 0 && profile?.id) {
     await expertRepo.deleteSkillsByExpertId(profile.id);

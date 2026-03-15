@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://192.168.1.6:3000";
 
 const SKILL_OPTIONS = [
   "React",
@@ -100,51 +100,99 @@ const DOMAIN_CERTIFICATE_GUIDE = {
     "Upload any official certificate, degree, or document that proves your expertise in your domain (PDF or image).",
 };
 
-// ─── Reusable dropdown ────────────────────────────────────────────────────────
-function DropdownPicker({ label, value, options, onChange }) {
+// ─── Tokens ───────────────────────────────────────────────────────────────────
+const BLUE = "rgb(113, 149, 255)";
+const BLUE_L = "#d6e0f4";
+const BLUE_D = "#rgb(144, 169, 253)";
+const GREEN = "#16A34A";
+const GREEN_L = "#F0FDF4";
+const RED = "#DC2626";
+const RED_L = "#FFF5F5";
+const WHITE = "#FFFFFF";
+const BG = "#F8F9FB";
+const CARD = "#FFFFFF";
+const INK = "#111827";
+const MUTED = "#313439";
+const BORDER = "#E5E7EB";
+const EXPERT_ACCENT = "#rgb(113, 149, 255)";
+const EXPERT_L = "#rgb(235, 237, 244)";
+
+// ─── Section wrapper ──────────────────────────────────────────────────────────
+function Section({ title, icon, children }) {
+  return (
+    <View style={s.section}>
+      <View style={s.sectionHeader}>
+        <Text style={s.sectionIcon}>{icon}</Text>
+        <Text style={s.sectionTitle}>{title}</Text>
+      </View>
+      {children}
+    </View>
+  );
+}
+
+// ─── Field label ──────────────────────────────────────────────────────────────
+function Label({ text, required }) {
+  return (
+    <Text style={s.label}>
+      {text}
+      {required && <Text style={{ color: RED }}> *</Text>}
+    </Text>
+  );
+}
+
+// ─── Field error ──────────────────────────────────────────────────────────────
+function FieldError({ message }) {
+  if (!message) return null;
+  return (
+    <View style={s.errRow}>
+      <Ionicons name="alert-circle" size={12} color={RED} />
+      <Text style={s.errText}>{message}</Text>
+    </View>
+  );
+}
+
+// ─── Dropdown ─────────────────────────────────────────────────────────────────
+function DropdownPicker({ label, value, options, onChange, error }) {
   const [visible, setVisible] = useState(false);
   const selected = options.find((o) => o.value === value);
   return (
     <>
       <TouchableOpacity
-        style={styles.dropdownBox}
+        style={[s.input, s.row, error && s.inputErr]}
         onPress={() => setVisible(true)}
       >
-        <Text style={{ color: selected ? "#000" : "#777", fontSize: 15 }}>
+        <Text style={{ color: selected ? INK : MUTED, fontSize: 15, flex: 1 }}>
           {selected ? selected.label : label}
         </Text>
-        <Text style={{ color: "#777" }}>▼</Text>
+        <Ionicons name="chevron-down" size={18} color={MUTED} />
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={s.mOverlay}
           onPress={() => setVisible(false)}
         />
-        <View style={styles.modalBox}>
-          <Text style={styles.modalTitle}>{label}</Text>
+        <View style={s.mSheet}>
+          <View style={s.mHandle} />
+          <Text style={s.mTitle}>{label}</Text>
           <FlatList
             data={options}
             keyExtractor={(item) => item.value}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={[
-                  styles.modalItem,
-                  item.value === value && styles.modalItemSelected,
-                ]}
+                style={[s.mRow, item.value === value && s.mRowActive]}
                 onPress={() => {
                   onChange(item.value);
                   setVisible(false);
                 }}
               >
                 <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: item.value === value ? "700" : "400",
-                    color: item.value === value ? "#0B2D72" : "#333",
-                  }}
+                  style={[s.mRowText, item.value === value && s.mRowTextActive]}
                 >
                   {item.label}
                 </Text>
+                {item.value === value && (
+                  <Ionicons name="checkmark-circle" size={18} color={BLUE} />
+                )}
               </TouchableOpacity>
             )}
           />
@@ -158,26 +206,20 @@ function DropdownPicker({ label, value, options, onChange }) {
 function SkillsPicker({ selectedSkills, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customSkill, setCustomSkill] = useState("");
-
-  const toggleSkill = (skill) => {
+  const toggle = (skill) => {
     if (selectedSkills.includes(skill)) {
       onChange(selectedSkills.filter((s) => s !== skill));
-    } else {
-      if (selectedSkills.length >= 5) {
-        Alert.alert("Max 5 skills");
-        return;
-      }
-      onChange([...selectedSkills, skill]);
-    }
-  };
-
-  const addCustom = () => {
-    const t = customSkill.trim();
-    if (!t) return;
-    if (selectedSkills.includes(t)) {
-      Alert.alert("Already added");
       return;
     }
+    if (selectedSkills.length >= 5) {
+      Alert.alert("Max 5 skills");
+      return;
+    }
+    onChange([...selectedSkills, skill]);
+  };
+  const addCustom = () => {
+    const t = customSkill.trim();
+    if (!t || selectedSkills.includes(t)) return;
     if (selectedSkills.length >= 5) {
       Alert.alert("Max 5 skills");
       return;
@@ -185,115 +227,81 @@ function SkillsPicker({ selectedSkills, onChange }) {
     onChange([...selectedSkills, t]);
     setCustomSkill("");
   };
-
   return (
     <>
-      <View style={styles.selectedSkillsContainer}>
+      <View style={s.chipWrap}>
         {selectedSkills.length === 0 ? (
-          <Text style={{ color: "#777", fontSize: 13 }}>
-            No skills selected
+          <Text style={{ color: MUTED, fontSize: 13 }}>
+            No skills selected yet
           </Text>
         ) : (
-          selectedSkills.map((skill) => (
+          selectedSkills.map((sk) => (
             <TouchableOpacity
-              key={skill}
-              style={styles.skillChip}
-              onPress={() => toggleSkill(skill)}
+              key={sk}
+              style={s.chip}
+              onPress={() => toggle(sk)}
             >
-              <Text style={styles.skillChipText}>{skill}</Text>
+              <Text style={s.chipText}>{sk}</Text>
               <Ionicons
                 name="close"
-                size={14}
-                color="#fff"
+                size={12}
+                color={WHITE}
                 style={{ marginLeft: 4 }}
               />
             </TouchableOpacity>
           ))
         )}
       </View>
-      <TouchableOpacity
-        style={styles.addSkillsBtn}
-        onPress={() => setVisible(true)}
-      >
-        <Ionicons name="add-circle-outline" size={18} color="#0B2D72" />
-        <Text style={styles.addSkillsBtnText}>
+      <TouchableOpacity style={s.dashedBtn} onPress={() => setVisible(true)}>
+        <Ionicons name="add-circle-outline" size={17} color={BLUE} />
+        <Text style={s.dashedBtnText}>
           {selectedSkills.length === 0 ? "Add Skills" : "Edit Skills"} (max 5)
         </Text>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={s.mOverlay}
           onPress={() => setVisible(false)}
         />
-        <View style={[styles.modalBox, { maxHeight: "70%" }]}>
-          <Text style={styles.modalTitle}>Select Skills (max 5)</Text>
-          <Text
-            style={{
-              color: "#888",
-              textAlign: "center",
-              marginBottom: 10,
-              fontSize: 13,
-            }}
-          >
-            {selectedSkills.length}/5 selected
-          </Text>
-          <View style={styles.customSkillRow}>
+        <View style={[s.mSheet, { maxHeight: "72%" }]}>
+          <View style={s.mHandle} />
+          <Text style={s.mTitle}>Select Skills</Text>
+          <Text style={s.mMeta}>{selectedSkills.length}/5 selected</Text>
+          <View style={s.customRow}>
             <TextInput
-              style={styles.customSkillInput}
-              placeholder="Add custom skill..."
+              style={s.customInput}
+              placeholder="Add custom skill…"
               value={customSkill}
               onChangeText={setCustomSkill}
             />
-            <TouchableOpacity
-              style={styles.customSkillAddBtn}
-              onPress={addCustom}
-            >
-              <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
+            <TouchableOpacity style={s.customAddBtn} onPress={addCustom}>
+              <Text style={{ color: WHITE, fontWeight: "700", fontSize: 13 }}>
+                Add
+              </Text>
             </TouchableOpacity>
           </View>
           <FlatList
             data={SKILL_OPTIONS}
             keyExtractor={(item) => item}
             renderItem={({ item }) => {
-              const isSel = selectedSkills.includes(item);
+              const sel = selectedSkills.includes(item);
               return (
                 <TouchableOpacity
-                  style={[styles.modalItem, isSel && styles.modalItemSelected]}
-                  onPress={() => toggleSkill(item)}
+                  style={[s.mRow, sel && s.mRowActive]}
+                  onPress={() => toggle(item)}
                 >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        color: isSel ? "#0B2D72" : "#333",
-                        fontWeight: isSel ? "700" : "400",
-                      }}
-                    >
-                      {item}
-                    </Text>
-                    {isSel && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color="#0B2D72"
-                      />
-                    )}
-                  </View>
+                  <Text style={[s.mRowText, sel && s.mRowTextActive]}>
+                    {item}
+                  </Text>
+                  {sel && (
+                    <Ionicons name="checkmark-circle" size={18} color={BLUE} />
+                  )}
                 </TouchableOpacity>
               );
             }}
           />
-          <TouchableOpacity
-            style={[styles.submitBtn, { marginTop: 10 }]}
-            onPress={() => setVisible(false)}
-          >
-            <Text style={styles.submitText}>Done</Text>
+          <TouchableOpacity style={s.doneBtn} onPress={() => setVisible(false)}>
+            <Text style={s.doneBtnText}>Done</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -305,26 +313,20 @@ function SkillsPicker({ selectedSkills, onChange }) {
 function LanguagesPicker({ selectedLanguages, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customLang, setCustomLang] = useState("");
-
   const toggle = (lang) => {
     if (selectedLanguages.includes(lang)) {
       onChange(selectedLanguages.filter((l) => l !== lang));
-    } else {
-      if (selectedLanguages.length >= 5) {
-        Alert.alert("Max 5 languages");
-        return;
-      }
-      onChange([...selectedLanguages, lang]);
-    }
-  };
-
-  const addCustom = () => {
-    const t = customLang.trim();
-    if (!t) return;
-    if (selectedLanguages.includes(t)) {
-      Alert.alert("Already added");
       return;
     }
+    if (selectedLanguages.length >= 5) {
+      Alert.alert("Max 5 languages");
+      return;
+    }
+    onChange([...selectedLanguages, lang]);
+  };
+  const addCustom = () => {
+    const t = customLang.trim();
+    if (!t || selectedLanguages.includes(t)) return;
     if (selectedLanguages.length >= 5) {
       Alert.alert("Max 5 languages");
       return;
@@ -332,26 +334,25 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
     onChange([...selectedLanguages, t]);
     setCustomLang("");
   };
-
   return (
     <>
-      <View style={styles.selectedSkillsContainer}>
+      <View style={s.chipWrap}>
         {selectedLanguages.length === 0 ? (
-          <Text style={{ color: "#777", fontSize: 13 }}>
-            No languages selected
+          <Text style={{ color: MUTED, fontSize: 13 }}>
+            No languages selected yet
           </Text>
         ) : (
           selectedLanguages.map((lang) => (
             <TouchableOpacity
               key={lang}
-              style={styles.skillChip}
+              style={[s.chip, { backgroundColor: EXPERT_ACCENT }]}
               onPress={() => toggle(lang)}
             >
-              <Text style={styles.skillChipText}>{lang}</Text>
+              <Text style={s.chipText}>{lang}</Text>
               <Ionicons
                 name="close"
-                size={14}
-                color="#fff"
+                size={12}
+                color={WHITE}
                 style={{ marginLeft: 4 }}
               />
             </TouchableOpacity>
@@ -359,89 +360,74 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
         )}
       </View>
       <TouchableOpacity
-        style={styles.addSkillsBtn}
+        style={[s.dashedBtn, { borderColor: EXPERT_ACCENT }]}
         onPress={() => setVisible(true)}
       >
-        <Ionicons name="add-circle-outline" size={18} color="#0B2D72" />
-        <Text style={styles.addSkillsBtnText}>
+        <Ionicons name="add-circle-outline" size={17} color={EXPERT_ACCENT} />
+        <Text style={[s.dashedBtnText, { color: EXPERT_ACCENT }]}>
           {selectedLanguages.length === 0 ? "Add Languages" : "Edit Languages"}{" "}
           (max 5)
         </Text>
       </TouchableOpacity>
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={s.mOverlay}
           onPress={() => setVisible(false)}
         />
-        <View style={[styles.modalBox, { maxHeight: "70%" }]}>
-          <Text style={styles.modalTitle}>Select Languages (max 5)</Text>
-          <Text
-            style={{
-              color: "#888",
-              textAlign: "center",
-              marginBottom: 10,
-              fontSize: 13,
-            }}
-          >
-            {selectedLanguages.length}/5 selected
-          </Text>
-          <View style={styles.customSkillRow}>
+        <View style={[s.mSheet, { maxHeight: "72%" }]}>
+          <View style={s.mHandle} />
+          <Text style={s.mTitle}>Select Languages</Text>
+          <Text style={s.mMeta}>{selectedLanguages.length}/5 selected</Text>
+          <View style={s.customRow}>
             <TextInput
-              style={styles.customSkillInput}
-              placeholder="Add custom language..."
+              style={s.customInput}
+              placeholder="Add custom language…"
               value={customLang}
               onChangeText={setCustomLang}
             />
             <TouchableOpacity
-              style={styles.customSkillAddBtn}
+              style={[s.customAddBtn, { backgroundColor: EXPERT_ACCENT }]}
               onPress={addCustom}
             >
-              <Text style={{ color: "#fff", fontWeight: "700" }}>Add</Text>
+              <Text style={{ color: WHITE, fontWeight: "700", fontSize: 13 }}>
+                Add
+              </Text>
             </TouchableOpacity>
           </View>
           <FlatList
             data={LANGUAGE_OPTIONS}
             keyExtractor={(item) => item}
             renderItem={({ item }) => {
-              const isSel = selectedLanguages.includes(item);
+              const sel = selectedLanguages.includes(item);
               return (
                 <TouchableOpacity
-                  style={[styles.modalItem, isSel && styles.modalItemSelected]}
+                  style={[s.mRow, sel && { backgroundColor: EXPERT_L }]}
                   onPress={() => toggle(item)}
                 >
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                    }}
+                  <Text
+                    style={[
+                      s.mRowText,
+                      sel && { color: EXPERT_ACCENT, fontWeight: "700" },
+                    ]}
                   >
-                    <Text
-                      style={{
-                        fontSize: 16,
-                        color: isSel ? "#0B2D72" : "#333",
-                        fontWeight: isSel ? "700" : "400",
-                      }}
-                    >
-                      {item}
-                    </Text>
-                    {isSel && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={20}
-                        color="#0B2D72"
-                      />
-                    )}
-                  </View>
+                    {item}
+                  </Text>
+                  {sel && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={18}
+                      color={EXPERT_ACCENT}
+                    />
+                  )}
                 </TouchableOpacity>
               );
             }}
           />
           <TouchableOpacity
-            style={[styles.submitBtn, { marginTop: 10 }]}
+            style={[s.doneBtn, { backgroundColor: EXPERT_ACCENT }]}
             onPress={() => setVisible(false)}
           >
-            <Text style={styles.submitText}>Done</Text>
+            <Text style={s.doneBtnText}>Done</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -449,111 +435,91 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   );
 }
 
-// ─── Inline field error ───────────────────────────────────────────────────────
-function FieldError({ message }) {
-  if (!message) return null;
-  return (
-    <View
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 4,
-        gap: 4,
-      }}
-    >
-      <Ionicons name="alert-circle" size={13} color="#e53935" />
-      <Text style={styles.fieldError}>{message}</Text>
-    </View>
-  );
-}
-
-// ─── Certificate upload section ───────────────────────────────────────────────
-function CertificateUploadSection({ domain, certFile, onPick, error }) {
+// ─── Certificate upload ───────────────────────────────────────────────────────
+function CertificateUpload({ domain, certFile, onPick, error }) {
   const guide = domain ? DOMAIN_CERTIFICATE_GUIDE[domain] : null;
   return (
-    <View style={{ marginTop: 6 }}>
+    <View style={{ marginTop: 4 }}>
       {domain ? (
-        <View style={styles.certInfoBox}>
+        <View style={s.certInfoBox}>
           <Ionicons
             name="shield-checkmark-outline"
-            size={18}
-            color="#0B2D72"
+            size={16}
+            color={EXPERT_ACCENT}
             style={{ marginTop: 2 }}
           />
           <View style={{ flex: 1 }}>
-            <Text
-              style={styles.certInfoTitle}
-            >{`Required proof for "${domain}"`}</Text>
-            <Text style={styles.certInfoText}>{guide}</Text>
+            <Text style={[s.certInfoTitle, { color: EXPERT_ACCENT }]}>
+              Required for "{domain}"
+            </Text>
+            <Text style={s.certInfoText}>{guide}</Text>
           </View>
         </View>
       ) : (
         <View
           style={[
-            styles.certInfoBox,
-            { borderLeftColor: "#e07b00", backgroundColor: "#fff8ee" },
+            s.certInfoBox,
+            { borderLeftColor: "#F59E0B", backgroundColor: "#FFFBEB" },
           ]}
         >
           <Ionicons
             name="warning-outline"
-            size={18}
-            color="#e07b00"
+            size={16}
+            color="#F59E0B"
             style={{ marginTop: 2 }}
           />
-          <Text style={[styles.certInfoText, { color: "#e07b00", flex: 1 }]}>
-            Please select your domain first — the required certificate type will
-            appear here.
+          <Text style={{ fontSize: 13, color: "#92400E", flex: 1 }}>
+            Select your domain first to see which certificate is required.
           </Text>
         </View>
       )}
       <TouchableOpacity
         style={[
-          styles.certUploadBtn,
-          certFile && styles.certUploadBtnSuccess,
-          error && !certFile && styles.certUploadBtnError,
-          !domain && { opacity: 0.45 },
+          s.certBtn,
+          certFile && s.certBtnSuccess,
+          error && !certFile && s.certBtnErr,
+          !domain && { opacity: 0.4 },
         ]}
-        onPress={
-          domain
-            ? onPick
-            : () =>
-                Alert.alert(
-                  "Select domain first",
-                  "Please choose your domain before uploading a certificate.",
-                )
-        }
-        activeOpacity={domain ? 0.7 : 1}
+        onPress={domain ? onPick : () => Alert.alert("Select domain first")}
+        activeOpacity={domain ? 0.75 : 1}
       >
-        <Ionicons
-          name={certFile ? "document-attach" : "cloud-upload-outline"}
-          size={24}
-          color={certFile ? "#1a7f37" : error ? "#e53935" : "#0B2D72"}
-        />
-        <View style={{ flex: 1, marginLeft: 12 }}>
+        <View
+          style={[
+            s.certIconWrap,
+            certFile
+              ? { backgroundColor: GREEN_L }
+              : { backgroundColor: EXPERT_L },
+          ]}
+        >
+          <Ionicons
+            name={certFile ? "document-attach" : "cloud-upload-outline"}
+            size={22}
+            color={certFile ? GREEN : error ? RED : EXPERT_ACCENT}
+          />
+        </View>
+        <View style={{ flex: 1 }}>
           {certFile ? (
             <>
-              <Text style={styles.certFileNameText} numberOfLines={1}>
+              <Text style={s.certFileName} numberOfLines={1}>
                 {certFile.name}
               </Text>
-              <Text style={{ fontSize: 11, color: "#1a7f37", marginTop: 2 }}>
-                ✓ Certificate uploaded — tap to replace
+              <Text style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>
+                ✓ Uploaded — tap to replace
               </Text>
             </>
           ) : (
             <>
-              <Text
-                style={[styles.certUploadLabel, error && { color: "#e53935" }]}
-              >
+              <Text style={[s.certLabel, error && { color: RED }]}>
                 Tap to upload certificate *
               </Text>
-              <Text style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
-                Accepted: PDF, JPG, PNG
+              <Text style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                PDF, JPG, PNG accepted
               </Text>
             </>
           )}
         </View>
         {certFile && (
-          <Ionicons name="checkmark-circle" size={24} color="#1a7f37" />
+          <Ionicons name="checkmark-circle" size={22} color={GREEN} />
         )}
       </TouchableOpacity>
       <FieldError message={error} />
@@ -561,18 +527,16 @@ function CertificateUploadSection({ domain, certFile, onPick, error }) {
   );
 }
 
-// ─── Main screen ──────────────────────────────────────────────────────────────
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const [role, setRole] = useState("Jobseeker");
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
-
-  // ✅ FIX: gender is now initialized in formData
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
-    gender: "", // ✅ ADDED HERE
+    gender: "",
     dob: "",
     qualification: "",
     customQualification: "",
@@ -581,15 +545,12 @@ export default function ProfileScreen() {
     cv: null,
     image: null,
     certFile: null,
-    languages: "",
-    customLanguages: "",
     location: "",
     customLocation: "",
     bio: "",
     domain: "",
     customDomain: "",
   });
-
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
 
@@ -604,7 +565,7 @@ export default function ProfileScreen() {
     if (cleaned.trim().length < 2)
       setErrors((p) => ({
         ...p,
-        fullName: "Name must have at least 2 letters (letters only)",
+        fullName: "Name must have at least 2 letters",
       }));
     else setErrors((p) => ({ ...p, fullName: "" }));
   };
@@ -613,10 +574,7 @@ export default function ProfileScreen() {
     const lower = value.toLowerCase();
     setField("email", lower);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lower))
-      setErrors((p) => ({
-        ...p,
-        email: "Enter a valid email (no capital letters allowed)",
-      }));
+      setErrors((p) => ({ ...p, email: "Enter a valid email address" }));
     else setErrors((p) => ({ ...p, email: "" }));
   };
 
@@ -649,7 +607,7 @@ export default function ProfileScreen() {
         setErrors((p) => ({ ...p, certFile: "" }));
       }
     } catch {
-      Alert.alert("Error", "Could not open file picker. Please try again.");
+      Alert.alert("Error", "Could not open file picker.");
     }
   };
 
@@ -666,65 +624,48 @@ export default function ProfileScreen() {
     if (!result.canceled) setField("image", result.assets[0]);
   };
 
-  // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
-
     if (!formData.fullName.trim() || formData.fullName.trim().length < 2)
-      e.fullName = "Full name is required (letters only, min 2 chars)";
-    else if (/[^a-zA-Z\s]/.test(formData.fullName))
-      e.fullName = "Name must contain letters only";
-
+      e.fullName = "Full name is required (min 2 chars)";
     if (!formData.email) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       e.email = "Enter a valid email address";
-
-    // ✅ FIX: gender validation now works because gender is in formData
     if (!formData.gender) e.gender = "Gender is required";
-
     if (!formData.dob) e.dob = "Birth date is required";
-
     if (!formData.qualification) e.qualification = "Qualification is required";
     else if (
       formData.qualification === "Other" &&
       !formData.customQualification.trim()
     )
-      e.customQualification = "Please specify your qualification";
-
+      e.customQualification = "Please specify";
     if (!formData.experience) e.experience = "Experience is required";
     else if (
       formData.experience === "Other" &&
       !formData.customExperience.trim()
     )
-      e.customExperience = "Please specify your experience";
-
+      e.customExperience = "Please specify";
     if (!formData.cv) e.cv = "Please upload your CV";
-
     if (role === "Expert") {
       if (!formData.domain) e.domain = "Domain is required for Experts";
       else if (formData.domain === "Other" && !formData.customDomain.trim())
-        e.customDomain = "Please specify your domain";
-
+        e.customDomain = "Please specify";
       if (selectedSkills.length === 0)
         e.skills = "Please select at least 1 skill";
-
       if (!formData.certFile)
-        e.certFile =
-          "Please upload your certificate — this is required to verify your domain expertise";
-
+        e.certFile = "Certificate is required to verify your expertise";
       if (formData.location === "Other" && !formData.customLocation.trim())
-        e.customLocation = "Please specify your city";
+        e.customLocation = "Please enter your city";
     }
-
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
-  // ── Submit ───────────────────────────────────────────────────────────────────
+  // ── Submit with role-based routing ──────────────────────────────────────────
   const submitProfile = async () => {
     if (!validate()) {
       Alert.alert(
-        "Validation Error",
+        "Incomplete Form",
         "Please fix the highlighted fields before submitting.",
       );
       return;
@@ -741,13 +682,10 @@ export default function ProfileScreen() {
 
       const form = new FormData();
       form.append("role", role.toLowerCase());
-
-      // ✅ FIX: gender sent as lowercase to match DB ENUM/VARCHAR
       form.append("gender", formData.gender?.toLowerCase());
 
       const resolvedDomain =
         formData.domain === "Other" ? formData.customDomain : formData.domain;
-
       const resolvedData = {
         ...formData,
         domain: resolvedDomain || null,
@@ -767,7 +705,7 @@ export default function ProfileScreen() {
           selectedLanguages.length > 0
             ? selectedLanguages.join(", ")
             : formData.languages,
-        isVerified: role === "Expert" ? true : false,
+        isVerified: role === "Expert",
         verificationStatus: role === "Expert" ? "approved" : "none",
       };
 
@@ -780,9 +718,8 @@ export default function ProfileScreen() {
         "customExperience",
         "customLanguages",
         "customDomain",
-        "gender", // ✅ skip gender here because we already appended it above manually
+        "gender",
       ];
-
       Object.keys(resolvedData).forEach((key) => {
         if (
           !skipFields.includes(key) &&
@@ -834,17 +771,14 @@ export default function ProfileScreen() {
         form.append("certificateDomain", resolvedDomain);
       }
 
-      await axios.post(
-        "http://192.168.1.19:3000/api/users/save-profile",
-        form,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
+      await axios.post(`${BASE_URL}/api/users/save-profile`, form, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "multipart/form-data",
         },
-      );
+      });
 
+      // ── Save to AsyncStorage ──
       const userStr = await AsyncStorage.getItem("user");
       const existingUser = userStr ? JSON.parse(userStr) : {};
       await AsyncStorage.setItem(
@@ -857,363 +791,436 @@ export default function ProfileScreen() {
         }),
       );
 
-      Alert.alert(
-        role === "Expert" ? "✅ Profile Verified & Saved" : "✅ Profile Saved",
-        role === "Expert"
-          ? "Your certificate has been uploaded and your expert profile is now verified!"
-          : "Your profile has been saved successfully!",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
-          },
-        ],
-      );
+      // ── Role-based routing ──────────────────────────────────────────────────
+      // Jobseeker → user dashboard
+      // Expert    → expert dashboard
+      // Both live under app/(tabs)/dashboard/
+Alert.alert(
+  role === "Expert" ? "✅ Expert Profile Created!" : "✅ Profile Saved!",
+  role === "Expert"
+    ? "Your certificate has been uploaded and your expert profile is now active!"
+    : "Your profile has been saved. Welcome to CareerTalk!",
+  [
+    {
+      text: "Continue",
+      onPress: () => {
+        // Navigate to single dashboard screen
+        router.replace("/(tabs)/dashboard/dashboard");
+      },
+    },
+  ],
+);
     } catch (e) {
       console.log("Submit error:", e.response?.data || e.message);
       Alert.alert(
         "Error",
-        e.response?.data?.message || "Could not save profile",
+        e.response?.data?.message ||
+          "Could not save profile. Please try again.",
       );
     }
   };
 
+  const isExpert = role === "Expert";
+  const accent = isExpert ? EXPERT_ACCENT : BLUE;
+  const accentLight = isExpert ? EXPERT_L : BLUE_L;
   const displayDomain =
     formData.domain === "Other"
       ? formData.customDomain || "Other"
       : formData.domain;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.header}>Profile Information</Text>
+        {/* ── HEADER ── */}
+        <View
+          style={[
+            s.topBar,
+            { borderBottomColor: isExpert ? EXPERT_L : BLUE_L },
+          ]}
+        >
+          <View style={s.logoRow}>
+            <View style={[s.logoBox, { backgroundColor: accent }]}>
+              <Text style={s.logoText}>CT</Text>
+            </View>
+            <Text style={s.logoName}>CareerTalk</Text>
+          </View>
+          <Text style={[s.pageTitle, { color: accent }]}>
+            {isExpert ? "Expert Profile" : "Your Profile"}
+          </Text>
+          <Text style={s.pageSub}>Fill your details to get started</Text>
+        </View>
 
-          {/* ── Profile image ── */}
-          <Text style={styles.label}>Profile Image</Text>
-          <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-            {formData.image ? (
-              <Image
-                source={{ uri: formData.image.uri }}
-                style={styles.imagePreview}
-              />
-            ) : (
-              <Text
-                style={{ color: "#777", fontSize: 13, textAlign: "center" }}
-              >
-                📷{"\n"}Choose Photo
-              </Text>
-            )}
-          </TouchableOpacity>
-
-          {/* ── Role toggle ── */}
-          <Text style={styles.label}>Select Role</Text>
-          <View style={styles.roleRow}>
-            {["Jobseeker", "Expert"].map((item) => (
-              <TouchableOpacity
-                key={item}
-                style={[styles.roleBtn, role === item && styles.roleSelected]}
-                onPress={() => setRole(item)}
-              >
-                <Text
-                  style={[styles.roleText, role === item && { color: "#fff" }]}
-                >
-                  {item}
-                </Text>
-              </TouchableOpacity>
-            ))}
+        <ScrollView
+          contentContainerStyle={s.scroll}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* ── ROLE TOGGLE ── */}
+          <View style={s.roleCard}>
+            <Text style={s.roleCardLabel}>I am a</Text>
+            <View style={s.roleTabs}>
+              {["Jobseeker", "Expert"].map((item) => {
+                const isActive = role === item;
+                const col = item === "Expert" ? EXPERT_ACCENT : BLUE;
+                return (
+                  <TouchableOpacity
+                    key={item}
+                    style={[
+                      s.roleTab,
+                      isActive && { backgroundColor: col, borderColor: col },
+                    ]}
+                    onPress={() => setRole(item)}
+                  >
+                    <Text style={s.roleTabIcon}>
+                      {item === "Expert" ? "🎓" : "💼"}
+                    </Text>
+                    <Text style={[s.roleTabText, isActive && { color: WHITE }]}>
+                      {item}
+                    </Text>
+                    {isActive && (
+                      <View style={s.roleTabCheck}>
+                        <Ionicons name="checkmark" size={11} color={WHITE} />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
 
-          {/* ── Full name ── */}
-          <Text style={styles.label}>Full Name *</Text>
-          <TextInput
-            style={[styles.input, errors.fullName && styles.inputError]}
-            placeholder="Enter full name (letters only)"
-            value={formData.fullName}
-            onChangeText={handleNameChange}
-          />
-          <FieldError message={errors.fullName} />
-
-          {/* ── Email ── */}
-          <Text style={styles.label}>Email *</Text>
-          <TextInput
-            style={[styles.input, errors.email && styles.inputError]}
-            placeholder="Enter email (lowercase only)"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            value={formData.email}
-            onChangeText={handleEmailChange}
-          />
-          <FieldError message={errors.email} />
-
-          {/* ── Gender ── */}
-          {/* ✅ FIX: onPress now uses setField instead of setFormData to also clear errors */}
-          <Text style={styles.label}>Gender *</Text>
-          <View
-            style={[
-              styles.input,
-              errors.gender && styles.inputError,
-              {
-                flexDirection: "row",
-                justifyContent: "space-around",
-                alignItems: "center",
-              },
-            ]}
-          >
-            {["male", "female", "other"].map((option) => (
-              <TouchableOpacity
-                key={option}
-                style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
-                onPress={() => setField("gender", option)} // ✅ uses setField to clear error too
-              >
-                <View
-                  style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 9,
-                    borderWidth: 2,
-                    borderColor: "#0B2D72",
-                    justifyContent: "center",
-                    alignItems: "center",
-                  }}
-                >
-                  {formData.gender === option && (
-                    <View
-                      style={{
-                        width: 9,
-                        height: 9,
-                        borderRadius: 5,
-                        backgroundColor: "#0B2D72",
-                      }}
-                    />
-                  )}
+          {/* ── BASIC INFO ── */}
+          <Section title="Basic Information" icon="👤">
+            {/* Profile image */}
+            <TouchableOpacity style={s.avatarWrap} onPress={pickImage}>
+              {formData.image ? (
+                <Image source={{ uri: formData.image.uri }} style={s.avatar} />
+              ) : (
+                <View style={[s.avatarPlaceholder, { borderColor: accent }]}>
+                  <Ionicons name="camera-outline" size={26} color={accent} />
+                  <Text style={[s.avatarHint, { color: accent }]}>
+                    Add Photo
+                  </Text>
                 </View>
-                <Text
-                  style={{
-                    fontSize: 14,
-                    color: "#333",
-                    textTransform: "capitalize",
-                  }}
-                >
-                  {option}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <FieldError message={errors.gender} />
+              )}
+              <View style={[s.avatarBadge, { backgroundColor: accent }]}>
+                <Ionicons name="camera" size={12} color={WHITE} />
+              </View>
+            </TouchableOpacity>
 
-          {/* ── DOB ── */}
-          <Text style={styles.label}>Birth Date *</Text>
-          <TouchableOpacity
-            style={[styles.input, errors.dob && styles.inputError]}
-            onPress={() => setShow(true)}
-          >
-            <Text style={{ color: formData.dob ? "#000" : "#777" }}>
-              {formData.dob || "Select Birth Date"}
-            </Text>
-          </TouchableOpacity>
-          <FieldError message={errors.dob} />
-          {show && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              maximumDate={new Date()}
-              onChange={onChangeDate}
+            <Label text="Full Name" required />
+            <TextInput
+              style={[s.input, errors.fullName && s.inputErr]}
+              placeholder="Enter your full name"
+              placeholderTextColor={MUTED}
+              value={formData.fullName}
+              onChangeText={handleNameChange}
             />
-          )}
+            <FieldError message={errors.fullName} />
 
-          {/* ── Domain ── */}
-          <Text style={styles.label}>Domain * (Your Expertise Area)</Text>
-          <DropdownPicker
-            label="Select Domain"
-            value={formData.domain}
-            onChange={(v) => {
-              setField("domain", v);
-              setField("certFile", null);
-              setField("customDomain", "");
-            }}
-            options={DOMAIN_OPTIONS}
-          />
-          <FieldError message={errors.domain} />
-          {formData.domain === "Other" && (
-            <>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.otherInput,
-                  errors.customDomain && styles.inputError,
-                ]}
-                placeholder="Please specify your domain..."
-                value={formData.customDomain}
-                onChangeText={(v) => setField("customDomain", v)}
-              />
-              <FieldError message={errors.customDomain} />
-            </>
-          )}
-
-          {/* ── Qualification ── */}
-          <Text style={styles.label}>Qualification *</Text>
-          <DropdownPicker
-            label="Select Qualification"
-            value={formData.qualification}
-            onChange={(v) => setField("qualification", v)}
-            options={[
-              { label: "Graduate", value: "Graduate" },
-              { label: "Post Graduate", value: "PG" },
-              { label: "Diploma", value: "Diploma" },
-              { label: "Marathi Medium", value: "Marathi Medium" },
-              { label: "Other", value: "Other" },
-            ]}
-          />
-          <FieldError message={errors.qualification} />
-          {formData.qualification === "Other" && (
-            <>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.otherInput,
-                  errors.customQualification && styles.inputError,
-                ]}
-                placeholder="Please specify your qualification..."
-                value={formData.customQualification}
-                onChangeText={(v) => setField("customQualification", v)}
-              />
-              <FieldError message={errors.customQualification} />
-            </>
-          )}
-
-          {/* ── Experience ── */}
-          <Text style={styles.label}>Experience *</Text>
-          <DropdownPicker
-            label="Select Experience"
-            value={formData.experience}
-            onChange={(v) => setField("experience", v)}
-            options={[
-              { label: "Fresher", value: "0" },
-              { label: "1 Year", value: "1" },
-              { label: "2 Years", value: "2" },
-              { label: "3 Years", value: "3" },
-              { label: "5 Years", value: "5" },
-              { label: "8+ Years", value: "8" },
-              { label: "Other", value: "Other" },
-            ]}
-          />
-          <FieldError message={errors.experience} />
-          {formData.experience === "Other" && (
-            <>
-              <TextInput
-                style={[
-                  styles.input,
-                  styles.otherInput,
-                  errors.customExperience && styles.inputError,
-                ]}
-                placeholder="Enter years of experience"
-                keyboardType="numeric"
-                value={formData.customExperience}
-                onChangeText={(v) => setField("customExperience", v)}
-              />
-              <FieldError message={errors.customExperience} />
-            </>
-          )}
-
-          {/* ── CV ── */}
-          <Text style={styles.label}>Upload CV *</Text>
-          <TouchableOpacity
-            style={[
-              styles.uploadBtn,
-              errors.cv && { borderWidth: 1.5, borderColor: "#e53935" },
-            ]}
-            onPress={pickCV}
-          >
-            <Ionicons
-              name="document-outline"
-              size={18}
-              color="#0B2D72"
-              style={{ marginRight: 8 }}
+            <Label text="Email Address" required />
+            <TextInput
+              style={[s.input, errors.email && s.inputErr]}
+              placeholder="your@email.com"
+              placeholderTextColor={MUTED}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={formData.email}
+              onChangeText={handleEmailChange}
             />
-            <Text style={{ fontWeight: "600", flex: 1 }} numberOfLines={1}>
-              {formData.cv ? formData.cv.name : "Choose CV file (PDF)"}
-            </Text>
-            {formData.cv && (
-              <Ionicons name="checkmark-circle" size={18} color="#1a7f37" />
+            <FieldError message={errors.email} />
+
+            <Label text="Gender" required />
+            <View style={[s.genderRow, errors.gender && s.inputErr]}>
+              {["male", "female", "other"].map((opt) => {
+                const isActive = formData.gender === opt;
+                return (
+                  <TouchableOpacity
+                    key={opt}
+                    style={[
+                      s.genderBtn,
+                      isActive && {
+                        backgroundColor: accentLight,
+                        borderColor: accent,
+                      },
+                    ]}
+                    onPress={() => setField("gender", opt)}
+                  >
+                    <View
+                      style={[
+                        s.radio,
+                        { borderColor: isActive ? accent : BORDER },
+                      ]}
+                    >
+                      {isActive && (
+                        <View
+                          style={[s.radioDot, { backgroundColor: accent }]}
+                        />
+                      )}
+                    </View>
+                    <Text
+                      style={[
+                        s.genderText,
+                        isActive && { color: accent, fontWeight: "700" },
+                      ]}
+                    >
+                      {opt.charAt(0).toUpperCase() + opt.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            <FieldError message={errors.gender} />
+
+            <Label text="Date of Birth" required />
+            <TouchableOpacity
+              style={[s.input, s.row, errors.dob && s.inputErr]}
+              onPress={() => setShow(true)}
+            >
+              <Text
+                style={{
+                  color: formData.dob ? INK : MUTED,
+                  flex: 1,
+                  fontSize: 15,
+                }}
+              >
+                {formData.dob || "Select date of birth"}
+              </Text>
+              <Ionicons name="calendar-outline" size={18} color={MUTED} />
+            </TouchableOpacity>
+            <FieldError message={errors.dob} />
+            {show && (
+              <DateTimePicker
+                value={date}
+                mode="date"
+                maximumDate={new Date()}
+                onChange={onChangeDate}
+              />
             )}
-          </TouchableOpacity>
-          <FieldError message={errors.cv} />
+          </Section>
+
+          {/* ── PROFESSIONAL INFO ── */}
+          <Section title="Professional Details" icon="🎯">
+            <Label text="Domain / Expertise Area" required={isExpert} />
+            <DropdownPicker
+              label="Select Domain"
+              value={formData.domain}
+              onChange={(v) => {
+                setField("domain", v);
+                setField("certFile", null);
+                setField("customDomain", "");
+              }}
+              options={DOMAIN_OPTIONS}
+              error={errors.domain}
+            />
+            <FieldError message={errors.domain} />
+            {formData.domain === "Other" && (
+              <>
+                <TextInput
+                  style={[
+                    s.input,
+                    s.dashedInput,
+                    errors.customDomain && s.inputErr,
+                  ]}
+                  placeholder="Specify your domain…"
+                  placeholderTextColor={MUTED}
+                  value={formData.customDomain}
+                  onChangeText={(v) => setField("customDomain", v)}
+                />
+                <FieldError message={errors.customDomain} />
+              </>
+            )}
+
+            <Label text="Qualification" required />
+            <DropdownPicker
+              label="Select Qualification"
+              value={formData.qualification}
+              onChange={(v) => setField("qualification", v)}
+              options={[
+                { label: "Graduate", value: "Graduate" },
+                { label: "Post Graduate", value: "PG" },
+                { label: "Diploma", value: "Diploma" },
+                { label: "Marathi Medium", value: "Marathi Medium" },
+                { label: "Other", value: "Other" },
+              ]}
+              error={errors.qualification}
+            />
+            <FieldError message={errors.qualification} />
+            {formData.qualification === "Other" && (
+              <>
+                <TextInput
+                  style={[
+                    s.input,
+                    s.dashedInput,
+                    errors.customQualification && s.inputErr,
+                  ]}
+                  placeholder="Specify qualification…"
+                  placeholderTextColor={MUTED}
+                  value={formData.customQualification}
+                  onChangeText={(v) => setField("customQualification", v)}
+                />
+                <FieldError message={errors.customQualification} />
+              </>
+            )}
+
+            <Label text="Experience" required />
+            <DropdownPicker
+              label="Select Experience"
+              value={formData.experience}
+              onChange={(v) => setField("experience", v)}
+              options={[
+                { label: "Fresher", value: "0" },
+                { label: "1 Year", value: "1" },
+                { label: "2 Years", value: "2" },
+                { label: "3 Years", value: "3" },
+                { label: "5 Years", value: "5" },
+                { label: "8+ Years", value: "8" },
+                { label: "Other", value: "Other" },
+              ]}
+              error={errors.experience}
+            />
+            <FieldError message={errors.experience} />
+            {formData.experience === "Other" && (
+              <>
+                <TextInput
+                  style={[
+                    s.input,
+                    s.dashedInput,
+                    errors.customExperience && s.inputErr,
+                  ]}
+                  placeholder="Enter years of experience"
+                  placeholderTextColor={MUTED}
+                  keyboardType="numeric"
+                  value={formData.customExperience}
+                  onChangeText={(v) => setField("customExperience", v)}
+                />
+                <FieldError message={errors.customExperience} />
+              </>
+            )}
+
+            <Label text="Upload CV" required />
+            <TouchableOpacity
+              style={[s.uploadBtn, errors.cv && s.uploadBtnErr]}
+              onPress={pickCV}
+            >
+              <View
+                style={[
+                  s.uploadIcon,
+                  formData.cv
+                    ? { backgroundColor: GREEN_L }
+                    : { backgroundColor: BLUE_L },
+                ]}
+              >
+                <Ionicons
+                  name={formData.cv ? "document-attach" : "document-outline"}
+                  size={20}
+                  color={formData.cv ? GREEN : BLUE}
+                />
+              </View>
+              <Text
+                style={[s.uploadText, formData.cv && { color: GREEN }]}
+                numberOfLines={1}
+              >
+                {formData.cv ? formData.cv.name : "Choose CV file (PDF)"}
+              </Text>
+              {formData.cv ? (
+                <Ionicons name="checkmark-circle" size={20} color={GREEN} />
+              ) : (
+                <Ionicons name="chevron-forward" size={18} color={MUTED} />
+              )}
+            </TouchableOpacity>
+            <FieldError message={errors.cv} />
+          </Section>
 
           {/* ══ EXPERT ONLY ══ */}
-          {role === "Expert" && (
+          {isExpert && (
             <>
-              <Text style={styles.label}>Skills * (select up to 5)</Text>
-              <SkillsPicker
-                selectedSkills={selectedSkills}
-                onChange={setSelectedSkills}
-              />
-              <FieldError message={errors.skills} />
+              <Section title="Expert Skills" icon="⚡">
+                <Label text="Skills" required />
+                <SkillsPicker
+                  selectedSkills={selectedSkills}
+                  onChange={setSelectedSkills}
+                />
+                <FieldError message={errors.skills} />
 
-              <Text style={styles.label}>
-                Domain Certificate / Proof of Expertise *
-              </Text>
-              <CertificateUploadSection
-                domain={displayDomain}
-                certFile={formData.certFile}
-                onPick={pickCertificate}
-                error={errors.certFile}
-              />
+                <Label text="Languages Known" />
+                <LanguagesPicker
+                  selectedLanguages={selectedLanguages}
+                  onChange={setSelectedLanguages}
+                />
+              </Section>
 
-              <Text style={styles.label}>Languages Known</Text>
-              <LanguagesPicker
-                selectedLanguages={selectedLanguages}
-                onChange={setSelectedLanguages}
-              />
+              <Section title="Verification" icon="🛡️">
+                <Label
+                  text="Domain Certificate / Proof of Expertise"
+                  required
+                />
+                <CertificateUpload
+                  domain={displayDomain}
+                  certFile={formData.certFile}
+                  onPick={pickCertificate}
+                  error={errors.certFile}
+                />
+              </Section>
 
-              <Text style={styles.label}>City</Text>
-              <DropdownPicker
-                label="Select Location"
-                value={formData.location}
-                onChange={(v) => setField("location", v)}
-                options={[
-                  { label: "Mumbai", value: "Mumbai" },
-                  { label: "Pune", value: "Pune" },
-                  { label: "Nashik", value: "Nashik" },
-                  { label: "Nagpur", value: "Nagpur" },
-                  { label: "Aurangabad", value: "Aurangabad" },
-                  { label: "Other", value: "Other" },
-                ]}
-              />
-              {formData.location === "Other" && (
-                <>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      styles.otherInput,
-                      errors.customLocation && styles.inputError,
-                    ]}
-                    placeholder="Please enter your city name..."
-                    value={formData.customLocation}
-                    onChangeText={(v) => setField("customLocation", v)}
-                  />
-                  <FieldError message={errors.customLocation} />
-                </>
-              )}
+              <Section title="Location & Bio" icon="📍">
+                <Label text="City" />
+                <DropdownPicker
+                  label="Select City"
+                  value={formData.location}
+                  onChange={(v) => setField("location", v)}
+                  options={[
+                    { label: "Mumbai", value: "Mumbai" },
+                    { label: "Pune", value: "Pune" },
+                    { label: "Nashik", value: "Nashik" },
+                    { label: "Nagpur", value: "Nagpur" },
+                    { label: "Aurangabad", value: "Aurangabad" },
+                    { label: "Other", value: "Other" },
+                  ]}
+                />
+                {formData.location === "Other" && (
+                  <>
+                    <TextInput
+                      style={[
+                        s.input,
+                        s.dashedInput,
+                        errors.customLocation && s.inputErr,
+                      ]}
+                      placeholder="Enter your city name…"
+                      placeholderTextColor={MUTED}
+                      value={formData.customLocation}
+                      onChangeText={(v) => setField("customLocation", v)}
+                    />
+                    <FieldError message={errors.customLocation} />
+                  </>
+                )}
 
-              <Text style={styles.label}>Bio</Text>
-              <TextInput
-                style={[styles.input, { height: 100 }]}
-                multiline
-                placeholder="Short bio about yourself..."
-                onChangeText={(v) => setField("bio", v)}
-              />
+                <Label text="Bio" />
+                <TextInput
+                  style={[s.input, { height: 90, textAlignVertical: "top" }]}
+                  multiline
+                  placeholder="Write a short bio about yourself…"
+                  placeholderTextColor={MUTED}
+                  value={formData.bio}
+                  onChangeText={(v) => setField("bio", v)}
+                />
+              </Section>
             </>
           )}
 
-          <TouchableOpacity style={styles.submitBtn} onPress={submitProfile}>
-            <Text style={styles.submitText}>
-              {role === "Expert" ? "Submit & Get Verified ✓" : "Submit"}
+          {/* ── SUBMIT ── */}
+          <TouchableOpacity
+            style={[s.submitBtn, { backgroundColor: accent }]}
+            onPress={submitProfile}
+            activeOpacity={0.85}
+          >
+            <Text style={s.submitText}>
+              {isExpert ? "Submit & Get Verified  →" : "Save Profile  →"}
             </Text>
           </TouchableOpacity>
+
+          <View style={{ height: 30 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -1221,192 +1228,371 @@ export default function ProfileScreen() {
 }
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: { padding: 20, paddingBottom: 50 },
-  header: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: "#0B2D72",
-    marginBottom: 10,
-  },
-  label: { marginTop: 15, fontSize: 16, fontWeight: "600", color: "#0B2D72" },
-  input: {
-    backgroundColor: "#f3f4f6",
-    padding: 14,
-    borderRadius: 8,
-    marginTop: 5,
-  },
-  inputError: {
-    borderWidth: 1.5,
-    borderColor: "#e53935",
-    backgroundColor: "#fff5f5",
-  },
-  otherInput: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: "#0B2D72",
-    borderStyle: "dashed",
-    backgroundColor: "#f0f4ff",
-  },
-  fieldError: { color: "#e53935", fontSize: 12 },
-  dropdownBox: {
-    backgroundColor: "#f3f4f6",
-    padding: 14,
-    borderRadius: 8,
-    marginTop: 5,
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  roleRow: { flexDirection: "row", gap: 10, marginTop: 10 },
-  roleBtn: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#0B2D72",
-    alignItems: "center",
-  },
-  roleSelected: { backgroundColor: "#0B2D72" },
-  roleText: { color: "#0B2D72", fontWeight: "600" },
-  uploadBtn: {
-    backgroundColor: "#e5e7eb",
-    padding: 14,
-    borderRadius: 8,
-    marginTop: 8,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  submitBtn: {
-    backgroundColor: "#0B2D72",
-    padding: 16,
-    borderRadius: 10,
-    marginTop: 30,
-  },
-  submitText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
-  modalBox: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 20,
-    maxHeight: "55%",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#0B2D72",
-    textAlign: "center",
-    marginBottom: 15,
-  },
-  modalItem: {
-    paddingVertical: 14,
-    paddingHorizontal: 10,
+const s = StyleSheet.create({
+  scroll: { paddingBottom: 40 },
+
+  // header
+  topBar: {
+    backgroundColor: WHITE,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 18,
     borderBottomWidth: 1,
-    borderBottomColor: "#f2f2f2",
+    borderBottomColor: BORDER,
   },
-  modalItemSelected: { backgroundColor: "#f0f4ff", borderRadius: 8 },
-  imagePicker: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    alignSelf: "center",
-    backgroundColor: "#f3f4f6",
-    borderStyle: "dashed",
-    borderWidth: 2,
-    borderColor: "#0B2D72",
+  logoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  logoBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 10,
-    overflow: "hidden",
   },
-  imagePreview: { width: 110, height: 110, borderRadius: 55 },
-  selectedSkillsContainer: {
+  logoText: {
+    fontSize: 11,
+    fontWeight: "900",
+    color: WHITE,
+    letterSpacing: 0.5,
+  },
+  logoName: { fontSize: 22, fontWeight: "800", color: INK },
+  pageTitle: { fontSize: 24, fontWeight: "800", letterSpacing: -0.4 },
+  pageSub: { fontSize: 15, color: MUTED, marginTop: 3, fontWeight: "500" },
+
+  // role card
+  roleCard: {
+    backgroundColor: WHITE,
+    marginHorizontal: 16,
+    marginTop: 14,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  roleCardLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: MUTED,
+    marginBottom: 10,
+  },
+  roleTabs: { flexDirection: "row", gap: 10 },
+  roleTab: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 7,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    backgroundColor: BG,
+    position: "relative",
+  },
+  roleTabIcon: { fontSize: 16 },
+  roleTabText: { fontSize: 14, fontWeight: "700", color: MUTED },
+  roleTabCheck: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.3)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // section
+  section: {
+    backgroundColor: WHITE,
+    marginHorizontal: 16,
+    marginTop: 14,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 14,
+  },
+  sectionIcon: { fontSize: 18 },
+  sectionTitle: { fontSize: 15, fontWeight: "800", color: INK },
+
+  // avatar
+  avatarWrap: { alignSelf: "center", marginBottom: 16, position: "relative" },
+  avatar: { width: 88, height: 88, borderRadius: 44 },
+  avatarPlaceholder: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    borderWidth: 2,
+    borderStyle: "dashed",
+    backgroundColor: BG,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  avatarHint: { fontSize: 11, fontWeight: "600" },
+  avatarBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: WHITE,
+  },
+
+  // inputs
+  label: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: INK,
+    marginTop: 14,
+    marginBottom: 6,
+  },
+  input: {
+    backgroundColor: BG,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontSize: 15,
+    color: INK,
+  },
+  inputErr: { borderColor: RED, backgroundColor: RED_L },
+  dashedInput: { marginTop: 8, borderStyle: "dashed" },
+  row: { flexDirection: "row", alignItems: "center" },
+
+  // gender
+  genderRow: {
+    flexDirection: "row",
+    gap: 8,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    padding: 10,
+    backgroundColor: BG,
+  },
+  genderBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+  },
+  radio: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  radioDot: { width: 8, height: 8, borderRadius: 4 },
+  genderText: { fontSize: 13, color: MUTED, fontWeight: "600" },
+
+  // error
+  errRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 5 },
+  errText: { fontSize: 12, color: RED, fontWeight: "500" },
+
+  // upload
+  uploadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    backgroundColor: BG,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    padding: 12,
+    marginTop: 2,
+  },
+  uploadBtnErr: { borderColor: RED, backgroundColor: RED_L },
+  uploadIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  uploadText: { flex: 1, fontSize: 14, fontWeight: "600", color: INK },
+
+  // chips
+  chipWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 8,
-    minHeight: 40,
-    backgroundColor: "#f3f4f6",
-    borderRadius: 8,
-    padding: 10,
+    backgroundColor: BG,
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    minHeight: 46,
   },
-  skillChip: {
+  chip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0B2D72",
+    backgroundColor: BLUE,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
   },
-  skillChipText: { color: "#fff", fontSize: 13, fontWeight: "600" },
-  addSkillsBtn: {
+  chipText: { color: WHITE, fontSize: 12, fontWeight: "700" },
+  dashedBtn: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 6,
     marginTop: 8,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: "#0B2D72",
-    borderRadius: 8,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: BLUE,
+    borderRadius: 10,
     borderStyle: "dashed",
-    justifyContent: "center",
   },
-  addSkillsBtnText: { color: "#0B2D72", fontWeight: "600" },
-  customSkillRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  customSkillInput: {
-    flex: 1,
-    backgroundColor: "#f3f4f6",
-    padding: 10,
-    borderRadius: 8,
-  },
-  customSkillAddBtn: {
-    backgroundColor: "#0B2D72",
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    justifyContent: "center",
-  },
+  dashedBtnText: { fontSize: 13, fontWeight: "700", color: BLUE },
+
+  // cert
   certInfoBox: {
     flexDirection: "row",
     gap: 10,
-    backgroundColor: "#eef2ff",
-    borderRadius: 10,
     padding: 12,
+    borderRadius: 10,
     borderLeftWidth: 4,
-    borderLeftColor: "#0B2D72",
+    borderLeftColor: EXPERT_ACCENT,
+    backgroundColor: EXPERT_L,
     marginBottom: 10,
   },
-  certInfoTitle: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#0B2D72",
-    marginBottom: 3,
-  },
-  certInfoText: { fontSize: 13, color: "#444", lineHeight: 19 },
-  certUploadBtn: {
+  certInfoTitle: { fontSize: 12, fontWeight: "700", marginBottom: 3 },
+  certInfoText: { fontSize: 12, color: "#444", lineHeight: 18 },
+  certBtn: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    borderRadius: 10,
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
     borderWidth: 2,
-    borderColor: "#0B2D72",
+    borderColor: EXPERT_ACCENT,
     borderStyle: "dashed",
-    backgroundColor: "#f8faff",
+    backgroundColor: EXPERT_L,
   },
-  certUploadBtnSuccess: {
+  certBtnSuccess: {
     borderStyle: "solid",
-    borderColor: "#1a7f37",
-    backgroundColor: "#f0fff4",
+    borderColor: GREEN,
+    backgroundColor: GREEN_L,
   },
-  certUploadBtnError: {
+  certBtnErr: {
     borderStyle: "solid",
-    borderColor: "#e53935",
-    backgroundColor: "#fff5f5",
+    borderColor: RED,
+    backgroundColor: RED_L,
   },
-  certUploadLabel: { fontSize: 15, fontWeight: "600", color: "#0B2D72" },
-  certFileNameText: { fontSize: 14, fontWeight: "600", color: "#1a7f37" },
+  certIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 11,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  certLabel: { fontSize: 14, fontWeight: "700", color: EXPERT_ACCENT },
+  certFileName: { fontSize: 13, fontWeight: "700", color: GREEN },
+
+  // modal
+  mOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
+  mSheet: {
+    backgroundColor: WHITE,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 36,
+    maxHeight: "55%",
+  },
+  mHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: BORDER,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  mTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: INK,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  mMeta: { fontSize: 12, color: MUTED, textAlign: "center", marginBottom: 12 },
+  mRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 13,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+  },
+  mRowActive: { backgroundColor: BLUE_L },
+  mRowText: { fontSize: 15, color: INK, fontWeight: "500" },
+  mRowTextActive: { color: BLUE, fontWeight: "700" },
+  customRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
+  customInput: {
+    flex: 1,
+    backgroundColor: BG,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  customAddBtn: {
+    backgroundColor: BLUE,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    justifyContent: "center",
+  },
+  doneBtn: {
+    backgroundColor: BLUE,
+    borderRadius: 12,
+    paddingVertical: 13,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  doneBtnText: { color: WHITE, fontSize: 15, fontWeight: "800" },
+
+  // submit
+  submitBtn: {
+    marginHorizontal: 16,
+    marginTop: 20,
+    height: 54,
+    borderRadius: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 5,
+  },
+  submitText: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: WHITE,
+    letterSpacing: 0.2,
+  },
 });
