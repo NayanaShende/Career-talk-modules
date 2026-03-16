@@ -1,28 +1,40 @@
 const multer = require("multer");
-const path = require("path");
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "../../uploads"));
-  },
+// memory storage (needed for cloudinary)
+const storage = multer.memoryStorage();
 
-  filename: function (req, file, cb) {
-    // remove spaces & special characters
-    const cleanName = file.originalname.replace(/[^a-zA-Z0-9.]/g, "_");
-    const uniqueName = Date.now() + "-" + cleanName;
-    cb(null, uniqueName);
+// file validation
+const fileFilter = (req, file, cb) => {
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/jpg",
+    "application/pdf",
+  ];
+
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error("Invalid file type"));
+  }
+};
+
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
   },
 });
 
-const upload = multer({ storage });
-
-// ✅ FIXED: added "certificate" field so Multer accepts it without throwing
-// "MulterError: Unexpected field"
+// multiple file upload
 const uploadFields = upload.fields([
-  { name: "cv", maxCount: 1 },
   { name: "image", maxCount: 1 },
-  { name: "certificate", maxCount: 1 }, // ← this was missing
+  { name: "cv", maxCount: 1 },
+  { name: "certificate", maxCount: 1 },
 ]);
 
-module.exports = upload;
-module.exports.uploadFields = uploadFields;
+module.exports = {
+  upload,
+  uploadFields,
+};

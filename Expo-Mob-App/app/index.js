@@ -179,16 +179,27 @@ export default function Index() {
   // ✅ Show blue spinner while checking token
   if (!target) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#0B2D72" }}>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#0B2D72",
+        }}
+      >
         <ActivityIndicator size="large" color="#ffffff" />
       </View>
     );
   }
 
   // ✅ Redirect based on token check
-  if (target === "dashboard") return <Redirect href="/(tabs)/dashboard/dashboard" />;
+  // Redirect based on token check
+  if (target === "dashboard")
+    return <Redirect href="/(tabs)/dashboard/dashboard" />;
+
   if (target === "userProfile") return <Redirect href="/home/userProfile" />;
-  return <Redirect href="/loginOtp" />; // ✅ FIXED: correct path from sitemap
+
+  return <Redirect href="/loginOtp" />;
 }
 
 const styles = StyleSheet.create({

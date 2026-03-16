@@ -18,13 +18,20 @@ import axios from "axios";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// ✅ Single consistent BASE_URL
-const BASE_URL = "http://192.168.1.26:3000";
-
+const BASE_URL = "http://192.168.1.19:3000";
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
-// ─── Modal Content ────────────────────────────────────────────────────────────
+// ── Design tokens ──────────────────────────────────────────────────────────
+const TEAL = "#574964";
+const TEAL_LIGHT = "#ebddf8";
+const TEAL_TEXT = "#574964";
+const PAGE_BG = "#f5f6f8";
+const CARD_BG = "#ffffff";
+const TEXT_1 = "#1a1a2e";
+const TEXT_2 = "#6b7280";
+const BORDER = "#eff0f2";
 
+// ─── Modal content (unchanged) ────────────────────────────────────────────────
 const ABOUT_US_CONTENT = {
   title: "About Career-Talk",
   sections: [
@@ -111,26 +118,26 @@ const TERMS_CONTENT = {
   ],
 };
 
-// ─── Info Modal Component ─────────────────────────────────────────────────────
-// ✅ FIXED: use pixel height instead of % so it works reliably on Expo mobile
+// ─── Info Modal ───────────────────────────────────────────────────────────────
 function InfoModal({ visible, onClose, content }) {
   if (!content) return null;
   return (
     <Modal visible={visible} transparent animationType="slide">
       <View style={modalStyles.overlay}>
         <View style={[modalStyles.sheet, { height: SCREEN_HEIGHT * 0.75 }]}>
+          <View style={modalStyles.handle} />
           <View style={modalStyles.header}>
             <Text style={modalStyles.title}>{content.title}</Text>
             <TouchableOpacity onPress={onClose} style={modalStyles.closeBtn}>
-              <Ionicons name="close" size={22} color="#333" />
+              <Ionicons name="close" size={20} color={TEXT_2} />
             </TouchableOpacity>
           </View>
-          {/* ✅ FIXED: ScrollView fills remaining space using flex: 1 inside fixed-height container */}
           <ScrollView
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 30 }}>
+            contentContainerStyle={{ paddingBottom: 30 }}
+          >
             {content.sections.map((section, idx) => (
-              <View key={idx} style={{ marginBottom: 16 }}>
+              <View key={idx} style={{ marginBottom: 18 }}>
                 {section.heading && (
                   <Text style={modalStyles.sectionHeading}>
                     {section.heading}
@@ -146,18 +153,37 @@ function InfoModal({ visible, onClose, content }) {
   );
 }
 
-// ─── Settings Row Component ───────────────────────────────────────────────────
-function SettingsRow({ icon, iconBg, label, onPress }) {
+// ─── Settings Row ─────────────────────────────────────────────────────────────
+function SettingsRow({ icon, iconBg, label, onPress, danger }) {
   return (
-    <TouchableOpacity style={settingsStyles.row} onPress={onPress}>
+    <TouchableOpacity
+      style={settingsStyles.row}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
       <View style={[settingsStyles.iconBox, { backgroundColor: iconBg }]}>
-        <Ionicons name={icon} size={18} color="#fff" />
+        <Ionicons name={icon} size={17} color="#fff" />
       </View>
-      <Text style={settingsStyles.label}>{label}</Text>
-      <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
+      <Text style={[settingsStyles.label, danger && { color: "#ef4444" }]}>
+        {label}
+      </Text>
+      <Ionicons name="chevron-forward" size={16} color="#c4c4cc" />
     </TouchableOpacity>
   );
 }
+
+// ─── Info Row ─────────────────────────────────────────────────────────────────
+const InfoRow = ({ icon, label, value }) => (
+  <View style={styles.infoRow}>
+    <View style={styles.infoIconWrap}>
+      <Ionicons name={icon} size={16} color={TEAL_TEXT} />
+    </View>
+    <View style={styles.infoText}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value || "Not available"}</Text>
+    </View>
+  </View>
+);
 
 // ─── Main Profile Screen ──────────────────────────────────────────────────────
 export default function ProfileScreen() {
@@ -165,7 +191,6 @@ export default function ProfileScreen() {
   const [expertProfile, setExpertProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ✅ NEW: Modal states
   const [aboutModal, setAboutModal] = useState(false);
   const [privacyModal, setPrivacyModal] = useState(false);
   const [termsModal, setTermsModal] = useState(false);
@@ -178,16 +203,12 @@ export default function ProfileScreen() {
         setLoading(false);
         return;
       }
-
-      // STEP 1: Fetch user profile
       const userRes = await axios.get(`${BASE_URL}/api/users/me`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const user = userRes.data.user;
-      console.log("✅ USER:", JSON.stringify(user));
       setProfile(user);
 
-      // STEP 2: If expert, fetch expert profile
       if (user?.role === "expert") {
         try {
           const expertRes = await axios.get(
@@ -196,9 +217,7 @@ export default function ProfileScreen() {
               headers: { Authorization: `Bearer ${token}` },
             },
           );
-          const ep = expertRes.data.data;
-          console.log("✅ EXPERT:", JSON.stringify(ep));
-          setExpertProfile(ep);
+          setExpertProfile(expertRes.data.data);
         } catch (expertErr) {
           console.log(
             "Expert fetch error:",
@@ -217,14 +236,12 @@ export default function ProfileScreen() {
   useEffect(() => {
     fetchProfile();
   }, []);
-
   useFocusEffect(
     useCallback(() => {
       fetchProfile();
     }, []),
   );
 
-  // ✅ Logout function
   const handleLogout = () => {
     Alert.alert("Logout", "Are you sure you want to logout?", [
       { text: "Cancel", style: "cancel" },
@@ -235,9 +252,8 @@ export default function ProfileScreen() {
           try {
             await AsyncStorage.removeItem("token");
             await AsyncStorage.removeItem("user");
-            // ✅ FIXED: correct path for loginOtp screen
             router.replace("/loginOtp");
-          } catch (e) {
+          } catch {
             Alert.alert("Error", "Logout failed. Try again.");
           }
         },
@@ -257,7 +273,6 @@ export default function ProfileScreen() {
     Linking.openURL(cvUrl);
   };
 
-  // ✅ FIXED: check expertProfile image first, then user image
   const rawImage = expertProfile?.image || profile?.image;
   const imageUrl = rawImage
     ? rawImage.startsWith("http")
@@ -266,11 +281,13 @@ export default function ProfileScreen() {
     : "https://i.pravatar.cc/150";
 
   if (loading)
-    return <ActivityIndicator size="large" style={{ marginTop: 120 }} />;
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={TEAL} />
+      </View>
+    );
 
   const isExpert = profile?.role === "expert";
-
-  // ✅ FIXED: pull domain, qualification from correct source
   const displayDomain = expertProfile?.domain || profile?.domain;
   const displayQualification = profile?.qualification;
   const displayExperience =
@@ -279,21 +296,50 @@ export default function ProfileScreen() {
       : profile?.experience
         ? `${profile.experience} years`
         : null;
+  const displayName = expertProfile?.name || profile?.fullName || "No Name";
+
+  // initials for fallback
+  const initials = displayName
+    .trim()
+    .split(" ")
+    .map((p) => p[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.cover} />
-
-        <View style={styles.avatarWrapper}>
-          <Image source={{ uri: imageUrl }} style={styles.avatar} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {/* ── TEAL COVER ── */}
+        <View style={styles.cover}>
+          {/* Back button top left */}
+          <TouchableOpacity
+            style={styles.coverBackBtn}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </TouchableOpacity>
+          {/* Edit button top right */}
+          <TouchableOpacity
+            style={styles.coverEditBtn}
+            onPress={() => router.push("/home/edit")}
+          >
+            <Ionicons name="pencil" size={16} color="#fff" />
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.center}>
-          <Text style={styles.name}>
-            {expertProfile?.name || profile?.fullName || "No Name"}
-          </Text>
+        {/* ── AVATAR ── */}
+        <View style={styles.avatarSection}>
+          <View style={styles.avatarRing}>
+            <Image source={{ uri: imageUrl }} style={styles.avatar} />
+          </View>
+
+          <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.domain}>{displayDomain || "Domain not set"}</Text>
+
           {profile?.role && (
             <View style={styles.roleBadge}>
               <Text style={styles.roleText}>
@@ -303,117 +349,162 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Basic Info Card */}
+        {/* ── STATS ROW ── */}
+        <View style={styles.statsRow}>
+          <View style={styles.statItem}>
+            <Text style={styles.statNum}>
+              {displayExperience?.split(" ")[0] || "—"}
+            </Text>
+            <Text style={styles.statLabel}>Yrs Exp</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNum}>
+              {expertProfile?.skills?.length || "—"}
+            </Text>
+            <Text style={styles.statLabel}>Skills</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statItem}>
+            <Text style={styles.statNum}>
+              {expertProfile?.rating
+                ? parseFloat(expertProfile.rating).toFixed(1)
+                : "—"}
+            </Text>
+            <Text style={styles.statLabel}>Rating</Text>
+          </View>
+        </View>
+
+        {/* ── BASIC INFO CARD ── */}
+        <View style={styles.sectionLabel}>
+          <Text style={styles.sectionLabelText}>Personal Info</Text>
+        </View>
         <View style={styles.card}>
-          <InfoRow icon="mail" label="Email" value={profile?.email} />
-          <InfoRow icon="call" label="Mobile" value={profile?.mobile} />
-          <InfoRow icon="calendar" label="Birth Date" value={profile?.dob} />
+          <InfoRow icon="mail-outline" label="Email" value={profile?.email} />
+          <InfoRow icon="call-outline" label="Mobile" value={profile?.mobile} />
           <InfoRow
-            icon="school"
+            icon="calendar-outline"
+            label="Birth Date"
+            value={profile?.dob}
+          />
+          <InfoRow
+            icon="school-outline"
             label="Qualification"
             value={displayQualification}
           />
           <InfoRow
-            icon="briefcase"
+            icon="briefcase-outline"
             label="Experience"
             value={displayExperience}
           />
         </View>
 
-        {/* Expert Details Card */}
+        {/* ── EXPERT DETAILS CARD ── */}
         {isExpert && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Expert Details</Text>
-            <InfoRow icon="tv-outline" label="Domain" value={displayDomain} />
-            <InfoRow
-              icon="location"
-              label="Location"
-              value={expertProfile?.location}
-            />
-            <InfoRow
-              icon="language"
-              label="Languages"
-              value={expertProfile?.language_spoken}
-            />
-            <InfoRow
-              icon="ribbon"
-              label="Certification"
-              value={expertProfile?.certification}
-            />
-            {expertProfile?.bio ? (
-              <View style={styles.bioRow}>
-                <Ionicons
-                  name="person-circle-outline"
-                  size={20}
-                  color="#6B7280"
-                />
-                <View style={{ marginLeft: 12, flex: 1 }}>
-                  <Text style={styles.label}>Bio</Text>
-                  <Text style={styles.value}>{expertProfile.bio}</Text>
-                </View>
-              </View>
-            ) : null}
+          <>
+            <View style={styles.sectionLabel}>
+              <Text style={styles.sectionLabelText}>Expert Details</Text>
+            </View>
+            <View style={styles.card}>
+              <InfoRow icon="tv-outline" label="Domain" value={displayDomain} />
+              <InfoRow
+                icon="location-outline"
+                label="Location"
+                value={expertProfile?.location}
+              />
+              <InfoRow
+                icon="language-outline"
+                label="Languages"
+                value={expertProfile?.language_spoken}
+              />
+              <InfoRow
+                icon="ribbon-outline"
+                label="Certification"
+                value={expertProfile?.certification}
+              />
 
-            {/* ✅ Skills chips */}
-            {expertProfile?.skills && expertProfile.skills.length > 0 && (
-              <View style={{ marginTop: 10 }}>
-                <Text style={[styles.label, { marginBottom: 8 }]}>Skills</Text>
-                <View style={styles.skillsRow}>
-                  {expertProfile.skills.map((s, i) => (
-                    <View key={i} style={styles.skillChip}>
-                      <Text style={styles.skillChipText}>{s.skill_name}</Text>
-                    </View>
-                  ))}
+              {expertProfile?.bio ? (
+                <View style={styles.bioRow}>
+                  <View style={styles.infoIconWrap}>
+                    <Ionicons
+                      name="person-outline"
+                      size={16}
+                      color={TEAL_TEXT}
+                    />
+                  </View>
+                  <View style={{ marginLeft: 0, flex: 1 }}>
+                    <Text style={styles.infoLabel}>Bio</Text>
+                    <Text style={styles.infoValue}>{expertProfile.bio}</Text>
+                  </View>
                 </View>
-              </View>
-            )}
-          </View>
+              ) : null}
+
+              {expertProfile?.skills && expertProfile.skills.length > 0 && (
+                <View style={styles.skillsSection}>
+                  <Text style={styles.infoLabel}>Skills</Text>
+                  <View style={styles.skillsRow}>
+                    {expertProfile.skills.map((s, i) => (
+                      <View key={i} style={styles.skillChip}>
+                        <Text style={styles.skillChipText}>{s.skill_name}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          </>
         )}
 
-        <TouchableOpacity style={styles.cvButton} onPress={openCV}>
-          <Ionicons name="document-text" size={20} color="#fff" />
-          <Text style={styles.cvText}>View / Download CV</Text>
-        </TouchableOpacity>
+        {/* ── ACTION BUTTONS ── */}
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.cvBtn} onPress={openCV}>
+            <Ionicons name="document-text-outline" size={18} color="#fff" />
+            <Text style={styles.cvBtnText}>View CV</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => router.push("/home/edit")}
+          >
+            <Ionicons name="pencil-outline" size={18} color={TEAL} />
+            <Text style={styles.editBtnText}>Edit Profile</Text>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => router.push("/home/edit")}>
-          <Text style={styles.editText}>Edit Profile</Text>
-        </TouchableOpacity>
-
-        {/* ✅ NEW: Settings Section — About Us, Privacy Policy, Terms */}
-        <View style={styles.settingsCard}>
-          <Text style={styles.settingsTitle}>Account Settings</Text>
+        {/* ── ACCOUNT SETTINGS ── */}
+        <View style={styles.sectionLabel}>
+          <Text style={styles.sectionLabelText}>Account Settings</Text>
+        </View>
+        <View style={styles.card}>
           <SettingsRow
             icon="information-circle-outline"
-            iconBg="#0B2D72"
+            iconBg={TEAL}
             label="About Us"
             onPress={() => setAboutModal(true)}
           />
-          <View style={styles.divider} />
+          <View style={styles.settingsDivider} />
           <SettingsRow
             icon="lock-closed-outline"
-            iconBg="#0B2D72"
+            iconBg={TEAL}
             label="Privacy Policy"
             onPress={() => setPrivacyModal(true)}
           />
-          <View style={styles.divider} />
+          <View style={styles.settingsDivider} />
           <SettingsRow
             icon="document-text-outline"
-            iconBg="#0B2D72"
+            iconBg={TEAL}
             label="Terms & Conditions"
             onPress={() => setTermsModal(true)}
           />
         </View>
 
-        {/* ✅ Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#fff" />
+        {/* ── LOGOUT ── */}
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={19} color="#fff" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* ✅ NEW: Modals */}
+      {/* ── MODALS ── */}
       <InfoModal
         visible={aboutModal}
         onClose={() => setAboutModal(false)}
@@ -433,142 +524,303 @@ export default function ProfileScreen() {
   );
 }
 
-const InfoRow = ({ icon, label, value }) => (
-  <View style={styles.row}>
-    <Ionicons name={icon} size={20} color="#6B7280" />
-    <View style={{ marginLeft: 12 }}>
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value || "Not available"}</Text>
-    </View>
-  </View>
-);
-
+// ── STYLES ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F3F4F6" },
-  cover: { height: 110, backgroundColor: "#0B2D72" },
-  avatarWrapper: { alignItems: "center", marginTop: -55 },
+  container: {
+    flex: 1,
+    backgroundColor: PAGE_BG,
+  },
+  loadingScreen: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: PAGE_BG,
+  },
+
+  // ── Cover ──
+  cover: {
+    height: 130,
+    backgroundColor: TEAL,
+    position: "relative",
+  },
+  coverBackBtn: {
+    position: "absolute",
+    top: 16,
+    left: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 25,
+  },
+  coverEditBtn: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    marginTop: 25,
+
+    alignItems: "center",
+  },
+
+  // ── Avatar section ──
+  avatarSection: {
+    alignItems: "center",
+    marginTop: -52,
+    paddingBottom: 4,
+  },
+  avatarRing: {
+    width: 106,
+    height: 106,
+    borderRadius: 53,
+    backgroundColor: CARD_BG,
+    padding: 3,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+  },
   avatar: {
-    width: 110,
-    height: 110,
-    borderRadius: 60,
-    borderWidth: 4,
-    borderColor: "#fff",
+    width: 100,
+    height: 100,
+    borderRadius: 50,
   },
-  center: { alignItems: "center", marginTop: 10 },
-  name: { fontSize: 22, fontWeight: "bold" },
-  domain: { color: "#6B7280", marginTop: 4 },
-  roleBadge: {
-    marginTop: 6,
-    backgroundColor: "#0B2D72",
-    paddingHorizontal: 14,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  roleText: { color: "#fff", fontSize: 12, fontWeight: "600" },
-  card: {
-    backgroundColor: "#fff",
-    margin: 20,
-    marginBottom: 0,
-    borderRadius: 18,
-    padding: 20,
-    elevation: 3,
-  },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#0B2D72",
-    marginBottom: 14,
-  },
-  row: { flexDirection: "row", marginBottom: 18 },
-  bioRow: { flexDirection: "row", marginBottom: 18, alignItems: "flex-start" },
-  label: { color: "#9CA3AF", fontSize: 12 },
-  value: { fontSize: 16, fontWeight: "600" },
-  skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  skillChip: {
-    backgroundColor: "#EEF2FF",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  skillChipText: { color: "#0B2D72", fontSize: 13, fontWeight: "600" },
-  cvButton: {
-    backgroundColor: "#0B2D72",
-    margin: 20,
-    marginBottom: 0,
-    padding: 15,
-    borderRadius: 14,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  cvText: { color: "#fff", marginLeft: 8, fontWeight: "600", fontSize: 15 },
-  editButton: {
-    margin: 20,
-    borderWidth: 1,
-    borderColor: "#0B2D72",
-    padding: 15,
-    borderRadius: 14,
-    alignItems: "center",
-    marginBottom: 0,
-  },
-  editText: { color: "#0B2D72", fontWeight: "600", fontSize: 15 },
-
-  // ✅ NEW: Settings card styles
-  settingsCard: {
-    backgroundColor: "#fff",
-    margin: 20,
-    marginBottom: 0,
-    borderRadius: 18,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    elevation: 3,
-  },
-  settingsTitle: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "#9CA3AF",
-    paddingHorizontal: 12,
-    paddingTop: 12,
-    paddingBottom: 6,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#F3F4F6",
-    marginHorizontal: 12,
-  },
-
-  logoutButton: {
-    margin: 20,
+  name: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: TEXT_1,
     marginTop: 12,
-    backgroundColor: "#a51111",
-    padding: 15,
-    borderRadius: 14,
+    letterSpacing: -0.3,
+  },
+  domain: {
+    fontSize: 14,
+    color: TEXT_2,
+    marginTop: 3,
+    fontWeight: "500",
+  },
+  roleBadge: {
+    marginTop: 8,
+    backgroundColor: TEAL_LIGHT,
+    paddingHorizontal: 16,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  roleText: {
+    color: TEAL_TEXT,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  // ── Stats row ──
+  statsRow: {
     flexDirection: "row",
+    backgroundColor: CARD_BG,
+    marginHorizontal: 20,
+    marginTop: 16,
+    borderRadius: 18,
+    paddingVertical: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+    elevation: 1,
+  },
+  statItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  statNum: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: TEAL,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: TEXT_2,
+    marginTop: 3,
+    fontWeight: "500",
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: BORDER,
+    marginVertical: 4,
+  },
+
+  // ── Section label ──
+  sectionLabel: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+  sectionLabelText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: TEXT_2,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+
+  // ── Card ──
+  card: {
+    backgroundColor: CARD_BG,
+    marginHorizontal: 20,
+    borderRadius: 18,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: BORDER,
+    elevation: 1,
+  },
+
+  // ── Info row ──
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 13,
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
+  },
+  infoIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: TEAL_LIGHT,
     justifyContent: "center",
     alignItems: "center",
-    marginBottom: 40,
+    marginRight: 12,
+    marginTop: 1,
+  },
+  infoText: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 11,
+    color: TEXT_2,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: TEXT_1,
+  },
+
+  // ── Bio row ──
+  bioRow: {
+    flexDirection: "row",
+    paddingVertical: 13,
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
+    gap: 12,
+  },
+
+  // ── Skills ──
+  skillsSection: {
+    paddingVertical: 13,
+  },
+  skillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 8,
+  },
+  skillChip: {
+    backgroundColor: TEAL_LIGHT,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  skillChipText: {
+    color: TEAL_TEXT,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  // ── Action buttons ──
+  actionsRow: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    marginTop: 16,
+    gap: 12,
+  },
+  cvBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: TEAL,
+    paddingVertical: 14,
+    borderRadius: 14,
+    elevation: 2,
+  },
+  cvBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  editBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: CARD_BG,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: TEAL,
+  },
+  editBtnText: {
+    color: TEAL,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  // ── Settings divider ──
+  settingsDivider: {
+    height: 0.5,
+    backgroundColor: BORDER,
+    marginHorizontal: 4,
+  },
+
+  // ── Logout ──
+  logoutBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#ef4444",
+    marginHorizontal: 20,
+    marginTop: 16,
+    paddingVertical: 15,
+    borderRadius: 14,
+    elevation: 2,
   },
   logoutText: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "800",
     fontSize: 15,
-    marginLeft: 8,
   },
 });
 
-// ✅ NEW: Settings row styles
+// ── Settings row styles ────────────────────────────────────────────────────
 const settingsStyles = StyleSheet.create({
   row: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+    paddingHorizontal: 4,
+    paddingVertical: 13,
   },
   iconBox: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
     justifyContent: "center",
     alignItems: "center",
@@ -577,12 +829,12 @@ const settingsStyles = StyleSheet.create({
   label: {
     flex: 1,
     fontSize: 15,
-    fontWeight: "500",
-    color: "#1F2937",
+    fontWeight: "600",
+    color: TEXT_1,
   },
 });
 
-// ✅ FIXED: Modal styles — overlay stops above tab bar so tabs remain visible
+// ── Modal styles ───────────────────────────────────────────────────────────
 const TAB_BAR_HEIGHT = 80;
 const modalStyles = StyleSheet.create({
   overlay: {
@@ -595,13 +847,20 @@ const modalStyles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   sheet: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 24,
+    backgroundColor: CARD_BG,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
+    paddingTop: 14,
     paddingHorizontal: 24,
     paddingBottom: 40,
-    // height is set inline via SCREEN_HEIGHT * 0.75
+  },
+  handle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: BORDER,
+    alignSelf: "center",
+    marginBottom: 18,
   },
   header: {
     flexDirection: "row",
@@ -610,23 +869,29 @@ const modalStyles = StyleSheet.create({
     marginBottom: 20,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1F2937",
+    fontSize: 19,
+    fontWeight: "800",
+    color: TEXT_1,
     flex: 1,
+    letterSpacing: -0.2,
   },
   closeBtn: {
-    padding: 4,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: PAGE_BG,
+    justifyContent: "center",
+    alignItems: "center",
   },
   sectionHeading: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "700",
-    color: "#111827",
-    marginBottom: 4,
+    color: TEXT_1,
+    marginBottom: 5,
   },
   sectionBody: {
     fontSize: 14,
-    color: "#4B5563",
+    color: TEXT_2,
     lineHeight: 22,
   },
 });

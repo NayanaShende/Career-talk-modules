@@ -44,9 +44,19 @@ exports.submitExpertProfileForm = async (req, res) => {
       certificates: certificateFiles.map((f) => f.filename),
     });
 
+    // ✅ FIXED: extract gender from req.body and log it for debugging
+    const gender = req.body.gender || null;
+    console.log("👤 Gender received in submitExpertProfileForm:", gender);
+
+    // ✅ FIXED: pass gender inside req.body so createExpertProfile can save it
+    const bodyWithGender = {
+      ...req.body,
+      gender, // ✅ explicitly include gender
+    };
+
     const expert = await expertService.createExpertProfile(
       userId,
-      req.body,
+      bodyWithGender, // ✅ FIXED: was req.body (without guaranteed gender), now bodyWithGender
       cvFile,
       imageFile,
       certificateFiles,
@@ -93,6 +103,7 @@ exports.updateMyExpertProfile = async (req, res) => {
     const body = {
       ...req.body,
       certifications: req.body.certification || req.body.certifications || null,
+      gender: req.body.gender || null, // ✅ FIXED: include gender in update too
     };
 
     const expert = await expertService.createExpertProfile(userId, body, file);
