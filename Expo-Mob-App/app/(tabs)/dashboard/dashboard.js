@@ -18,7 +18,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 
-const BASE_URL = "http://192.168.1.6:3000";
+const BASE_URL = "http://192.168.1.19:3000";
 
 const SKILL_FILTERS = [
   "All",
@@ -40,7 +40,6 @@ const SKILL_FILTERS = [
 //  EXPERT DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 function ExpertDashboard({
-  
   onlineExperts,
   loadingOnline,
   filteredExperts,
@@ -53,7 +52,6 @@ function ExpertDashboard({
   getFirstSkill,
   getSkillChips,
 }) {
-
   const [walletVisible, setWalletVisible] = useState(false);
   const [transactions, setTransactions] = useState([]);
   const [chats, setChats] = useState([]);
@@ -99,9 +97,7 @@ function ExpertDashboard({
         />
       ) : (
         <View style={styles.expertInitialCircle}>
-          <Text style={styles.expertInitialText}>
-            {getInitials(e.name)}
-          </Text>
+          <Text style={styles.expertInitialText}>{getInitials(e.name)}</Text>
         </View>
       )}
 
@@ -110,41 +106,48 @@ function ExpertDashboard({
       </Text>
 
       <View style={styles.starRow}>
-        {[1,2,3,4,5].map((s)=>(
+        {[1, 2, 3, 4, 5].map((s) => (
           <Ionicons
             key={s}
             name={s <= Math.round(e.rating || 0) ? "star" : "star-outline"}
-            size={14}
-            color="#FBBF24"
+            size={13}
+            color={s <= Math.round(e.rating || 0) ? "#F5C518" : "#DDD"}
           />
         ))}
       </View>
 
       <Text style={styles.expText}>
-        {e.experience > 0 ? `${e.experience} yrs` : "New"}
+        {e.experience > 0 ? `${e.experience} yrs exp` : "New"}
       </Text>
 
       <View style={styles.skillChipsRow}>
-        {getSkillChips(e).map((skill,idx)=>(
+        {getSkillChips(e).map((skill, idx) => (
           <View key={idx} style={styles.expertSkillBadge}>
             <Text style={styles.expertSkillText}>{skill}</Text>
           </View>
         ))}
       </View>
 
-      <View style={styles.expertCardFooter} />
+      <View style={styles.expertCardFooter}>
+        <Text style={styles.viewProfileText}>View Profile</Text>
+        <Ionicons name="chevron-forward" size={12} color="#1a1a2e" />
+      </View>
     </Pressable>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-
       {/* HEADER */}
       <View style={styles.header}>
         <View style={styles.avatarCircle}>
           <Text style={styles.avatarInitial}>CT</Text>
         </View>
-        <Text style={styles.headerTitle}>Career-Talk</Text>
+        <View>
+          <Text style={styles.headerTitle}>Career-Talk</Text>
+          <Text style={styles.headerSub}>
+            Find the right mentor for your career
+          </Text>
+        </View>
       </View>
 
       {/* SEARCH */}
@@ -152,26 +155,24 @@ function ExpertDashboard({
         style={styles.searchBar}
         onPress={() => router.push("/expert/search")}
       >
-        <Ionicons name="search" size={20} color="#C4C4C4"/>
-        <Text style={styles.searchText}>Search</Text>
+        <Ionicons name="search-outline" size={18} color="#AAAAAA" />
+        <Text style={styles.searchText}>
+          Search mentors, skills, careers...
+        </Text>
       </Pressable>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-
         {/* BANNER */}
         <View style={styles.promoBanner}>
           <View style={styles.promoTextContainer}>
             <Text style={styles.promoTitle}>
               What will my future be{"\n"}in the next 5 years?
             </Text>
-
             <Text style={styles.promoSub}>Ask Expert</Text>
-
             <TouchableOpacity style={styles.askExpertBtn}>
               <Text style={styles.askExpertBtnText}>Ask Expert</Text>
             </TouchableOpacity>
           </View>
-
           <Image
             source={require("../../../assets/banner.png")}
             style={styles.promoImage}
@@ -180,27 +181,30 @@ function ExpertDashboard({
 
         {/* LIVE EXPERTS */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Live Experts</Text>
-
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot}/>
-            <Text style={styles.liveIndicatorText}>Live</Text>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Live Experts</Text>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveIndicatorText}>Live</Text>
+            </View>
           </View>
         </View>
 
         {loadingOnline ? (
-          <ActivityIndicator color="#0B2D72"/>
+          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.liveScrollContainer}
           >
-            {onlineExperts.map((e)=>(
+            {onlineExperts.map((e) => (
               <LiveExpert
                 key={e.id}
                 name={e.name}
                 title={getFirstSkill(e)}
-                image={getImageUri(e.image,e.name)}
-                onPress={()=>router.push(`/expert/${e.id}`)}
+                image={getImageUri(e.image, e.name)}
+                onPress={() => router.push(`/expert/${e.id}`)}
               />
             ))}
           </ScrollView>
@@ -211,22 +215,26 @@ function ExpertDashboard({
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterList}
         >
-          {SKILL_FILTERS.map((skill)=>(
+          {SKILL_FILTERS.map((skill) => (
             <TouchableOpacity
               key={skill}
               style={[
                 styles.filterChip,
-                activeSkillFilter === skill && styles.filterChipActive
+                activeSkillFilter === skill && styles.filterChipActive,
               ]}
-              onPress={()=>setActiveSkillFilter(skill)}
+              onPress={() => setActiveSkillFilter(skill)}
             >
-              <Text style={[
-                styles.filterChipText,
-                activeSkillFilter === skill && styles.filterChipTextActive
-              ]}>
+              <Text
+                style={[
+                  styles.filterChipText,
+                  activeSkillFilter === skill && styles.filterChipTextActive,
+                ]}
+              >
                 {skill}
               </Text>
             </TouchableOpacity>
@@ -234,27 +242,31 @@ function ExpertDashboard({
         </ScrollView>
 
         {loadingSkillFilter ? (
-          <ActivityIndicator color="#0B2D72"/>
+          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
         ) : (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.expertBySkillList}
           >
-            {skillFilteredExperts.map((e)=>(
-              <ExpertCard key={e.id} e={e}/>
+            {skillFilteredExperts.map((e) => (
+              <ExpertCard key={e.id} e={e} />
             ))}
           </ScrollView>
         )}
 
         {/* TOP EXPERTS */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Top Experts</Text>
+          <Text style={styles.sectionTitle}>🔥 Top Experts</Text>
         </View>
 
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContainer}
         >
-          {filteredExperts.map((e)=>(
-            <ExpertCard key={e.id} e={e}/>
+          {filteredExperts.map((e) => (
+            <ExpertCard key={e.id} e={e} />
           ))}
         </ScrollView>
 
@@ -264,13 +276,15 @@ function ExpertDashboard({
         </View>
 
         {loadingChats ? (
-          <ActivityIndicator/>
-        ) : chats.map((c)=>(
-          <View key={c.id} style={styles.chatRow}>
-            <Text style={styles.chatName}>{c.user_name}</Text>
-            <Text style={styles.chatTime}>{c.created_at}</Text>
-          </View>
-        ))}
+          <ActivityIndicator />
+        ) : (
+          chats.map((c) => (
+            <View key={c.id} style={styles.chatRow}>
+              <Text style={styles.chatName}>{c.user_name}</Text>
+              <Text style={styles.chatTime}>{c.created_at}</Text>
+            </View>
+          ))
+        )}
 
         {/* TRANSACTION HISTORY */}
         <View style={styles.sectionHeader}>
@@ -278,31 +292,30 @@ function ExpertDashboard({
         </View>
 
         {loadingTxn ? (
-          <ActivityIndicator/>
-        ) : transactions.map((t)=>(
-          <View key={t.id} style={styles.txnRow}>
-            <View>
-              <Text style={styles.txnUser}>{t.user_name}</Text>
-              <Text style={styles.txnDate}>{t.created_at}</Text>
+          <ActivityIndicator />
+        ) : (
+          transactions.map((t) => (
+            <View key={t.id} style={styles.txnRow}>
+              <View>
+                <Text style={styles.txnUser}>{t.user_name}</Text>
+                <Text style={styles.txnDate}>{t.created_at}</Text>
+              </View>
+              <Text style={styles.txnAmount}>+₹{t.amount}</Text>
             </View>
-
-            <Text style={styles.txnAmount}>+₹{t.amount}</Text>
-          </View>
-        ))}
-
+          ))
+        )}
       </ScrollView>
 
       <WalletModal
         visible={walletVisible}
-        onClose={()=>setWalletVisible(false)}
+        onClose={() => setWalletVisible(false)}
       />
-
     </SafeAreaView>
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-//  JOBSEEKER DASHBOARD  (your original dashboard — untouched)
+//  JOBSEEKER DASHBOARD
 // ─────────────────────────────────────────────────────────────────────────────
 function JobseekerDashboard({
   onlineExperts,
@@ -322,18 +335,33 @@ function JobseekerDashboard({
 }) {
   const [walletVisible, setWalletVisible] = useState(false);
 
-  const ExpertCard = ({ e }) => (
+  const ExpertCard = ({ e, isFeatured }) => (
     <Pressable
-      style={styles.skillExpertCard}
+      style={[
+        styles.skillExpertCard,
+        isFeatured && styles.skillExpertCardFeatured,
+      ]}
       onPress={() => router.push(`/expert/${e.id}`)}
     >
+      {isFeatured && (
+        <View style={styles.topBadge}>
+          <Ionicons name="star" size={11} color="#B8860B" />
+          <Text style={styles.topBadgeText}>Top Expert</Text>
+        </View>
+      )}
       {e.image ? (
         <Image
           source={{ uri: getImageUri(e.image, e.name) }}
-          style={[styles.expertInitialCircle, { overflow: "hidden" }]}
+          style={[
+            styles.expertInitialCircle,
+            { overflow: "hidden" },
+            isFeatured && { marginTop: 10 },
+          ]}
         />
       ) : (
-        <View style={styles.expertInitialCircle}>
+        <View
+          style={[styles.expertInitialCircle, isFeatured && { marginTop: 10 }]}
+        >
           <Text style={styles.expertInitialText}>{getInitials(e.name)}</Text>
         </View>
       )}
@@ -345,13 +373,13 @@ function JobseekerDashboard({
           <Ionicons
             key={s}
             name={s <= Math.round(e.rating || 0) ? "star" : "star-outline"}
-            size={14}
-            color="#FBBF24"
+            size={13}
+            color={s <= Math.round(e.rating || 0) ? "#F5C518" : "#DDD"}
           />
         ))}
       </View>
       <Text style={styles.expText}>
-        {e.experience > 0 ? `${e.experience} yrs` : "New"}
+        {e.experience > 0 ? `${e.experience} Years Experience` : "New"}
       </Text>
       <View style={styles.skillChipsRow}>
         {getSkillChips(e).map((skill, idx) => (
@@ -360,7 +388,10 @@ function JobseekerDashboard({
           </View>
         ))}
       </View>
-      <View style={styles.expertCardFooter} />
+      <View style={styles.expertCardFooter}>
+        <Text style={styles.viewProfileText}>View Profile</Text>
+        <Ionicons name="chevron-forward" size={12} color="#1a1a2e" />
+      </View>
     </Pressable>
   );
 
@@ -371,7 +402,12 @@ function JobseekerDashboard({
         <View style={styles.avatarCircle}>
           <Text style={styles.avatarInitial}>CT</Text>
         </View>
-        <Text style={styles.headerTitle}>Career-Talk</Text>
+        <View>
+          <Text style={styles.headerTitle}>Career-Talk</Text>
+          <Text style={styles.headerSub}>
+            Find the right mentor for your career
+          </Text>
+        </View>
       </View>
 
       {/* SEARCH */}
@@ -379,8 +415,10 @@ function JobseekerDashboard({
         style={styles.searchBar}
         onPress={() => router.push("/expert/search")}
       >
-        <Ionicons name="search" size={20} color="#C4C4C4" />
-        <Text style={styles.searchText}>Search</Text>
+        <Ionicons name="search-outline" size={18} color="#AAAAAA" />
+        <Text style={styles.searchText}>
+          Search mentors, skills, careers...
+        </Text>
       </Pressable>
 
       <ScrollView
@@ -406,14 +444,16 @@ function JobseekerDashboard({
 
         {/* LIVE EXPERTS */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Live Experts</Text>
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveIndicatorText}>Live</Text>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>Live Experts</Text>
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveIndicatorText}>Live</Text>
+            </View>
           </View>
         </View>
         {loadingOnline ? (
-          <ActivityIndicator color="#0B2D72" />
+          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
         ) : onlineExperts.length === 0 ? (
           <Text style={styles.noExpertsText}>No experts online right now</Text>
         ) : (
@@ -437,6 +477,9 @@ function JobseekerDashboard({
         {/* BROWSE BY SKILL */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
+          <TouchableOpacity onPress={() => router.push("/expert/recommended")}>
+            <Text style={styles.viewAllText}>View All ›</Text>
+          </TouchableOpacity>
         </View>
         <ScrollView
           horizontal
@@ -464,7 +507,7 @@ function JobseekerDashboard({
           ))}
         </ScrollView>
         {loadingSkillFilter ? (
-          <ActivityIndicator color="#0B2D72" style={{ marginVertical: 20 }} />
+          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
         ) : skillFilteredExperts.length === 0 ? (
           <Text style={styles.noExpertsText}>
             No experts found for this skill
@@ -475,75 +518,90 @@ function JobseekerDashboard({
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.expertBySkillList}
           >
-            {skillFilteredExperts.map((e) => (
-              <ExpertCard key={e.id} e={e} />
+            {skillFilteredExperts.map((e, idx) => (
+              <ExpertCard key={e.id} e={e} isFeatured={idx === 0} />
             ))}
           </ScrollView>
         )}
 
         {/* TOP EXPERT BY SKILL */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Top Expert by Skill</Text>
+          <Text style={styles.sectionTitle}>🔥 Top Expert by Skill</Text>
           <TouchableOpacity onPress={() => router.push("/expert/recommended")}>
-            <Text style={styles.viewAllText}>View All</Text>
+            <Text style={styles.viewAllText}>View All ›</Text>
           </TouchableOpacity>
         </View>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContainer}
-        >
-          {loadingFiltered ? (
-            <ActivityIndicator color="#0B2D72" style={{ marginVertical: 20 }} />
-          ) : (
-            filteredExperts.map((e) => (
-              <Pressable
-                key={e.id}
-                style={styles.skillExpertCard}
-                onPress={() => router.push(`/expert/${e.id}`)}
-              >
+
+        {/* Top Experts section with a light container background */}
+        <View style={styles.topExpertsContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContainer}
+          >
+            {loadingFiltered ? (
+              <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
+            ) : (
+              filteredExperts.map((e, idx) => (
+                <ExpertCard key={e.id} e={e} isFeatured={idx === 0} />
+              ))
+            )}
+          </ScrollView>
+        </View>
+
+        {/* RECOMMENDED FOR YOU */}
+        <View style={[styles.sectionHeader, { marginTop: 20 }]}>
+          <View>
+            <Text style={styles.sectionTitle}>Recommended For You</Text>
+            <Text style={styles.sectionSubTitle}>Based on your skills</Text>
+          </View>
+        </View>
+
+        <View style={styles.recommendedGrid}>
+          {filteredExperts.slice(0, 4).map((e) => (
+            <Pressable
+              key={e.id}
+              style={styles.recCard}
+              onPress={() => router.push(`/expert/${e.id}`)}
+            >
+              <View style={styles.recTop}>
                 {e.image ? (
                   <Image
                     source={{ uri: getImageUri(e.image, e.name) }}
-                    style={[styles.expertInitialCircle, { overflow: "hidden" }]}
+                    style={styles.recAvatar}
                   />
                 ) : (
-                  <View style={styles.expertInitialCircle}>
-                    <Text style={styles.expertInitialText}>
+                  <View style={styles.recAvatarInitials}>
+                    <Text style={styles.recAvatarText}>
                       {getInitials(e.name)}
                     </Text>
                   </View>
                 )}
-                <Text style={styles.expertCardName} numberOfLines={1}>
-                  {e.name}
-                </Text>
-                <View style={styles.starRow}>
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <Ionicons
-                      key={s}
-                      name={
-                        s <= Math.round(e.rating || 0) ? "star" : "star-outline"
-                      }
-                      size={14}
-                      color="#FBBF24"
-                    />
-                  ))}
+                <View style={styles.recInfo}>
+                  <Text style={styles.recName} numberOfLines={1}>
+                    {e.name}
+                  </Text>
+                  <Text style={styles.recExp}>
+                    {e.experience > 0
+                      ? `${e.experience} Years Experience`
+                      : "New"}
+                  </Text>
                 </View>
-                <Text style={styles.expText}>
-                  {e.experience > 0 ? `${e.experience} yrs` : "New"}
-                </Text>
-                <View style={styles.skillChipsRow}>
-                  {getSkillChips(e).map((skill, idx) => (
-                    <View key={idx} style={styles.expertSkillBadge}>
-                      <Text style={styles.expertSkillText}>{skill}</Text>
-                    </View>
-                  ))}
-                </View>
-                <View style={styles.expertCardFooter} />
-              </Pressable>
-            ))
-          )}
-        </ScrollView>
+              </View>
+              <View style={styles.recTagsRow}>
+                {getSkillChips(e).map((skill, idx) => (
+                  <View key={idx} style={styles.recTag}>
+                    <Text style={styles.recTagText}>{skill}</Text>
+                  </View>
+                ))}
+              </View>
+              <View style={styles.recFooter}>
+                <Text style={styles.recViewText}>View Profile</Text>
+                <Ionicons name="chevron-forward" size={12} color="#1a1a2e" />
+              </View>
+            </Pressable>
+          ))}
+        </View>
       </ScrollView>
 
       <WalletModal
@@ -565,6 +623,7 @@ const LiveExpert = ({ name, title, image, onPress }) => (
       onError={() => {}}
     />
     <View style={styles.liveBadge}>
+      <View style={styles.liveBadgeDot} />
       <Text style={styles.liveText}>LIVE</Text>
     </View>
     <View style={styles.liveOverlay}>
@@ -579,7 +638,7 @@ const LiveExpert = ({ name, title, image, onPress }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 export default function Dashboard() {
   // ── shared state ──
-  const [userRole, setUserRole] = useState(null); // "expert" | "user"
+  const [userRole, setUserRole] = useState(null);
   const [userData, setUserData] = useState(null);
   const [checking, setChecking] = useState(true);
 
@@ -612,7 +671,7 @@ export default function Dashboard() {
       const cleanImage = image.replace(/^uploads\//, "");
       return `${BASE_URL}/uploads/${cleanImage}`;
     }
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=1A2B4C&color=fff`;
+    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=2d6a5e&color=fff`;
   };
 
   const getFirstSkill = (expert) => {
@@ -809,7 +868,7 @@ export default function Dashboard() {
           backgroundColor: "#fff",
         }}
       >
-        <ActivityIndicator size="large" color="#0FA688" />
+        <ActivityIndicator size="large" color={TEAL} />
       </View>
     );
   }
@@ -826,7 +885,7 @@ export default function Dashboard() {
     getSkillChips,
   };
 
-  // ✅ ROLE SWITCH — expert sees ExpertDashboard, everyone else sees JobseekerDashboard
+  // ✅ ROLE SWITCH
   if (userRole === "expert") {
     return (
       <ExpertDashboard
@@ -856,533 +915,523 @@ export default function Dashboard() {
 // ─────────────────────────────────────────────────────────────────────────────
 //  STYLES
 // ─────────────────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#FFF" },
+const TEAL = "#574964";
+const TEAL_LIGHT = "#efddff";
+const TEAL_TEXT = "#574964";
+const PAGE_BG = "#f5f6f8";
+const CARD_BG = "#FFFFFF";
+const TEXT_PRIMARY = "#1a1a2e";
+const TEXT_MUTED = "#888899";
+const BORDER = "#eff0f2";
 
-  // ── jobseeker header ──
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: PAGE_BG,
+  },
+
+  // ── Header ──
   header: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#FFF",
-    elevation: 4,
+    gap: 12,
+    backgroundColor: CARD_BG,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
+    marginTop: 25,
+    elevation: 2,
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    marginTop: 10,
+    shadowOpacity: 0.05,
     shadowRadius: 4,
   },
   avatarCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "rgb(113, 149, 255)",
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: TEAL,
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarInitial: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
+  avatarInitial: {
+    color: "#FFF",
+    fontWeight: "800",
+    fontSize: 13,
+  },
   headerTitle: {
     fontSize: 22,
-    fontWeight: "700",
-    marginLeft: 12,
-    color: "#333",
+    fontWeight: "800",
+    color: TEXT_PRIMARY,
+    letterSpacing: -0.3,
   },
+  headerSub: {
+    fontSize: 13,
+    color: TEXT_MUTED,
+    marginTop: 1,
+  },
+
+  // ── Search ──
   searchBar: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgb(244, 247, 255)",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 45,
-    marginHorizontal: 16,
-    marginBottom: 15,
-    marginTop: 10,
+    backgroundColor: CARD_BG,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
+    borderBottomWidth: 0.5,
+    marginTop: 16,
+    marginLeft: 9,
+    marginRight: 9,
+    borderBottomColor: BORDER,
+    gap: 10,
   },
   searchText: {
-    color: "rgb(90, 91, 93)",
-    marginLeft: 8,
-    fontSize: 16,
+    color: "#AAAAAA",
+    fontSize: 14,
     fontWeight: "500",
   },
 
-  // ── expert header ──
-  expertHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: "rgb(113, 149, 255)",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-  },
-  expertAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  expertAvatarTxt: { color: "#fff", fontWeight: "700", fontSize: 16 },
-  onlineDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#16A34A",
-    position: "absolute",
-    bottom: 0,
-    left: 38,
-    borderWidth: 2,
-    borderColor: "rgb(113, 149, 255)",
-  },
-  expertGreet: { fontSize: 12, color: "rgba(255,255,255,0.6)" },
-  expertName: { fontSize: 17, fontWeight: "700", color: "#fff" },
-  withdrawBtn: {
-    borderWidth: 1.5,
-    borderColor: "#0FA688",
-    borderRadius: 20,
-    paddingHorizontal: 18,
-    paddingVertical: 8,
-  },
-  withdrawTxt: { color: "#0FA688", fontWeight: "700", fontSize: 14 },
-
-  // ── earnings banner ──
-  earnBanner: {
-    flexDirection: "row",
-    backgroundColor: "#0FA688",
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 18,
-    padding: 20,
-    alignItems: "center",
-  },
-  earnLabel: {
-    fontSize: 10,
-    color: "rgba(255,255,255,0.7)",
-    letterSpacing: 1,
-    fontWeight: "600",
-  },
-  earnAmount: { fontSize: 28, fontWeight: "800", color: "#fff", marginTop: 4 },
-  earnWeek: { fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 4 },
-  earnDivider: {
-    width: 1,
-    height: 60,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    marginHorizontal: 20,
-  },
-  earnBigNum: { fontSize: 28, fontWeight: "800", color: "#fff" },
-  earnSmallLbl: { fontSize: 11, color: "rgba(255,255,255,0.7)", marginTop: 2 },
-
-  // ── expert tabs ──
-  expertTabRow: {
-    flexDirection: "row",
-    backgroundColor: "rgb(113, 149, 255)",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  expertTab: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 20,
-    alignItems: "center",
-  },
-  expertTabActive: { backgroundColor: "#0FA688" },
-  expertTabTxt: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.5)",
-    fontWeight: "600",
-  },
-  expertTabTxtActive: { color: "#0D2E2A", fontWeight: "700" },
-
-  // ── expert sections ──
-  expertSection: {
-    backgroundColor: "#fff",
-    borderRadius: 18,
-    padding: 16,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderWidth: 0.5,
-    borderColor: "#E5E7EB",
-  },
-  expertSectionHead: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 14,
-  },
-  expertSectionTitle: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: "#111827",
-    marginBottom: 4,
-  },
-  seeAllTeal: { fontSize: 13, color: "#0FA688", fontWeight: "600" },
-
-  // live pill
-  livePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "rgb(113, 149, 255)",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    gap: 5,
-  },
-  livePillDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: "#DC2626",
-  },
-  livePillTxt: { fontSize: 12, color: "#DC2626", fontWeight: "600" },
-
-  // session row
-  sessionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 14,
-    padding: 12,
-    marginBottom: 10,
-  },
-  sessionAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  sessionAvatarTxt: { color: "#fff", fontWeight: "700", fontSize: 15 },
-  sessionUserName: { fontSize: 15, fontWeight: "700", color: "#111827" },
-  sessionTopic: { fontSize: 12, color: "#6B7280", marginTop: 2 },
-  sessionTimeBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "#fff",
-    borderRadius: 20,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  sessionTimeTxt: { fontSize: 12, fontWeight: "600", color: "#0FA688" },
-  waitingBadge: {
-    backgroundColor: "rgb(113, 149, 255)",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginBottom: 6,
-    alignItems: "center",
-  },
-  waitingTxt: { fontSize: 11, color: "#D97706", fontWeight: "600" },
-  joinBtn: {
-    backgroundColor: "#0FA688",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    alignItems: "center",
-  },
-  joinTxt: { color: "#fff", fontWeight: "700", fontSize: 13 },
-
-  // chat row
-  chatRow: { flexDirection: "row", alignItems: "center", marginBottom: 14 },
-  chatAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  chatAvatarTxt: { color: "#fff", fontWeight: "700", fontSize: 14 },
-  chatName: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  chatMsg: { fontSize: 12, color: "#6B7280", marginTop: 2 },
-  chatTime: { fontSize: 11, color: "#9CA3AF" },
-  chatAmount: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#0FA688",
-    marginTop: 3,
-  },
-
-  // earnings cards
-  earnCardsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginHorizontal: 16,
-    marginTop: 16,
-  },
-  earnCard: { flex: 1, borderRadius: 14, padding: 16 },
-  earnCardLabel: { fontSize: 12, color: "#6B7280", marginBottom: 6 },
-  earnCardValue: { fontSize: 22, fontWeight: "800" },
-
-  // transaction row
-  txnSubtitle: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    marginBottom: 16,
-    marginTop: -2,
-  },
-  txnRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 14,
-    borderBottomWidth: 0.5,
-    borderColor: "#E5E7EB",
-  },
-  txnAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  txnAvatarTxt: { color: "#fff", fontWeight: "700", fontSize: 14 },
-  txnUserName: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  txnTopic: { fontSize: 12, color: "#6B7280", marginTop: 2 },
-  txnDate: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
-  txnAmount: { fontSize: 16, fontWeight: "800", color: "#0FA688" },
-  txnStatusBadge: {
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    marginTop: 4,
-  },
-  txnStatusTxt: { fontSize: 11, fontWeight: "600" },
-
-  // ── shared original styles ──
-  scrollContainer: { paddingBottom: 40 },
-  promoBanner: {
-    backgroundColor: "rgb(228, 235, 255)",
-    marginHorizontal: 16,
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: "row",
-    marginBottom: 25,
-  },
-  promoTextContainer: { flex: 1 },
-  promoTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#333",
-    lineHeight: 22,
-  },
-  promoSub: { fontSize: 18, fontWeight: "700", color: "#333", marginTop: 8 },
-  askExpertBtn: {
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: "rgb(113, 149, 255)",
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-  },
-  askExpertBtnText: {
-    color: "rgb(92, 132, 251)",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  promoImage: { width: 150, height: 130, borderRadius: 12 },
+  // ── Section Headers ──
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    marginBottom: 15,
-    marginTop: 10,
+    paddingHorizontal: 18,
+    marginBottom: 12,
+    marginTop: 20,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
   },
   sectionTitle: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "rgb(90, 91, 93)",
+    fontSize: 18,
+    fontWeight: "800",
+    color: TEXT_PRIMARY,
+    letterSpacing: -0.2,
   },
-  viewAllText: { color: "rgb(113, 149, 255)", fontSize: 17, fontWeight: "600" },
+  sectionSubTitle: {
+    fontSize: 13,
+    color: TEXT_MUTED,
+    marginTop: 2,
+  },
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: TEAL,
+  },
+
+  // ── Live Indicator ──
   liveIndicator: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFF0F0",
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 20,
+    gap: 5,
   },
   liveDot: {
-    width: 8,
-    height: 8,
+    width: 7,
+    height: 7,
     borderRadius: 4,
-    backgroundColor: "red",
-    marginRight: 5,
+    backgroundColor: "#e53935",
   },
-  liveIndicatorText: { color: "red", fontSize: 12, fontWeight: "700" },
-  noExpertsText: {
-    textAlign: "center",
-    color: "#999",
-    marginVertical: 20,
-    fontSize: 14,
-  },
-  expertBySkillList: { paddingLeft: 16, paddingBottom: 10 },
-  skillExpertCard: {
-    width: 140,
-    backgroundColor: "#F3F0FF",
-    borderRadius: 20,
-    padding: 12,
-    alignItems: "center",
-    marginRight: 15,
-   paddingLeft: 16, paddingBottom: 10 ,
-  },
-  expertInitialCircle: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: "rgb(113, 149, 255)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  expertInitialText: { color: "#FFF", fontWeight: "bold", fontSize: 16 },
-  expertCardName: {
-    fontSize: 13,
+  liveIndicatorText: {
+    color: "#e53935",
+    fontSize: 12,
     fontWeight: "700",
-    color: "#333",
-    marginBottom: 4,
   },
-  starRow: { flexDirection: "row", marginBottom: 4 },
-  expText: { fontSize: 11, color: "#666", marginBottom: 6 },
-  skillChipsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-    justifyContent: "center",
+
+  // ── Live Card ──
+  liveScrollContainer: {
+    paddingLeft: 18,
+    paddingBottom: 8,
   },
-  expertSkillBadge: {
-    backgroundColor: "rgb(113, 149, 255)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-    marginBottom: 2,
-  },
-  expertSkillText: { color: "#FFF", fontSize: 10, fontWeight: "600" },
-  expertCardFooter: {
-    height: 4,
-    width: 60,
-    backgroundColor: "#DDD",
-    borderRadius: 2,
-    marginTop: 8,
-  },
-  liveScrollContainer: { paddingLeft: 16, paddingBottom: 10 },
   liveCard: {
-    width: 150,
-    height: 180,
-    borderRadius: 20,
+    width: 130,
+    height: 170,
+    borderRadius: 18,
     overflow: "hidden",
     marginRight: 12,
-    backgroundColor: "rgb(113, 149, 255)",
+    backgroundColor: "#4a4869",
   },
-  liveImage: { width: "100%", height: "100%" },
+  liveImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
   liveBadge: {
     position: "absolute",
     top: 8,
     left: 8,
-    backgroundColor: "red",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#e53935",
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 8,
+    gap: 4,
   },
-  liveText: { color: "#fff", fontSize: 10, fontWeight: "700" },
+  liveBadgeDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: "#fff",
+  },
+  liveText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "800",
+  },
   liveOverlay: {
     position: "absolute",
     bottom: 0,
     width: "100%",
     padding: 8,
-    backgroundColor: "rgba(0,0,0,0.4)",
+    backgroundColor: "rgba(0,0,0,0.45)",
   },
-  liveName: { color: "#fff", fontWeight: "700", fontSize: 12 },
-  liveTitle: { color: "#fff", fontSize: 10 },
-  filterList: { paddingLeft: 16, paddingBottom: 12 },
-  filterChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: "rgb(113, 149, 255)",
-    marginRight: 10,
-    backgroundColor: "#fff",
-  },
-  filterChipActive: { backgroundColor: "rgb(164, 187, 255)" },
-  filterChipText: { fontSize: 13, fontWeight: "600", color: "#2c2b2b" },
-  filterChipTextActive: { color: "#3e3d3d" },
-  emptyTxt: {
-    fontSize: 13,
-    color: "#9CA3AF",
-    textAlign: "center",
-    paddingVertical: 20,
-  },
-  statsContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 15,
-  },
-
-  statCard: {
-    backgroundColor: "#fff",
-    padding: 15,
-    borderRadius: 12,
-    alignItems: "center",
-    width: "40%",
-    elevation: 2,
-  },
-
-  statNumber: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#0FA688",
-  },
-
-  statLabel: {
-    fontSize: 12,
-    color: "#777",
-    marginTop: 4,
-  },
-
-  tabRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    marginVertical: 10,
-  },
-
-  tabBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-  },
-
-  tabActive: {
-    backgroundColor: "#0FA688",
-  },
-
-  tabText: {
-    color: "#777",
-  },
-
-  tabTextActive: {
+  liveName: {
     color: "#fff",
     fontWeight: "700",
+    fontSize: 12,
+  },
+  liveTitle: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 10,
+    marginTop: 1,
   },
 
+  // ── Skill Filter Chips ──
+  filterList: {
+    paddingLeft: 18,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 50,
+    borderWidth: 1.5,
+    borderColor: "#D0D0D8",
+    backgroundColor: CARD_BG,
+  },
+  filterChipActive: {
+    backgroundColor: TEAL,
+    borderColor: TEAL,
+  },
+  filterChipText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: "#555",
+  },
+  filterChipTextActive: {
+    color: "#fff",
+  },
+
+  // ── Expert Card ──
+  expertBySkillList: {
+    paddingLeft: 18,
+    paddingBottom: 8,
+  },
+  scrollContainer: {
+    paddingLeft: 18,
+    paddingBottom: 8,
+  },
+  topExpertsContainer: {
+    backgroundColor: "#f0f2f5",
+    borderRadius: 20,
+    marginHorizontal: 18,
+    paddingVertical: 14,
+    paddingLeft: 0,
+  },
+  skillExpertCard: {
+    width: 158,
+    backgroundColor: CARD_BG,
+    borderRadius: 20,
+    padding: 14,
+    paddingBottom: 12,
+    marginRight: 14,
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+  },
+  skillExpertCardFeatured: {
+    borderColor: "#f2e9fb",
+    borderWidth: 1.5,
+  },
+  topBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFF8E8",
+    borderWidth: 1,
+    borderColor: "#F5D76E",
+    borderRadius: 20,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    gap: 4,
+    alignSelf: "flex-start",
+    marginBottom: 2,
+  },
+  topBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: "#B8860B",
+  },
+  expertInitialCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#574964",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: TEAL_LIGHT,
+  },
+  expertInitialText: {
+    color: "#FFF",
+    fontWeight: "800",
+    fontSize: 16,
+  },
+  expertCardName: {
+    fontSize: 14,
+    fontWeight: "800",
+    color: TEXT_PRIMARY,
+    textAlign: "center",
+    marginBottom: 4,
+  },
+  starRow: {
+    flexDirection: "row",
+    gap: 2,
+    marginBottom: 3,
+  },
+  expText: {
+    fontSize: 12,
+    color: TEXT_MUTED,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  skillChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  expertSkillBadge: {
+    backgroundColor: TEAL_LIGHT,
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 50,
+  },
+  expertSkillText: {
+    color: TEAL_TEXT,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  expertCardFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F3",
+    paddingTop: 8,
+    width: "100%",
+    justifyContent: "center",
+  },
+  viewProfileText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+  },
+
+  // ── Recommended Cards ──
+  recommendedGrid: {
+    paddingHorizontal: 18,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+  },
+  recCard: {
+    backgroundColor: CARD_BG,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: BORDER,
+    padding: 14,
+    width: "47.5%",
+  },
+  recTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  recAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: TEAL_LIGHT,
+  },
+  recAvatarInitials: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#574964",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  recAvatarText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  recInfo: {
+    flex: 1,
+  },
+  recName: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: TEXT_PRIMARY,
+  },
+  recExp: {
+    fontSize: 11,
+    color: TEXT_MUTED,
+    marginTop: 2,
+  },
+  recTagsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 5,
+    marginBottom: 10,
+  },
+  recTag: {
+    backgroundColor: TEAL_LIGHT,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 50,
+  },
+  recTagText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: TEAL_TEXT,
+  },
+  recFooter: {
+    borderTopWidth: 1,
+    borderTopColor: "#F0F0F3",
+    paddingTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 2,
+  },
+  recViewText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+  },
+
+  // ── Chat Row ──
+  chatRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: BORDER,
+    backgroundColor: CARD_BG,
+  },
+  chatName: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: TEXT_PRIMARY,
+  },
+  chatTime: {
+    fontSize: 11,
+    color: TEXT_MUTED,
+  },
+
+  // ── Transaction Row ──
   txnRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 12,
+    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     borderBottomWidth: 0.5,
-    borderColor: "#eee",
+    borderBottomColor: BORDER,
+    backgroundColor: CARD_BG,
   },
-
   txnUser: {
-    fontWeight: "600",
-  },
-
-  txnDate: {
-    fontSize: 12,
-    color: "#888",
-  },
-
-  txnAmount: {
+    fontSize: 14,
     fontWeight: "700",
-    color: "#0FA688",
+    color: TEXT_PRIMARY,
+  },
+  txnDate: {
+    fontSize: 11,
+    color: TEXT_MUTED,
+    marginTop: 2,
+  },
+  txnAmount: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: TEAL,
+  },
+
+  // ── Banner ──
+  promoBanner: {
+    backgroundColor: "#ede4f6",
+    marginHorizontal: 18,
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    marginBottom: 4,
+    marginTop: 16,
+    overflow: "hidden",
+  },
+  promoTextContainer: {
+    flex: 1,
+  },
+  promoTitle: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: TEXT_PRIMARY,
+    lineHeight: 22,
+  },
+  promoSub: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: TEAL,
+    marginTop: 6,
+  },
+  askExpertBtn: {
+    marginTop: 12,
+    backgroundColor: TEAL,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+  askExpertBtnText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  promoImage: {
+    width: 130,
+    height: 120,
+    borderRadius: 12,
+  },
+
+  // ── Misc ──
+  noExpertsText: {
+    textAlign: "center",
+    color: TEXT_MUTED,
+    marginVertical: 20,
+    fontSize: 14,
+    paddingHorizontal: 18,
   },
 });

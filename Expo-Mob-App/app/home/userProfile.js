@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.6:3000";
+const BASE_URL = "http://192.168.1.19:3000";
 
 const SKILL_OPTIONS = [
   "React",
@@ -100,29 +100,32 @@ const DOMAIN_CERTIFICATE_GUIDE = {
     "Upload any official certificate, degree, or document that proves your expertise in your domain (PDF or image).",
 };
 
-// ─── Tokens ───────────────────────────────────────────────────────────────────
-const BLUE = "rgb(113, 149, 255)";
-const BLUE_L = "#d6e0f4";
-const BLUE_D = "#rgb(144, 169, 253)";
-const GREEN = "#16A34A";
-const GREEN_L = "#F0FDF4";
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const GREEN = "#574964";
+const GREEN_DARK = "#574964";
+const GREEN_MID = "#574964";
+const GREEN_LIGHT = "#f5ebff";
+const GREEN_PALE = "#574964";
+const WHITE = "#FFFFFF";
+const INK = "#574964";
+const MUTED = "#574964";
+const MUTED2 = "#574964";
+const BORDER = "#b59ccc";
+const BG = "#fcf9ff";
+const BG_INPUT = "#fefeff";
 const RED = "#DC2626";
 const RED_L = "#FFF5F5";
-const WHITE = "#FFFFFF";
-const BG = "#F8F9FB";
-const CARD = "#FFFFFF";
-const INK = "#111827";
-const MUTED = "#313439";
-const BORDER = "#E5E7EB";
-const EXPERT_ACCENT = "#rgb(113, 149, 255)";
-const EXPERT_L = "#rgb(235, 237, 244)";
+const GREEN_SUC = "#16A34A";
+const GREEN_SUC_L = "#F0FDF4";
 
 // ─── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, icon, children }) {
   return (
     <View style={s.section}>
       <View style={s.sectionHeader}>
-        <Text style={s.sectionIcon}>{icon}</Text>
+        <View style={s.sectionIconBox}>
+          <Text style={s.sectionIcon}>{icon}</Text>
+        </View>
         <Text style={s.sectionTitle}>{title}</Text>
       </View>
       {children}
@@ -161,7 +164,7 @@ function DropdownPicker({ label, value, options, onChange, error }) {
         style={[s.input, s.row, error && s.inputErr]}
         onPress={() => setVisible(true)}
       >
-        <Text style={{ color: selected ? INK : MUTED, fontSize: 15, flex: 1 }}>
+        <Text style={{ color: selected ? INK : MUTED2, fontSize: 15, flex: 1 }}>
           {selected ? selected.label : label}
         </Text>
         <Ionicons name="chevron-down" size={18} color={MUTED} />
@@ -191,7 +194,7 @@ function DropdownPicker({ label, value, options, onChange, error }) {
                   {item.label}
                 </Text>
                 {item.value === value && (
-                  <Ionicons name="checkmark-circle" size={18} color={BLUE} />
+                  <Ionicons name="checkmark-circle" size={18} color={GREEN} />
                 )}
               </TouchableOpacity>
             )}
@@ -231,7 +234,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
     <>
       <View style={s.chipWrap}>
         {selectedSkills.length === 0 ? (
-          <Text style={{ color: MUTED, fontSize: 13 }}>
+          <Text style={{ color: MUTED2, fontSize: 13 }}>
             No skills selected yet
           </Text>
         ) : (
@@ -253,7 +256,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
         )}
       </View>
       <TouchableOpacity style={s.dashedBtn} onPress={() => setVisible(true)}>
-        <Ionicons name="add-circle-outline" size={17} color={BLUE} />
+        <Ionicons name="add-circle-outline" size={17} color={GREEN} />
         <Text style={s.dashedBtnText}>
           {selectedSkills.length === 0 ? "Add Skills" : "Edit Skills"} (max 5)
         </Text>
@@ -271,6 +274,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
             <TextInput
               style={s.customInput}
               placeholder="Add custom skill…"
+              placeholderTextColor={MUTED2}
               value={customSkill}
               onChangeText={setCustomSkill}
             />
@@ -294,7 +298,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
                     {item}
                   </Text>
                   {sel && (
-                    <Ionicons name="checkmark-circle" size={18} color={BLUE} />
+                    <Ionicons name="checkmark-circle" size={18} color={GREEN} />
                   )}
                 </TouchableOpacity>
               );
@@ -338,14 +342,14 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
     <>
       <View style={s.chipWrap}>
         {selectedLanguages.length === 0 ? (
-          <Text style={{ color: MUTED, fontSize: 13 }}>
+          <Text style={{ color: MUTED2, fontSize: 13 }}>
             No languages selected yet
           </Text>
         ) : (
           selectedLanguages.map((lang) => (
             <TouchableOpacity
               key={lang}
-              style={[s.chip, { backgroundColor: EXPERT_ACCENT }]}
+              style={[s.chip, { backgroundColor: GREEN_MID }]}
               onPress={() => toggle(lang)}
             >
               <Text style={s.chipText}>{lang}</Text>
@@ -359,12 +363,9 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
           ))
         )}
       </View>
-      <TouchableOpacity
-        style={[s.dashedBtn, { borderColor: EXPERT_ACCENT }]}
-        onPress={() => setVisible(true)}
-      >
-        <Ionicons name="add-circle-outline" size={17} color={EXPERT_ACCENT} />
-        <Text style={[s.dashedBtnText, { color: EXPERT_ACCENT }]}>
+      <TouchableOpacity style={s.dashedBtn} onPress={() => setVisible(true)}>
+        <Ionicons name="add-circle-outline" size={17} color={GREEN} />
+        <Text style={s.dashedBtnText}>
           {selectedLanguages.length === 0 ? "Add Languages" : "Edit Languages"}{" "}
           (max 5)
         </Text>
@@ -382,13 +383,11 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
             <TextInput
               style={s.customInput}
               placeholder="Add custom language…"
+              placeholderTextColor={MUTED2}
               value={customLang}
               onChangeText={setCustomLang}
             />
-            <TouchableOpacity
-              style={[s.customAddBtn, { backgroundColor: EXPERT_ACCENT }]}
-              onPress={addCustom}
-            >
+            <TouchableOpacity style={s.customAddBtn} onPress={addCustom}>
               <Text style={{ color: WHITE, fontWeight: "700", fontSize: 13 }}>
                 Add
               </Text>
@@ -401,32 +400,20 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
               const sel = selectedLanguages.includes(item);
               return (
                 <TouchableOpacity
-                  style={[s.mRow, sel && { backgroundColor: EXPERT_L }]}
+                  style={[s.mRow, sel && s.mRowActive]}
                   onPress={() => toggle(item)}
                 >
-                  <Text
-                    style={[
-                      s.mRowText,
-                      sel && { color: EXPERT_ACCENT, fontWeight: "700" },
-                    ]}
-                  >
+                  <Text style={[s.mRowText, sel && s.mRowTextActive]}>
                     {item}
                   </Text>
                   {sel && (
-                    <Ionicons
-                      name="checkmark-circle"
-                      size={18}
-                      color={EXPERT_ACCENT}
-                    />
+                    <Ionicons name="checkmark-circle" size={18} color={GREEN} />
                   )}
                 </TouchableOpacity>
               );
             }}
           />
-          <TouchableOpacity
-            style={[s.doneBtn, { backgroundColor: EXPERT_ACCENT }]}
-            onPress={() => setVisible(false)}
-          >
+          <TouchableOpacity style={s.doneBtn} onPress={() => setVisible(false)}>
             <Text style={s.doneBtnText}>Done</Text>
           </TouchableOpacity>
         </View>
@@ -445,13 +432,11 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
           <Ionicons
             name="shield-checkmark-outline"
             size={16}
-            color={EXPERT_ACCENT}
+            color={GREEN}
             style={{ marginTop: 2 }}
           />
           <View style={{ flex: 1 }}>
-            <Text style={[s.certInfoTitle, { color: EXPERT_ACCENT }]}>
-              Required for "{domain}"
-            </Text>
+            <Text style={s.certInfoTitle}>Required for "{domain}"</Text>
             <Text style={s.certInfoText}>{guide}</Text>
           </View>
         </View>
@@ -487,14 +472,14 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
           style={[
             s.certIconWrap,
             certFile
-              ? { backgroundColor: GREEN_L }
-              : { backgroundColor: EXPERT_L },
+              ? { backgroundColor: GREEN_SUC_L }
+              : { backgroundColor: GREEN_LIGHT },
           ]}
         >
           <Ionicons
             name={certFile ? "document-attach" : "cloud-upload-outline"}
             size={22}
-            color={certFile ? GREEN : error ? RED : EXPERT_ACCENT}
+            color={certFile ? GREEN_SUC : error ? RED : GREEN}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -503,7 +488,7 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
               <Text style={s.certFileName} numberOfLines={1}>
                 {certFile.name}
               </Text>
-              <Text style={{ fontSize: 11, color: GREEN, marginTop: 2 }}>
+              <Text style={{ fontSize: 11, color: GREEN_SUC, marginTop: 2 }}>
                 ✓ Uploaded — tap to replace
               </Text>
             </>
@@ -519,7 +504,7 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
           )}
         </View>
         {certFile && (
-          <Ionicons name="checkmark-circle" size={22} color={GREEN} />
+          <Ionicons name="checkmark-circle" size={22} color={GREEN_SUC} />
         )}
       </TouchableOpacity>
       <FieldError message={error} />
@@ -661,7 +646,6 @@ export default function ProfileScreen() {
     return Object.keys(e).length === 0;
   };
 
-  // ── Submit with role-based routing ──────────────────────────────────────────
   const submitProfile = async () => {
     if (!validate()) {
       Alert.alert(
@@ -673,17 +657,14 @@ export default function ProfileScreen() {
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) return Alert.alert("Login Required");
-
       await axios.post(
         `${BASE_URL}/api/auth/set-role`,
         { role: role.toLowerCase() },
         { headers: { Authorization: `Bearer ${token}` } },
       );
-
       const form = new FormData();
       form.append("role", role.toLowerCase());
       form.append("gender", formData.gender?.toLowerCase());
-
       const resolvedDomain =
         formData.domain === "Other" ? formData.customDomain : formData.domain;
       const resolvedData = {
@@ -708,7 +689,6 @@ export default function ProfileScreen() {
         isVerified: role === "Expert",
         verificationStatus: role === "Expert" ? "approved" : "none",
       };
-
       const skipFields = [
         "cv",
         "image",
@@ -726,14 +706,11 @@ export default function ProfileScreen() {
           resolvedData[key] !== "" &&
           resolvedData[key] !== null &&
           resolvedData[key] !== undefined
-        ) {
+        )
           form.append(key, resolvedData[key]);
-        }
       });
-
       if (selectedSkills.length > 0)
         form.append("skills", selectedSkills.join(", "));
-
       if (formData.cv) {
         const cleanUri = formData.cv.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -743,7 +720,6 @@ export default function ProfileScreen() {
           type: ext === "pdf" ? "application/pdf" : `image/${ext}`,
         });
       }
-
       if (formData.image) {
         const cleanUri = formData.image.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -753,7 +729,6 @@ export default function ProfileScreen() {
           type: `image/${ext}`,
         });
       }
-
       if (role === "Expert" && formData.certFile) {
         const cleanUri = formData.certFile.uri.split("?")[0];
         const ext = cleanUri.split(".").pop().toLowerCase();
@@ -770,15 +745,12 @@ export default function ProfileScreen() {
         });
         form.append("certificateDomain", resolvedDomain);
       }
-
       await axios.post(`${BASE_URL}/api/users/save-profile`, form, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
-
-      // ── Save to AsyncStorage ──
       const userStr = await AsyncStorage.getItem("user");
       const existingUser = userStr ? JSON.parse(userStr) : {};
       await AsyncStorage.setItem(
@@ -790,28 +762,19 @@ export default function ProfileScreen() {
           isVerified: role === "Expert",
         }),
       );
-
-      // ── Role-based routing ──────────────────────────────────────────────────
-      // Jobseeker → user dashboard
-      // Expert    → expert dashboard
-      // Both live under app/(tabs)/dashboard/
-Alert.alert(
-  role === "Expert" ? "✅ Expert Profile Created!" : "✅ Profile Saved!",
-  role === "Expert"
-    ? "Your certificate has been uploaded and your expert profile is now active!"
-    : "Your profile has been saved. Welcome to CareerTalk!",
-  [
-    {
-      text: "Continue",
-      onPress: () => {
-        // Navigate to single dashboard screen
-        router.replace("/(tabs)/dashboard/dashboard");
-      },
-    },
-  ],
-);
+      Alert.alert(
+        role === "Expert" ? "✅ Expert Profile Created!" : "✅ Profile Saved!",
+        role === "Expert"
+          ? "Your certificate has been uploaded and your expert profile is now active!"
+          : "Your profile has been saved. Welcome to CareerTalk!",
+        [
+          {
+            text: "Continue",
+            onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
+          },
+        ],
+      );
     } catch (e) {
-      console.log("Submit error:", e.response?.data || e.message);
       Alert.alert(
         "Error",
         e.response?.data?.message ||
@@ -821,8 +784,6 @@ Alert.alert(
   };
 
   const isExpert = role === "Expert";
-  const accent = isExpert ? EXPERT_ACCENT : BLUE;
-  const accentLight = isExpert ? EXPERT_L : BLUE_L;
   const displayDomain =
     formData.domain === "Other"
       ? formData.customDomain || "Other"
@@ -835,22 +796,22 @@ Alert.alert(
         style={{ flex: 1 }}
       >
         {/* ── HEADER ── */}
-        <View
-          style={[
-            s.topBar,
-            { borderBottomColor: isExpert ? EXPERT_L : BLUE_L },
-          ]}
-        >
-          <View style={s.logoRow}>
-            <View style={[s.logoBox, { backgroundColor: accent }]}>
+        <View style={s.topBar}>
+          <View style={s.topBarInner}>
+            <View style={s.logoBox}>
               <Text style={s.logoText}>CT</Text>
             </View>
-            <Text style={s.logoName}>CareerTalk</Text>
+            <View>
+              <Text style={s.logoName}>CareerTalk</Text>
+              <Text style={s.logoTagline}>Build your future</Text>
+            </View>
           </View>
-          <Text style={[s.pageTitle, { color: accent }]}>
-            {isExpert ? "Expert Profile" : "Your Profile"}
-          </Text>
-          <Text style={s.pageSub}>Fill your details to get started</Text>
+          <View style={s.headerTextGroup}>
+            <Text style={s.pageTitle}>
+              {isExpert ? "Expert Profile" : "Jobseeker Profile"}
+            </Text>
+            <Text style={s.pageSub}>Fill your details to get started</Text>
+          </View>
         </View>
 
         <ScrollView
@@ -859,29 +820,27 @@ Alert.alert(
         >
           {/* ── ROLE TOGGLE ── */}
           <View style={s.roleCard}>
-            <Text style={s.roleCardLabel}>I am a</Text>
+            <Text style={s.roleCardLabel}>I am joining as</Text>
             <View style={s.roleTabs}>
               {["Jobseeker", "Expert"].map((item) => {
                 const isActive = role === item;
-                const col = item === "Expert" ? EXPERT_ACCENT : BLUE;
                 return (
                   <TouchableOpacity
                     key={item}
-                    style={[
-                      s.roleTab,
-                      isActive && { backgroundColor: col, borderColor: col },
-                    ]}
+                    style={[s.roleTab, isActive && s.roleTabActive]}
                     onPress={() => setRole(item)}
                   >
                     <Text style={s.roleTabIcon}>
                       {item === "Expert" ? "🎓" : "💼"}
                     </Text>
-                    <Text style={[s.roleTabText, isActive && { color: WHITE }]}>
+                    <Text
+                      style={[s.roleTabText, isActive && s.roleTabTextActive]}
+                    >
                       {item}
                     </Text>
                     {isActive && (
                       <View style={s.roleTabCheck}>
-                        <Ionicons name="checkmark" size={11} color={WHITE} />
+                        <Ionicons name="checkmark" size={10} color={WHITE} />
                       </View>
                     )}
                   </TouchableOpacity>
@@ -897,14 +856,12 @@ Alert.alert(
               {formData.image ? (
                 <Image source={{ uri: formData.image.uri }} style={s.avatar} />
               ) : (
-                <View style={[s.avatarPlaceholder, { borderColor: accent }]}>
-                  <Ionicons name="camera-outline" size={26} color={accent} />
-                  <Text style={[s.avatarHint, { color: accent }]}>
-                    Add Photo
-                  </Text>
+                <View style={s.avatarPlaceholder}>
+                  <Ionicons name="camera-outline" size={28} color={GREEN} />
+                  <Text style={s.avatarHint}>Add Photo</Text>
                 </View>
               )}
-              <View style={[s.avatarBadge, { backgroundColor: accent }]}>
+              <View style={s.avatarBadge}>
                 <Ionicons name="camera" size={12} color={WHITE} />
               </View>
             </TouchableOpacity>
@@ -913,7 +870,7 @@ Alert.alert(
             <TextInput
               style={[s.input, errors.fullName && s.inputErr]}
               placeholder="Enter your full name"
-              placeholderTextColor={MUTED}
+              placeholderTextColor={MUTED2}
               value={formData.fullName}
               onChangeText={handleNameChange}
             />
@@ -923,7 +880,7 @@ Alert.alert(
             <TextInput
               style={[s.input, errors.email && s.inputErr]}
               placeholder="your@email.com"
-              placeholderTextColor={MUTED}
+              placeholderTextColor={MUTED2}
               keyboardType="email-address"
               autoCapitalize="none"
               value={formData.email}
@@ -938,32 +895,19 @@ Alert.alert(
                 return (
                   <TouchableOpacity
                     key={opt}
-                    style={[
-                      s.genderBtn,
-                      isActive && {
-                        backgroundColor: accentLight,
-                        borderColor: accent,
-                      },
-                    ]}
+                    style={[s.genderBtn, isActive && s.genderBtnActive]}
                     onPress={() => setField("gender", opt)}
                   >
                     <View
                       style={[
                         s.radio,
-                        { borderColor: isActive ? accent : BORDER },
+                        { borderColor: isActive ? GREEN : BORDER },
                       ]}
                     >
-                      {isActive && (
-                        <View
-                          style={[s.radioDot, { backgroundColor: accent }]}
-                        />
-                      )}
+                      {isActive && <View style={s.radioDot} />}
                     </View>
                     <Text
-                      style={[
-                        s.genderText,
-                        isActive && { color: accent, fontWeight: "700" },
-                      ]}
+                      style={[s.genderText, isActive && s.genderTextActive]}
                     >
                       {opt.charAt(0).toUpperCase() + opt.slice(1)}
                     </Text>
@@ -980,7 +924,7 @@ Alert.alert(
             >
               <Text
                 style={{
-                  color: formData.dob ? INK : MUTED,
+                  color: formData.dob ? INK : MUTED2,
                   flex: 1,
                   fontSize: 15,
                 }}
@@ -1024,7 +968,7 @@ Alert.alert(
                     errors.customDomain && s.inputErr,
                   ]}
                   placeholder="Specify your domain…"
-                  placeholderTextColor={MUTED}
+                  placeholderTextColor={MUTED2}
                   value={formData.customDomain}
                   onChangeText={(v) => setField("customDomain", v)}
                 />
@@ -1056,7 +1000,7 @@ Alert.alert(
                     errors.customQualification && s.inputErr,
                   ]}
                   placeholder="Specify qualification…"
-                  placeholderTextColor={MUTED}
+                  placeholderTextColor={MUTED2}
                   value={formData.customQualification}
                   onChangeText={(v) => setField("customQualification", v)}
                 />
@@ -1090,7 +1034,7 @@ Alert.alert(
                     errors.customExperience && s.inputErr,
                   ]}
                   placeholder="Enter years of experience"
-                  placeholderTextColor={MUTED}
+                  placeholderTextColor={MUTED2}
                   keyboardType="numeric"
                   value={formData.customExperience}
                   onChangeText={(v) => setField("customExperience", v)}
@@ -1108,24 +1052,24 @@ Alert.alert(
                 style={[
                   s.uploadIcon,
                   formData.cv
-                    ? { backgroundColor: GREEN_L }
-                    : { backgroundColor: BLUE_L },
+                    ? { backgroundColor: GREEN_SUC_L }
+                    : { backgroundColor: GREEN_LIGHT },
                 ]}
               >
                 <Ionicons
                   name={formData.cv ? "document-attach" : "document-outline"}
                   size={20}
-                  color={formData.cv ? GREEN : BLUE}
+                  color={formData.cv ? GREEN_SUC : GREEN}
                 />
               </View>
               <Text
-                style={[s.uploadText, formData.cv && { color: GREEN }]}
+                style={[s.uploadText, formData.cv && { color: GREEN_SUC }]}
                 numberOfLines={1}
               >
                 {formData.cv ? formData.cv.name : "Choose CV file (PDF)"}
               </Text>
               {formData.cv ? (
-                <Ionicons name="checkmark-circle" size={20} color={GREEN} />
+                <Ionicons name="checkmark-circle" size={20} color={GREEN_SUC} />
               ) : (
                 <Ionicons name="chevron-forward" size={18} color={MUTED} />
               )}
@@ -1143,7 +1087,6 @@ Alert.alert(
                   onChange={setSelectedSkills}
                 />
                 <FieldError message={errors.skills} />
-
                 <Label text="Languages Known" />
                 <LanguagesPicker
                   selectedLanguages={selectedLanguages}
@@ -1188,20 +1131,19 @@ Alert.alert(
                         errors.customLocation && s.inputErr,
                       ]}
                       placeholder="Enter your city name…"
-                      placeholderTextColor={MUTED}
+                      placeholderTextColor={MUTED2}
                       value={formData.customLocation}
                       onChangeText={(v) => setField("customLocation", v)}
                     />
                     <FieldError message={errors.customLocation} />
                   </>
                 )}
-
                 <Label text="Bio" />
                 <TextInput
                   style={[s.input, { height: 90, textAlignVertical: "top" }]}
                   multiline
                   placeholder="Write a short bio about yourself…"
-                  placeholderTextColor={MUTED}
+                  placeholderTextColor={MUTED2}
                   value={formData.bio}
                   onChangeText={(v) => setField("bio", v)}
                 />
@@ -1211,16 +1153,19 @@ Alert.alert(
 
           {/* ── SUBMIT ── */}
           <TouchableOpacity
-            style={[s.submitBtn, { backgroundColor: accent }]}
+            style={s.submitBtn}
             onPress={submitProfile}
             activeOpacity={0.85}
           >
             <Text style={s.submitText}>
-              {isExpert ? "Submit & Get Verified  →" : "Save Profile  →"}
+              {isExpert ? "Submit & Get Verified" : "Save Profile"}
             </Text>
+            <View style={s.submitArrow}>
+              <Ionicons name="arrow-forward" size={18} color={GREEN} />
+            </View>
           </TouchableOpacity>
 
-          <View style={{ height: 30 }} />
+          <View style={{ height: 36 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -1231,53 +1176,73 @@ Alert.alert(
 const s = StyleSheet.create({
   scroll: { paddingBottom: 40 },
 
-  // header
+  // Header
   topBar: {
-    backgroundColor: WHITE,
+    backgroundColor: GREEN,
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: BORDER,
+    paddingBottom: 20,
   },
-  logoRow: {
+  topBarInner: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 14,
+    gap: 10,
+    marginBottom: 16,
   },
   logoBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 9,
+    width: 38,
+    height: 38,
+    borderRadius: 11,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.3)",
     justifyContent: "center",
     alignItems: "center",
   },
   logoText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "900",
     color: WHITE,
     letterSpacing: 0.5,
   },
-  logoName: { fontSize: 22, fontWeight: "800", color: INK },
-  pageTitle: { fontSize: 24, fontWeight: "800", letterSpacing: -0.4 },
-  pageSub: { fontSize: 15, color: MUTED, marginTop: 3, fontWeight: "500" },
+  logoName: { fontSize: 18, fontWeight: "800", color: WHITE },
+  logoTagline: {
+    fontSize: 11,
+    color: "rgba(255,255,255,0.65)",
+    fontWeight: "500",
+  },
+  headerTextGroup: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
+  },
+  pageTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: WHITE,
+    letterSpacing: -0.3,
+  },
+  pageSub: { fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 3 },
 
-  // role card
+  // Role card
   roleCard: {
     backgroundColor: WHITE,
     marginHorizontal: 16,
-    marginTop: 14,
+    marginTop: 16,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
     borderColor: BORDER,
   },
   roleCardLabel: {
-    fontSize: 13,
-    fontWeight: "600",
+    fontSize: 12,
+    fontWeight: "700",
     color: MUTED,
-    marginBottom: 10,
+    marginBottom: 12,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
   },
   roleTabs: { flexDirection: "row", gap: 10 },
   roleTab: {
@@ -1286,15 +1251,17 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 7,
-    paddingVertical: 12,
+    paddingVertical: 13,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: BORDER,
     backgroundColor: BG,
     position: "relative",
   },
+  roleTabActive: { backgroundColor: GREEN_LIGHT, borderColor: GREEN },
   roleTabIcon: { fontSize: 16 },
   roleTabText: { fontSize: 14, fontWeight: "700", color: MUTED },
+  roleTabTextActive: { color: GREEN },
   roleTabCheck: {
     position: "absolute",
     top: 6,
@@ -1302,12 +1269,12 @@ const s = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.3)",
+    backgroundColor: GREEN,
     justifyContent: "center",
     alignItems: "center",
   },
 
-  // section
+  // Section
   section: {
     backgroundColor: WHITE,
     marginHorizontal: 16,
@@ -1320,41 +1287,60 @@ const s = StyleSheet.create({
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 14,
+    gap: 10,
+    marginBottom: 16,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: GREEN_LIGHT,
   },
-  sectionIcon: { fontSize: 18 },
+  sectionIconBox: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: GREEN_LIGHT,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sectionIcon: { fontSize: 16 },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: INK },
 
-  // avatar
+  // Avatar
   avatarWrap: { alignSelf: "center", marginBottom: 16, position: "relative" },
-  avatar: { width: 88, height: 88, borderRadius: 44 },
+  avatar: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    borderWidth: 3,
+    borderColor: GREEN_PALE,
+  },
   avatarPlaceholder: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     borderWidth: 2,
     borderStyle: "dashed",
-    backgroundColor: BG,
+    borderColor: GREEN_PALE,
+    backgroundColor: GREEN_LIGHT,
     justifyContent: "center",
     alignItems: "center",
     gap: 4,
   },
-  avatarHint: { fontSize: 11, fontWeight: "600" },
+  avatarHint: { fontSize: 11, fontWeight: "600", color: GREEN },
   avatarBadge: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: 2,
+    right: 2,
     width: 26,
     height: 26,
     borderRadius: 13,
+    backgroundColor: GREEN,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
     borderColor: WHITE,
   },
 
-  // inputs
+  // Inputs
   label: {
     fontSize: 13,
     fontWeight: "700",
@@ -1363,7 +1349,7 @@ const s = StyleSheet.create({
     marginBottom: 6,
   },
   input: {
-    backgroundColor: BG,
+    backgroundColor: BG_INPUT,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: BORDER,
@@ -1376,27 +1362,28 @@ const s = StyleSheet.create({
   dashedInput: { marginTop: 8, borderStyle: "dashed" },
   row: { flexDirection: "row", alignItems: "center" },
 
-  // gender
+  // Gender
   genderRow: {
     flexDirection: "row",
     gap: 8,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: BORDER,
-    padding: 10,
-    backgroundColor: BG,
+    padding: 8,
+    backgroundColor: BG_INPUT,
   },
   genderBtn: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    paddingVertical: 9,
+    paddingHorizontal: 8,
+    borderRadius: 9,
     borderWidth: 1.5,
     borderColor: BORDER,
   },
+  genderBtnActive: { backgroundColor: GREEN_LIGHT, borderColor: GREEN },
   radio: {
     width: 16,
     height: 16,
@@ -1405,19 +1392,20 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  radioDot: { width: 8, height: 8, borderRadius: 4 },
+  radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: GREEN },
   genderText: { fontSize: 13, color: MUTED, fontWeight: "600" },
+  genderTextActive: { color: GREEN, fontWeight: "700" },
 
-  // error
+  // Error
   errRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 5 },
   errText: { fontSize: 12, color: RED, fontWeight: "500" },
 
-  // upload
+  // Upload
   uploadBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    backgroundColor: BG,
+    backgroundColor: BG_INPUT,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: BORDER,
@@ -1434,22 +1422,22 @@ const s = StyleSheet.create({
   },
   uploadText: { flex: 1, fontSize: 14, fontWeight: "600", color: INK },
 
-  // chips
+  // Chips
   chipWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    backgroundColor: BG,
+    backgroundColor: BG_INPUT,
     borderRadius: 12,
     padding: 12,
     borderWidth: 1.5,
     borderColor: BORDER,
-    minHeight: 46,
+    minHeight: 48,
   },
   chip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: BLUE,
+    backgroundColor: GREEN,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -1463,25 +1451,30 @@ const s = StyleSheet.create({
     marginTop: 8,
     paddingVertical: 10,
     borderWidth: 1.5,
-    borderColor: BLUE,
+    borderColor: GREEN,
     borderRadius: 10,
     borderStyle: "dashed",
   },
-  dashedBtnText: { fontSize: 13, fontWeight: "700", color: BLUE },
+  dashedBtnText: { fontSize: 13, fontWeight: "700", color: GREEN },
 
-  // cert
+  // Certificate
   certInfoBox: {
     flexDirection: "row",
     gap: 10,
     padding: 12,
     borderRadius: 10,
     borderLeftWidth: 4,
-    borderLeftColor: EXPERT_ACCENT,
-    backgroundColor: EXPERT_L,
+    borderLeftColor: GREEN,
+    backgroundColor: GREEN_LIGHT,
     marginBottom: 10,
   },
-  certInfoTitle: { fontSize: 12, fontWeight: "700", marginBottom: 3 },
-  certInfoText: { fontSize: 12, color: "#444", lineHeight: 18 },
+  certInfoTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: GREEN,
+    marginBottom: 3,
+  },
+  certInfoText: { fontSize: 12, color: "#3D6B5E", lineHeight: 18 },
   certBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1489,14 +1482,14 @@ const s = StyleSheet.create({
     padding: 14,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: EXPERT_ACCENT,
+    borderColor: GREEN,
     borderStyle: "dashed",
-    backgroundColor: EXPERT_L,
+    backgroundColor: GREEN_LIGHT,
   },
   certBtnSuccess: {
     borderStyle: "solid",
-    borderColor: GREEN,
-    backgroundColor: GREEN_L,
+    borderColor: GREEN_SUC,
+    backgroundColor: GREEN_SUC_L,
   },
   certBtnErr: {
     borderStyle: "solid",
@@ -1510,15 +1503,15 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  certLabel: { fontSize: 14, fontWeight: "700", color: EXPERT_ACCENT },
-  certFileName: { fontSize: 13, fontWeight: "700", color: GREEN },
+  certLabel: { fontSize: 14, fontWeight: "700", color: GREEN },
+  certFileName: { fontSize: 13, fontWeight: "700", color: GREEN_SUC },
 
-  // modal
+  // Modal
   mOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
   mSheet: {
     backgroundColor: WHITE,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 26,
+    borderTopRightRadius: 26,
     padding: 20,
     paddingBottom: 36,
     maxHeight: "55%",
@@ -1547,9 +1540,9 @@ const s = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 10,
   },
-  mRowActive: { backgroundColor: BLUE_L },
+  mRowActive: { backgroundColor: GREEN_LIGHT },
   mRowText: { fontSize: 15, color: INK, fontWeight: "500" },
-  mRowTextActive: { color: BLUE, fontWeight: "700" },
+  mRowTextActive: { color: GREEN, fontWeight: "700" },
   customRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
   customInput: {
     flex: 1,
@@ -1560,15 +1553,16 @@ const s = StyleSheet.create({
     fontSize: 14,
     borderWidth: 1,
     borderColor: BORDER,
+    color: INK,
   },
   customAddBtn: {
-    backgroundColor: BLUE,
+    backgroundColor: GREEN,
     paddingHorizontal: 16,
     borderRadius: 10,
     justifyContent: "center",
   },
   doneBtn: {
-    backgroundColor: BLUE,
+    backgroundColor: GREEN,
     borderRadius: 12,
     paddingVertical: 13,
     alignItems: "center",
@@ -1576,23 +1570,35 @@ const s = StyleSheet.create({
   },
   doneBtnText: { color: WHITE, fontSize: 15, fontWeight: "800" },
 
-  // submit
+  // Submit
   submitBtn: {
     marginHorizontal: 16,
     marginTop: 20,
-    height: 54,
-    borderRadius: 14,
+    height: 56,
+    borderRadius: 16,
+    backgroundColor: GREEN,
+    flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 5,
+    gap: 12,
+    shadowColor: GREEN,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 6,
   },
   submitText: {
     fontSize: 16,
     fontWeight: "800",
     color: WHITE,
     letterSpacing: 0.2,
+  },
+  submitArrow: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: WHITE,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
