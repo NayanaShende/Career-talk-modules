@@ -15,19 +15,68 @@ import {
   Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import Svg, { Rect, Path, Line } from "react-native-svg";
+import Svg, { Rect, Path, Line, Circle, G } from "react-native-svg";
 import { router } from "expo-router";
 import API from "../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
-// ─── CareerTalk Briefcase Logo ────────────────────────────────────────────────
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const GREEN = "#574964";
+const GREEN_DARK = "#574964";
+const GREEN_LIGHT = "#f4eafd";
+const GREEN_MID = "#574964";
+const GREEN_PALE = "#c6b0db";
+const WHITE = "#FFFFFF";
+const INK = "#0D1F1B";
+const MUTED = "#574964";
+const MUTED2 = "#574964";
+const BORDER = "#574964";
+const BG_INPUT = "#f5ebff";
+const ERR = "#DC2626";
+
+// ─── Decorative Background Blobs ─────────────────────────────────────────────
+function BackgroundDecor() {
+  return (
+    <Svg
+      style={StyleSheet.absoluteFill}
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+    >
+      {/* Top-right large circle */}
+      <Circle cx={width + 40} cy={-40} r={160} fill="rgba(255,255,255,0.07)" />
+      {/* Mid-left circle */}
+      <Circle
+        cx={-60}
+        cy={height * 0.38}
+        r={120}
+        fill="rgba(255,255,255,0.05)"
+      />
+      {/* Small accent */}
+      <Circle
+        cx={width * 0.75}
+        cy={height * 0.22}
+        r={50}
+        fill="rgba(255,255,255,0.06)"
+      />
+      {/* Bottom right */}
+      <Circle
+        cx={width + 20}
+        cy={height * 0.55}
+        r={90}
+        fill="rgba(0,0,0,0.04)"
+      />
+    </Svg>
+  );
+}
+
+// ─── CareerTalk Logo ──────────────────────────────────────────────────────────
 function CareerTalkLogo() {
   return (
     <View style={styles.logoBox}>
-      <Svg width={24} height={24} viewBox="0 0 26 26" fill="none">
-        {/* Briefcase body */}
+      <Svg width={26} height={26} viewBox="0 0 26 26" fill="none">
         <Rect
           x={3}
           y={10}
@@ -38,14 +87,12 @@ function CareerTalkLogo() {
           stroke="white"
           strokeWidth={1.6}
         />
-        {/* Briefcase handle */}
         <Path
           d="M9 10V8a4 4 0 018 0v2"
           stroke="white"
           strokeWidth={1.6}
           strokeLinecap="round"
         />
-        {/* Center divider */}
         <Line
           x1={13}
           y1={10}
@@ -55,7 +102,6 @@ function CareerTalkLogo() {
           strokeWidth={1.4}
           strokeLinecap="round"
         />
-        {/* Upward arrow — growth */}
         <Path
           d="M10 16l3-3 3 3"
           stroke="white"
@@ -68,15 +114,24 @@ function CareerTalkLogo() {
   );
 }
 
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+function StatCard({ num, label }) {
+  return (
+    <View style={styles.statCard}>
+      <Text style={styles.statNum}>{num}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function LoginOtpScreen() {
   const slideAnim = useRef(new Animated.Value(40)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.97)).current;
   const otpRefs = useRef([]);
-
   const fadeIn = useRef(new Animated.Value(0)).current;
-  const slideUp = useRef(new Animated.Value(20)).current;
+  const slideUp = useRef(new Animated.Value(24)).current;
 
   const countries = [
     { code: "IN", callingCode: "91", flag: "🇮🇳", name: "India" },
@@ -96,7 +151,6 @@ export default function LoginOtpScreen() {
   const [timer, setTimer] = useState(60);
   const [isTimerActive, setIsTimerActive] = useState(false);
 
-  // Entrance animation
   useEffect(() => {
     Animated.parallel([
       Animated.timing(fadeIn, {
@@ -113,7 +167,6 @@ export default function LoginOtpScreen() {
     ]).start();
   }, []);
 
-  // Countdown timer
   useEffect(() => {
     let interval;
     if (isTimerActive && timer > 0) {
@@ -182,9 +235,8 @@ export default function LoginOtpScreen() {
   };
 
   const handleKeyPress = (e, i) => {
-    if (e.nativeEvent.key === "Backspace" && otp[i] === "" && i > 0) {
+    if (e.nativeEvent.key === "Backspace" && otp[i] === "" && i > 0)
       otpRefs.current[i - 1]?.focus();
-    }
   };
 
   const resendOtp = async () => {
@@ -241,39 +293,47 @@ export default function LoginOtpScreen() {
               { opacity: fadeIn, transform: [{ translateY: slideUp }] },
             ]}
           >
-            {/* ── TOP LAVENDER SECTION ── */}
-            <View style={styles.top}>
-              {/* Logo */}
+            {/* ── HERO SECTION ── */}
+            <View style={styles.hero}>
+              <BackgroundDecor />
+
+              {/* Logo row */}
               <View style={styles.logoRow}>
                 <CareerTalkLogo />
-                <View>
-                  <Text style={styles.appName}>CareerTalk</Text>
-                </View>
+                <Text style={styles.appName}>CareerTalk</Text>
+              </View>
+
+              {/* Badge */}
+              <View style={styles.heroBadge}>
+                <Text style={styles.heroBadgeText}>
+                  🌱 Grow your career with expert mentorship
+                </Text>
               </View>
 
               {/* Headline */}
               <Text style={styles.headline}>
-                Find your direction{"\n"}
-                <Text style={styles.headlineAccent}>
-                  Build your future
-                </Text>
+                Find your{"\n"}
+                <Text style={styles.headlineAccent}>direction.</Text>
               </Text>
-
               <Text style={styles.subline}>
-                One conversation with the right expert can change your entire
-                career path.
+                One conversation with the right expert{"\n"}can change your
+                entire career path.
               </Text>
             </View>
 
-            {/* ── WHITE FORM CARD ── */}
+            {/* ── FORM CARD ── */}
             <View style={styles.formCard}>
+              {/* Pill handle */}
+              <View style={styles.cardHandle} />
+
               {!otpSent ? (
                 <>
-                  <Text style={styles.sectionLabel}>
-                    SIGN IN TO GET STARTED
+                  <Text style={styles.formTitle}>Welcome back</Text>
+                  <Text style={styles.formSub}>
+                    Enter your mobile number to continue
                   </Text>
 
-                  {/* Phone row */}
+                  {/* Phone Input */}
                   <View
                     style={[
                       styles.phoneRow,
@@ -290,14 +350,14 @@ export default function LoginOtpScreen() {
                       <Text style={styles.dialCode}>
                         +{selectedCountry.callingCode}
                       </Text>
-                      <Text style={styles.chevron}>›</Text>
+                      <Text style={styles.chevron}>▾</Text>
                     </TouchableOpacity>
                     <View style={styles.divLine} />
                     <TextInput
                       style={styles.numInput}
                       keyboardType="number-pad"
-                      placeholder="Enter mobile number"
-                      placeholderTextColor="#BBBFC8"
+                      placeholder="Mobile number"
+                      placeholderTextColor="#574964"
                       value={mobile}
                       onChangeText={handlePhoneChange}
                       maxLength={10}
@@ -312,11 +372,18 @@ export default function LoginOtpScreen() {
                     style={[styles.ctaBtn, loading && styles.ctaBtnDim]}
                     onPress={sendOtp}
                     disabled={loading}
-                    activeOpacity={0.82}
+                    activeOpacity={0.85}
                   >
-                    <Text style={styles.ctaBtnText}>
-                      {loading ? "Sending…" : "Send OTP"}
-                    </Text>
+                    {loading ? (
+                      <Text style={styles.ctaBtnText}>Sending…</Text>
+                    ) : (
+                      <View style={styles.ctaBtnInner}>
+                        <Text style={styles.ctaBtnText}>Get OTP</Text>
+                        <View style={styles.ctaArrow}>
+                          <Text style={styles.ctaArrowText}>→</Text>
+                        </View>
+                      </View>
+                    )}
                   </TouchableOpacity>
 
                   <Text style={styles.legalText}>
@@ -324,11 +391,6 @@ export default function LoginOtpScreen() {
                     <Text style={styles.legalLink}>Terms</Text> &{" "}
                     <Text style={styles.legalLink}>Privacy Policy</Text>
                   </Text>
-
-                  {/* FAB */}
-                  <TouchableOpacity style={styles.fab} onPress={sendOtp}>
-                    <Text style={styles.fabArrow}>→</Text>
-                  </TouchableOpacity>
                 </>
               ) : (
                 <Animated.View
@@ -340,7 +402,7 @@ export default function LoginOtpScreen() {
                     ],
                   }}
                 >
-                  <Text style={styles.sectionLabel}>VERIFY YOUR NUMBER</Text>
+                  <Text style={styles.formTitle}>Verify number</Text>
                   <Text style={styles.formSub}>
                     Code sent to{" "}
                     <Text style={styles.numHighlight}>
@@ -374,7 +436,7 @@ export default function LoginOtpScreen() {
                   <View style={styles.resendRow}>
                     {isTimerActive ? (
                       <Text style={styles.timerText}>
-                        Resend code in{" "}
+                        Resend in{" "}
                         <Text style={styles.timerHighlight}>{timer}s</Text>
                       </Text>
                     ) : (
@@ -388,11 +450,18 @@ export default function LoginOtpScreen() {
                     style={[styles.ctaBtn, loading && styles.ctaBtnDim]}
                     onPress={verifyOtp}
                     disabled={loading}
-                    activeOpacity={0.82}
+                    activeOpacity={0.85}
                   >
-                    <Text style={styles.ctaBtnText}>
-                      {loading ? "Verifying…" : "Verify & Continue"}
-                    </Text>
+                    {loading ? (
+                      <Text style={styles.ctaBtnText}>Verifying…</Text>
+                    ) : (
+                      <View style={styles.ctaBtnInner}>
+                        <Text style={styles.ctaBtnText}>Verify & Continue</Text>
+                        <View style={styles.ctaArrow}>
+                          <Text style={styles.ctaArrowText}>→</Text>
+                        </View>
+                      </View>
+                    )}
                   </TouchableOpacity>
 
                   <TouchableOpacity
@@ -465,133 +534,142 @@ export default function LoginOtpScreen() {
   );
 }
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
-const PURPLE = "rgb(113, 149, 255)";
-const PURPLE_LIGHT = "#c2d6fd";
-const PURPLE_PALE = "#cedfff";
-const WHITE = "#FFFFFF";
-const INK = "#1C1A2E";
-const MUTED = "#79808d";
-const MUTED2 = "#575a6a";
-const BORDER = "#E0DCEF";
-const BORDER2 = "#E8E4F4";
-const BG_INPUT = "#F8F8FC";
-const ERR = "#DC2626";
-
+// ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: PURPLE_LIGHT },
-  root: { flex: 1, backgroundColor: PURPLE_LIGHT },
+  safe: { flex: 1, backgroundColor: GREEN },
+  root: { flex: 1, backgroundColor: GREEN },
 
-  // ── top section ──
-  top: {
+  // Hero
+  hero: {
     flex: 1,
-
-    paddingHorizontal: 24,
-    paddingTop: 12,
+    paddingHorizontal: 26,
+    paddingTop: 16,
+    paddingBottom: 24,
     justifyContent: "center",
+    overflow: "hidden",
   },
-
   logoRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginBottom: 30,
+    marginBottom: 24,
   },
   logoBox: {
     width: 46,
     height: 46,
     borderRadius: 14,
-    backgroundColor: PURPLE,
+    backgroundColor: "rgba(255,255,255,0.18)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
     justifyContent: "center",
     alignItems: "center",
   },
   appName: {
-    fontSize: 37,
+    fontSize: 26,
     fontWeight: "800",
-    color: INK,
+    color: WHITE,
     letterSpacing: -0.3,
   },
-  appTagline: {
-    fontSize: 10,
-    color: PURPLE,
+
+  heroBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    marginBottom: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
+  },
+  heroBadgeText: {
+    color: "rgba(255,255,255,0.9)",
+    fontSize: 12,
     fontWeight: "600",
-    letterSpacing: 0.8,
-    marginTop: 1,
   },
 
   headline: {
-    fontSize: 30,
-    fontWeight: "700",
-    color: INK,
-    lineHeight: 38,
-    letterSpacing: -0.4,
+    fontSize: 42,
+    fontWeight: "800",
+    color: WHITE,
+    lineHeight: 50,
+    letterSpacing: -1,
     marginBottom: 12,
   },
   headlineAccent: {
-    color: PURPLE,
-    fontSize: 30,
-    fontWeight: "700",
+    color: GREEN_PALE,
+    fontSize: 42,
+    fontWeight: "800",
+    letterSpacing: -1,
   },
   subline: {
     fontSize: 14,
-    color: MUTED2,
+    color: "rgba(255,255,255,0.7)",
     lineHeight: 22,
-    marginBottom: 28,
+    marginBottom: 26,
   },
 
-  // stat cards
+  // Stat cards
   statRow: {
     flexDirection: "row",
     gap: 10,
   },
   statCard: {
     flex: 1,
-    backgroundColor: WHITE,
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 14,
-    paddingVertical: 13,
+    paddingVertical: 14,
     alignItems: "center",
-    borderWidth: 0.5,
-    borderColor: BORDER,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
   },
-  statNum: { fontSize: 17, fontWeight: "700", color: INK },
-  statLabel: { fontSize: 10, color: MUTED, marginTop: 3, fontWeight: "500" },
+  statNum: { fontSize: 16, fontWeight: "800", color: WHITE },
+  statLabel: {
+    fontSize: 10,
+    color: "rgba(255,255,255,0.65)",
+    marginTop: 3,
+    fontWeight: "600",
+  },
 
-  // ── form card ──
+  // Form card
   formCard: {
     backgroundColor: WHITE,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
     paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 40,
-    marginTop: -80, // 👈 ADD THIS (adjust value if needed)
-    borderTopWidth: 0.5,
-    borderColor: BORDER,
+    paddingTop: 12,
+    paddingBottom: 44,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 14,
   },
-
-  sectionLabel: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: PURPLE,
-    letterSpacing: 1.2,
-    marginBottom: 18,
+  cardHandle: {
+    width: 38,
+    height: 4,
+    backgroundColor: BORDER,
+    borderRadius: 2,
+    alignSelf: "center",
+    marginBottom: 22,
+  },
+  formTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: INK,
+    marginBottom: 6,
+    letterSpacing: -0.3,
   },
   formSub: { fontSize: 13, color: MUTED, marginBottom: 22, lineHeight: 20 },
-  numHighlight: { fontWeight: "700", color: PURPLE },
+  numHighlight: { fontWeight: "700", color: GREEN },
 
-  // phone input
+  // Phone input
   phoneRow: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: BG_INPUT,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: BORDER2,
+    borderColor: BORDER,
     height: 54,
     paddingHorizontal: 16,
     marginBottom: 10,
@@ -600,11 +678,11 @@ const styles = StyleSheet.create({
   countryBtn: { flexDirection: "row", alignItems: "center", gap: 4 },
   flagEmoji: { fontSize: 20 },
   dialCode: { fontSize: 14, fontWeight: "600", color: INK, marginLeft: 4 },
-  chevron: { fontSize: 18, color: MUTED, fontWeight: "300", marginLeft: 2 },
+  chevron: { fontSize: 12, color: MUTED, marginLeft: 3 },
   divLine: {
     width: 1,
     height: 24,
-    backgroundColor: BORDER2,
+    backgroundColor: BORDER,
     marginHorizontal: 14,
   },
   numInput: { flex: 1, fontSize: 15, color: INK, fontWeight: "500" },
@@ -619,25 +697,39 @@ const styles = StyleSheet.create({
 
   // CTA button
   ctaBtn: {
-    backgroundColor: PURPLE,
+    backgroundColor: GREEN,
     height: 54,
     borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
     marginTop: 4,
-    shadowColor: PURPLE,
+    shadowColor: GREEN,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.28,
-    shadowRadius: 12,
+    shadowOpacity: 0.3,
+    shadowRadius: 14,
     elevation: 7,
   },
   ctaBtnDim: { opacity: 0.65 },
+  ctaBtnInner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   ctaBtnText: {
     fontSize: 15,
     fontWeight: "700",
     color: WHITE,
     letterSpacing: 0.2,
   },
+  ctaArrow: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ctaArrowText: { color: WHITE, fontSize: 15, fontWeight: "700" },
 
   legalText: {
     marginTop: 16,
@@ -646,26 +738,13 @@ const styles = StyleSheet.create({
     color: MUTED,
     lineHeight: 18,
   },
-  legalLink: { color: PURPLE, fontWeight: "700" },
-
-  // FAB
-  fab: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: INK,
-    justifyContent: "center",
-    alignItems: "center",
-    alignSelf: "center",
-    marginTop: 20,
-  },
-  fabArrow: { color: WHITE, fontSize: 18, fontWeight: "600" },
+  legalLink: { color: GREEN, fontWeight: "700" },
 
   // OTP
   otpRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: 8,
+    gap: 7,
     marginTop: 4,
     marginBottom: 4,
   },
@@ -675,38 +754,38 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     backgroundColor: BG_INPUT,
     borderWidth: 1.5,
-    borderColor: BORDER2,
+    borderColor: BORDER,
     fontSize: 22,
     fontWeight: "700",
     textAlign: "center",
     color: INK,
   },
   otpCellFilled: {
-    borderColor: PURPLE,
-    backgroundColor: PURPLE_PALE,
-    color: PURPLE,
+    borderColor: GREEN,
+    backgroundColor: GREEN_LIGHT,
+    color: GREEN,
   },
 
   resendRow: { alignItems: "center", marginTop: 14, marginBottom: 2 },
   timerText: { fontSize: 13, color: MUTED },
-  timerHighlight: { fontWeight: "700", color: PURPLE },
-  resendText: { fontSize: 13, color: PURPLE, fontWeight: "700" },
+  timerHighlight: { fontWeight: "700", color: GREEN },
+  resendText: { fontSize: 13, color: GREEN, fontWeight: "700" },
 
   backBtn: { alignItems: "center", marginTop: 14 },
   backBtnText: { fontSize: 13, color: MUTED, fontWeight: "500" },
 
-  // modal
+  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.35)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "flex-end",
   },
   modalSheet: {
     backgroundColor: WHITE,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 20,
-    paddingBottom: 42,
+    paddingBottom: 44,
   },
   modalHandle: {
     width: 36,
@@ -717,21 +796,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: "800",
     color: INK,
     textAlign: "center",
-    marginBottom: 12,
+    marginBottom: 14,
   },
   countryRow: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 13,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
     gap: 12,
   },
-  countryRowActive: { backgroundColor: PURPLE_PALE },
+  countryRowActive: { backgroundColor: GREEN_LIGHT },
   cFlag: { fontSize: 24 },
   cName: { flex: 1, fontSize: 15, color: INK, fontWeight: "600" },
   cCode: { fontSize: 13, color: MUTED, fontWeight: "600" },
@@ -739,19 +818,19 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: PURPLE,
+    backgroundColor: GREEN,
     justifyContent: "center",
     alignItems: "center",
   },
   cancelBtn: {
     marginTop: 10,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: BG_INPUT,
+    height: 50,
+    borderRadius: 14,
+    backgroundColor: GREEN_LIGHT,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 0.5,
+    borderWidth: 1,
     borderColor: BORDER,
   },
-  cancelBtnText: { fontSize: 14, fontWeight: "700", color: INK },
+  cancelBtnText: { fontSize: 14, fontWeight: "700", color: GREEN },
 });
