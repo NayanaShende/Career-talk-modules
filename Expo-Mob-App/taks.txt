@@ -1,0 +1,9 @@
+    Today-Work (05-03-26)
+
+1. Profile Editing Option:
+    - Implement profile edit functionality
+2. Explore Pre-Authorized Wallet*:
+    - Understand how pre-authorized wallets work
+    - Integrate wallet functionality into your app
+3. UI of Chat Screen and Dashboard:
+    - Design and build the chat screen UI
