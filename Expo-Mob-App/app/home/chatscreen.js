@@ -22,7 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: TEXT_1,
     letterSpacing: -0.2,
-    paddingTop:10,
+    paddingTop: 10,
   },
   statusRow: {
     flexDirection: "row",
@@ -710,6 +710,6 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   sendBtnDisabled: {
-    backgroundColor:TEAL,
+    backgroundColor: TEAL,
   },
 });

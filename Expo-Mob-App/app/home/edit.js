@@ -23,7 +23,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const TEAL = "#574964";

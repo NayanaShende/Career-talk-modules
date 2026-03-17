@@ -18,7 +18,7 @@ import axios from "axios";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 // ── Design tokens ──────────────────────────────────────────────────────────
