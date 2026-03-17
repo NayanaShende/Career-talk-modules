@@ -1,0 +1,31 @@
+const express = require("express");
+const router = express.Router();
+const paymentController = require("../controllers/payment.controller");
+const protect = require("../middleware/protect"); // ✅ ADDED
+
+// ✅ IMPORTANT: Webhook route MUST be defined BEFORE express.json() is applied
+// It needs raw body for Razorpay signature verification
+// This route uses express.raw() to get raw buffer
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  (req, res, next) => {
+    // Parse raw buffer to JSON for our handler
+    // but keep original raw for signature verification
+    try {
+      req.body = JSON.parse(req.body.toString());
+      next();
+    } catch (e) {
+      return res.status(400).json({ success: false, message: "Invalid JSON payload" });
+    }
+  },
+  paymentController.handleWebhook
+);
+
+// ✅ Create Razorpay Order (requires auth middleware)
+router.post("/create-order", protect, paymentController.createOrder);
+
+// ✅ Verify Payment + Credit Wallet (requires auth middleware)
+router.post("/verify-payment", protect, paymentController.verifyPayment);
+
+module.exports = router;

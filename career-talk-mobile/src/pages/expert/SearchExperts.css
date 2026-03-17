@@ -1,0 +1,129 @@
+/* Page wrapper */
+.search-page {
+  padding: 30px;
+  background: #f8f9fc;
+}
+
+/* Heading */
+.search-page h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+/* Search box */
+.search-box-wrapper {
+  position: relative;
+  max-width: 620px;
+  margin-bottom: 35px;
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 16px;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #777;
+}
+
+.search-input {
+  width: 100%;
+  padding: 14px 18px 14px 48px;
+  font-size: 16px;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: #5b5bf7;
+}
+
+/* Experts grid — 4 cards per row */
+.experts-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 30px;
+}
+
+/* Expert card */
+.expert-card {
+  background: #ffffff;
+  border-radius: 16px;
+
+  /* 🔥 FIX: reduced top padding to remove empty space */
+  padding: 12px 26px 26px;
+
+  height: 380px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* 🔥 FIX: remove default top margin from first text */
+.expert-card h3:first-child {
+  margin-top: 0;
+}
+
+/* Safety fix if image exists */
+.expert-card img {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: block;
+  margin-top: 0;
+}
+
+/* Name */
+.expert-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+/* Role + experience */
+.expert-card p {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 18px;
+}
+
+/* Button */
+.view-btn {
+  background: #5b5bf7;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.view-btn:hover {
+  background: #4a4ae0;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .experts-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .experts-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .experts-row {
+    grid-template-columns: 1fr;
+  }
+}

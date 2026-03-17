@@ -1,0 +1,94 @@
+/* ===========================
+   WRAPPER
+=========================== */
+.login-wrapper {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  background: white url(../../assets/home/home.png) no-repeat left;
+  background-size: 55%;
+  padding-right: 140px;
+  font-family: 'Lucida Sans', sans-serif;
+}
+
+/* ===========================
+   CARD
+=========================== */
+.login-card {
+  width: 550px;
+  padding: 40px;
+  background: white;
+  border-radius: 22px;
+  box-shadow: 40px 30px 40px rgba(9, 63, 213, 0.35);
+  text-align: center;
+}
+
+/* ===========================
+   TITLES
+=========================== */
+.welcome-text {
+  font-size: 3rem;
+  color: #024CAA;
+  font-weight: bold;
+}
+
+.log {
+  font-size: 2rem;
+  margin-bottom: 20px;
+}
+
+/* ===========================
+   FIX: intl-tel-input
+=========================== */
+
+/* Remove your custom input styling */
+.mobile-input {
+  width: 100%;
+  height: 48px;
+  border-radius: 10px;
+  border: 1px solid #ccc;
+  font-size: 16px;
+  padding-left: 80px !important; /* ensures dial code never overlaps */
+}
+
+/* Force plugin full width */
+.iti {
+  width: 100% !important;
+}
+
+/* Flag box fix */
+.iti__flag-container {
+  height: 48px;
+  border-radius: 10px 0 0 10px;
+}
+
+/* Country list dropdown fix */
+.iti__country-list {
+  z-index: 99999 !important;
+}
+
+/* ===========================
+   BUTTON
+=========================== */
+.send-btn {
+  width: 100%;
+  margin-top: 24px;
+  padding: 15px;
+  font-size: 20px;
+  background: #024CAA;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.send-btn:hover {
+  background: #0582c1;
+}
+
+.register-text {
+  margin-top: 18px;
+  text-decoration: underline;
+  cursor: pointer;
+}
