@@ -23,7 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -37,7 +37,7 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 
-// ── Helpers (unchanged) ────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
 const sortMessages = (msgs) =>
   [...msgs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -116,7 +116,7 @@ export default function ChatScreen() {
         )}&background=2d6a5e&color=fff`;
 
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [userRole, setUserRole] = useState(null); // ✅ NEW: track role to skip billing for expert
+  const [userRole, setUserRole] = useState(null);
   const [messages, setMessages] = useState([]);
   const [textMessage, setTextMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -138,9 +138,9 @@ export default function ChatScreen() {
       if (str) {
         const u = JSON.parse(str);
         const uid = u?.id || u?.userId || u?.user?.id;
-        const role = (u?.role || u?.userType || "user").toLowerCase(); // ✅ NEW: read role
+        const role = (u?.role || u?.userType || "user").toLowerCase();
         setCurrentUserId(Number(uid));
-        setUserRole(role); // ✅ NEW: set role
+        setUserRole(role);
       }
     });
   }, []);
@@ -189,7 +189,10 @@ export default function ChatScreen() {
       if (err?.error === "insufficient_balance") {
         Alert.alert(
           "Insufficient Balance",
-          err.message || `You need at least ₹50 to start chat.\nYour balance: ₹${err.balance?.toFixed(2) || 0}`,
+          err.message ||
+            `You need at least ₹50 to start chat.\nYour balance: ₹${
+              err.balance?.toFixed(2) || 0
+            }`,
           [
             { text: "Add Money", onPress: () => router.push("/(tabs)/wallet") },
             { text: "Cancel", style: "cancel", onPress: () => router.back() },
@@ -213,7 +216,12 @@ export default function ChatScreen() {
           minutesRef.current += 1;
           setMinutesUsed(minutesRef.current);
           setWalletBalance(res.data.balance);
-          console.log("⏱️ Minute", minutesRef.current, "— Balance:", res.data.balance);
+          console.log(
+            "⏱️ Minute",
+            minutesRef.current,
+            "— Balance:",
+            res.data.balance
+          );
         }
       } catch (e) {
         const err = e?.response?.data;
@@ -242,7 +250,12 @@ export default function ChatScreen() {
 
       if (res?.data?.success) {
         const { totalCharged, released, duration } = res.data;
-        console.log("✅ Chat ended — charged: ₹" + totalCharged + ", released: ₹" + released);
+        console.log(
+          "✅ Chat ended — charged: ₹" +
+            totalCharged +
+            ", released: ₹" +
+            released
+        );
 
         if (autoEnded) {
           Alert.alert(
@@ -262,7 +275,7 @@ export default function ChatScreen() {
     try {
       setLoading(true);
       const res = await API.get(
-        `/chat/messages/${currentUserId}/${RECEIVER_ID}`,
+        `/chat/messages/${currentUserId}/${RECEIVER_ID}`
       );
       setMessages(dedupeMessages(sortMessages(res?.data?.data || [])));
     } catch (error) {
@@ -287,7 +300,7 @@ export default function ChatScreen() {
           message: messageToSend,
           created_at: new Date(),
         },
-      ]),
+      ])
     );
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
     try {
@@ -304,7 +317,7 @@ export default function ChatScreen() {
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
     loadChats();
-    // ✅ UPDATED: Only start billing for users — experts earn, they don't pay
+    // Only start billing for users — experts earn, they don't pay
     if (userRole !== "expert") {
       startChatBilling(currentUserId);
     }
@@ -323,7 +336,7 @@ export default function ChatScreen() {
     socketRef.current.on("receiveMessage", (newMessage) => {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
         setMessages((prev) =>
-          dedupeMessages(sortMessages([...prev, newMessage])),
+          dedupeMessages(sortMessages([...prev, newMessage]))
         );
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
@@ -340,7 +353,7 @@ export default function ChatScreen() {
         tickIntervalRef.current = null;
       }
     };
-  }, [currentUserId, RECEIVER_ID, userRole]); // ✅ added userRole to deps
+  }, [currentUserId, RECEIVER_ID, userRole]);
 
   // ── Render item ───────────────────────────────────────────────────────────
   const renderItem = ({ item }) => {
@@ -361,18 +374,33 @@ export default function ChatScreen() {
     const timeText = formatTime(item.created_at);
 
     return (
+      // FIX: restored proper JSX structure — removed orphaned style lines,
+      // added opening <Text>, fixed <View> closing tag for metaRow, added
+      // <Text> for timeText inside metaRow
       <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
         {/* Expert avatar on the left */}
         {!isUser && (
           <Image source={{ uri: expertAvatarUrl }} style={styles.msgAvatar} />
         )}
 
-        <View style={[ styles.bubble, isUser ? styles.bubbleMine : styles.bubbleTheirs ]}>
-          style={[styles.bubble, isUser ? styles.bubbleMe : styles.bubbleThem]}
+        <View
+          style={[
+            styles.bubble,
+            isUser ? styles.bubbleMe : styles.bubbleThem,
+          ]}>
+          <Text
+            style={[
+              styles.msgText,
               isUser ? styles.msgTextMe : styles.msgTextThem,
+            ]}>
             {msgText}
           </Text>
           <View style={styles.metaRow}>
+            <Text
+              style={[
+                styles.timeText,
+                isUser ? styles.timeMine : styles.timeTheirs,
+              ]}>
               {timeText}
             </Text>
             {isUser && (
@@ -406,20 +434,24 @@ export default function ChatScreen() {
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar backgroundColor={TEAL} barStyle="light-content" />
 
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      {/* ── BILLING BAR ────────────────────────────────────────────────── */}
       {chatActive && (
         <View style={styles.billingBar}>
           <View style={styles.billingLeft}>
             <Text style={styles.billingTimer}>⏱️ {minutesUsed} min</Text>
             <Text style={styles.billingRate}>₹10/min</Text>
           </View>
-          <Text style={styles.billingBalance}>₹{walletBalance.toFixed(2)}</Text>
+          <Text style={styles.billingBalance}>
+            ₹{walletBalance.toFixed(2)}
+          </Text>
           <TouchableOpacity
             style={styles.endChatBtn}
             onPress={() => {
               Alert.alert(
                 "End Chat?",
-                `Duration: ${minutesUsed} min\nCharged: ₹${minutesUsed * 10}\nRemaining hold will be released.`,
+                `Duration: ${minutesUsed} min\nCharged: ₹${
+                  minutesUsed * 10
+                }\nRemaining hold will be released.`,
                 [
                   {
                     text: "End Chat",
@@ -438,10 +470,12 @@ export default function ChatScreen() {
         </View>
       )}
 
+      {/* ── HEADER ─────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        {/* Back */}
+        {/* FIX: restored TouchableOpacity with correct onPress and children */}
         <TouchableOpacity
-          <Ionicons name="chevron-back" size={22} color={TEXT_1} />
+          style={styles.backBtn}
+          onPress={() => {
             if (chatActive) {
               Alert.alert(
                 "End Chat?",
@@ -461,24 +495,17 @@ export default function ChatScreen() {
             } else {
               router.back();
             }
-          }}
-          style={styles.backBtn}>
+          }}>
+          <Ionicons name="chevron-back" size={22} color={TEXT_1} />
         </TouchableOpacity>
 
-        {/* Avatar + online dot */}
-        <View style={styles.headerAvatarWrap}>
-          <Image
-            source={{ uri: expertAvatarUrl }}
-            style={styles.headerAvatar}
-          />
-          <View
-            style={[
-              styles.headerOnlineDot,
-              { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
-            ]}
-          />
-                },
-              });
+        {/* FIX: restored TouchableOpacity wrapping avatar + info with correct
+            onPress, removed orphaned code fragments */}
+        <TouchableOpacity
+          style={styles.headerAvatarPressable}
+          onPress={() => {
+            if (userRole === "expert") {
+              // Expert clicking → show user's profile or do nothing
             } else {
               // User clicking → show expert's profile
               router.push({
@@ -486,29 +513,42 @@ export default function ChatScreen() {
               });
             }
           }}>
+          {/* Avatar + online dot */}
+          <View style={styles.headerAvatarWrap}>
+            <Image
+              source={{ uri: expertAvatarUrl }}
+              style={styles.headerAvatar}
+            />
+            <View
+              style={[
+                styles.headerOnlineDot,
+                { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
+              ]}
+            />
           </View>
-        {/* Name + status */}
+
+          {/* Name + status */}
           <View style={styles.headerInfo}>
             <Text style={styles.headerName} numberOfLines={1}>
               {expertName}
             </Text>
-          <View style={styles.statusRow}>
-            <View
-              style={[
-                styles.statusDot,
-                { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
-              ]}
-            />
-            <Text
-              style={[
-                styles.headerStatus,
-                { color: isOnline ? "#16a34a" : TEXT_2 },
-              ]}
-            >
-              {isOnline ? "Active now" : "Offline"}
-            </Text>
+            <View style={styles.statusRow}>
+              <View
+                style={[
+                  styles.statusDot,
+                  { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
+                ]}
+              />
+              <Text
+                style={[
+                  styles.headerStatus,
+                  { color: isOnline ? "#16a34a" : TEXT_2 },
+                ]}>
+                {isOnline ? "Active now" : "Offline"}
+              </Text>
+            </View>
           </View>
-        </View>
+        </TouchableOpacity>
 
         {/* Action icons */}
         <View style={styles.headerActions}>
@@ -557,6 +597,9 @@ export default function ChatScreen() {
       </View>
 
       {/* ── INPUT BAR ──────────────────────────────────────────────────── */}
+      {/* FIX: wrapped input bar in KeyboardAvoidingView correctly */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <View style={styles.inputBar}>
           {/* Attachment */}
           <TouchableOpacity style={styles.attachBtn}>
@@ -582,7 +625,10 @@ export default function ChatScreen() {
 
           {/* Send */}
           <TouchableOpacity
-            style={[ styles.sendBtn, !textMessage.trim() && styles.sendBtnDisabled ]}
+            style={[
+              styles.sendBtn,
+              !textMessage.trim() && styles.sendBtnDisabled,
+            ]}
             onPress={handleSend}
             disabled={!textMessage.trim()}>
             <Ionicons
@@ -622,7 +668,15 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // ── Header ──
+  // ── Billing bar ──
+  // FIX: restored billingBar as a proper style object (was orphaned/cut off)
+  billingBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#1f2937",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   billingLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
   billingTimer: { color: "#fff", fontSize: 13, fontWeight: "700" },
@@ -635,6 +689,8 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
   },
   endChatTxt: { color: "#fff", fontWeight: "700", fontSize: 13 },
+
+  // ── Header ──
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -658,6 +714,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#f4f5f7",
     justifyContent: "center",
     alignItems: "center",
+  },
+  // FIX: added headerAvatarPressable (wraps avatar + info as a tappable area)
+  headerAvatarPressable: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   headerAvatarWrap: {
     position: "relative",
   },
@@ -686,7 +750,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: TEXT_1,
     letterSpacing: -0.2,
-    paddingTop:10,
+    paddingTop: 10,
   },
   statusRow: {
     flexDirection: "row",
@@ -721,6 +785,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: CHAT_BG,
   },
+  listContent: {
     paddingHorizontal: 14,
     paddingVertical: 14,
     paddingBottom: 10,
@@ -754,15 +819,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginBottom: 8,
     alignItems: "flex-end",
+  },
   rowRight: { justifyContent: "flex-end" },
   rowLeft: { justifyContent: "flex-start" },
-  msgAvatar: { width: 30, height: 30, borderRadius: 15, marginRight: 6, marginBottom: 2 },
+  msgAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 6,
+    marginBottom: 2,
+  },
+  // FIX: restored msgAvatarLarge (was orphaned fragment with no key)
+  msgAvatarLarge: {
     width: 32,
     height: 32,
     borderRadius: 16,
     marginRight: 8,
     borderWidth: 1.5,
     borderColor: TEAL_LIGHT,
+  },
 
   // ── Bubble ──
   bubble: {
@@ -774,10 +849,13 @@ const styles = StyleSheet.create({
   },
   bubbleMe: {
     backgroundColor: BUBBLE_ME,
+    borderBottomRightRadius: 4,
     elevation: 1,
     shadowColor: TEAL,
     shadowOpacity: 0.2,
     shadowRadius: 4,
+  },
+  // FIX: restored bubbleThem closing brace (was missing)
   bubbleThem: {
     backgroundColor: BUBBLE_THEM,
     borderBottomLeftRadius: 4,
@@ -863,13 +941,18 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     minHeight: 42,
   },
-  input: { flex: 1, fontSize: 15, color: "#1C1C1E", maxHeight: 100 },
+  // FIX: restored input style (orphaned color/fontWeight lines merged in)
+  input: {
+    flex: 1,
+    fontSize: 15,
     color: TEXT_1,
     fontWeight: "400",
+    maxHeight: 100,
   },
   micBtn: {
     marginLeft: 6,
     marginBottom: 1,
+  },
   sendBtn: {
     width: 40,
     height: 40,
@@ -880,5 +963,7 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   sendBtnDisabled: {
-    backgroundColor:TEAL,
+    backgroundColor: TEAL,
+    opacity: 0.5,
+  },
 });

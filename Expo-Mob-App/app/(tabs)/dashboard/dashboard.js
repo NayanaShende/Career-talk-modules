@@ -18,7 +18,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 const SKILL_FILTERS = [
   "All",
@@ -193,7 +193,7 @@ function ExpertDashboard({
           <View style={styles.sectionTitleRow}>
             <Text style={styles.sectionTitle}>Live Experts</Text>
             <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
+              <View style={styles.liveDot} />
               <Text style={styles.liveIndicatorText}>Live</Text>
             </View>
           </View>
@@ -222,6 +222,7 @@ function ExpertDashboard({
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
         </View>
 
+        {/* FIX: added closing > on TouchableOpacity, removed duplicate style prop */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -233,14 +234,12 @@ function ExpertDashboard({
                 styles.filterChip,
                 activeSkillFilter === skill && styles.filterChipActive,
               ]}
-              onPress={() => setActiveSkillFilter(skill)}
+              onPress={() => setActiveSkillFilter(skill)}>
               <Text
-                style={[
                 style={[
                   styles.filterChipText,
                   activeSkillFilter === skill && styles.filterChipTextActive,
-                ]}
-              >
+                ]}>
                 {skill}
               </Text>
             </TouchableOpacity>
@@ -272,7 +271,13 @@ function ExpertDashboard({
             <ExpertCard key={e.id} e={e} />
           ))}
         </ScrollView>
-          <ActivityIndicator />
+
+        {/* Chats Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Recent Chats</Text>
+        </View>
+        {loadingChats ? (
+          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
         ) : (
           chats.map((c) => (
             <View key={c.id} style={styles.chatRow}>
@@ -281,7 +286,13 @@ function ExpertDashboard({
             </View>
           ))
         )}
-          <ActivityIndicator />
+
+        {/* Transactions Section */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Transactions</Text>
+        </View>
+        {loadingTxn ? (
+          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
         ) : (
           transactions.map((t) => (
             <View key={t.id} style={styles.txnRow}>
@@ -303,7 +314,7 @@ function ExpertDashboard({
   );
 }
 
-//  JOBSEEKER DASHBOARD
+// JOBSEEKER DASHBOARD
 function JobseekerDashboard({
   onlineExperts,
   topExperts,
@@ -322,12 +333,14 @@ function JobseekerDashboard({
 }) {
   const [walletVisible, setWalletVisible] = useState(false);
 
+  // FIX: added onPress prop and closing > on Pressable
   const ExpertCard = ({ e, isFeatured }) => (
     <Pressable
       style={[
         styles.skillExpertCard,
         isFeatured && styles.skillExpertCardFeatured,
       ]}
+      onPress={() => router.push(`/expert/${e.id}`)}>
       {isFeatured && (
         <View style={styles.topBadge}>
           <Ionicons name="star" size={11} color="#B8860B" />
@@ -345,8 +358,7 @@ function JobseekerDashboard({
         />
       ) : (
         <View
-          style={[styles.expertInitialCircle, isFeatured && { marginTop: 10 }]}
-        >
+          style={[styles.expertInitialCircle, isFeatured && { marginTop: 10 }]}>
           <Text style={styles.expertInitialText}>{getInitials(e.name)}</Text>
         </View>
       )}
@@ -504,13 +516,11 @@ function JobseekerDashboard({
           </TouchableOpacity>
         </View>
 
-        {/* Top Experts section with a light container background */}
         <View style={styles.topExpertsContainer}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContainer}
-          >
+            contentContainerStyle={styles.scrollContainer}>
             {loadingFiltered ? (
               <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
             ) : (
@@ -534,8 +544,7 @@ function JobseekerDashboard({
             <Pressable
               key={e.id}
               style={styles.recCard}
-              onPress={() => router.push(`/expert/${e.id}`)}
-            >
+              onPress={() => router.push(`/expert/${e.id}`)}>
               <View style={styles.recTop}>
                 {e.image ? (
                   <Image
@@ -603,7 +612,7 @@ const LiveExpert = ({ name, title, image, onPress }) => (
 );
 
 export default function Dashboard() {
-  const [userRole, setUserRole] = useState(null);
+  // FIX: removed duplicate useState for userRole
   const [userRole, setUserRole] = useState(null);
   const [userData, setUserData] = useState(null);
   const [checking, setChecking] = useState(true);
@@ -1030,40 +1039,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "800",
   },
+  // FIX: restored liveOverlay as a proper style object
   liveOverlay: {
-  chatItemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#f0f0f0",
-  },
-  chatItemAvatar: { width: 44, height: 44, borderRadius: 22 },
-  chatItemName: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  chatItemDate: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
-  chatItemAmount: { fontSize: 14, fontWeight: "700", color: "#0FA688" },
-  txnItemRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#f0f0f0",
-  },
-  txnItemAvatar: { width: 44, height: 44, borderRadius: 22 },
-  txnItemName: { fontSize: 14, fontWeight: "700", color: "#111827" },
-  txnTypeBadge: {
-    alignSelf: "flex-start",
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 3,
-    marginBottom: 2,
-  },
-  txnTypeText: { fontSize: 10, fontWeight: "700" },
-  txnItemDate: { fontSize: 11, color: "#9CA3AF" },
-  txnItemAmount: { fontSize: 16, fontWeight: "800", color: "#0FA688" },
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   liveName: {
     color: "#fff",
@@ -1075,6 +1059,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 1,
   },
+
   // ── Skill Filter Chips ──
   filterList: {
     paddingLeft: 18,
@@ -1129,7 +1114,10 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
     alignItems: "center",
   },
-  sectionTitle: { fontSize: 22, fontWeight: "700", color: "rgb(90, 91, 93)" },
+  skillExpertCardFeatured: {
+    borderColor: TEAL,
+    borderWidth: 2,
+  },
   topBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -1276,13 +1264,20 @@ const styles = StyleSheet.create({
     gap: 5,
     marginBottom: 10,
   },
+  // FIX: restored recTag and recTagText as proper style objects
+  recTag: {
     backgroundColor: TEAL_LIGHT,
     paddingHorizontal: 10,
     paddingVertical: 3,
     borderRadius: 50,
   },
-  statNumber: { fontSize: 22, fontWeight: "700", color: "#0FA688" },
-  statLabel: { fontSize: 12, color: "#777", marginTop: 4 },
+  recTagText: {
+    color: TEAL_TEXT,
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  // FIX: restored recFooter and recViewText as proper style objects
+  recFooter: {
     borderTopWidth: 1,
     borderTopColor: "#F0F0F3",
     paddingTop: 8,
@@ -1290,11 +1285,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 2,
-  tabBtn: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20 },
-  tabActive: { backgroundColor: "#0FA688" },
-  tabText: { color: "#777" },
-  tabTextActive: { color: "#fff", fontWeight: "700" },
+  },
+  recViewText: {
+    fontSize: 13,
+    fontWeight: "700",
     color: TEXT_PRIMARY,
+  },
+
+  // ── Chat Row ──
+  chatRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -1303,27 +1302,78 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
     backgroundColor: CARD_BG,
+  },
+  chatName: {
+    fontSize: 14,
+    fontWeight: "700",
     color: TEXT_PRIMARY,
   },
   chatTime: {
     fontSize: 11,
     color: TEXT_MUTED,
+  },
+
   // ── Transaction Row ──
+  txnRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 18,
     paddingVertical: 14,
+    borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
     backgroundColor: CARD_BG,
+  },
+  txnUser: {
     fontSize: 14,
     fontWeight: "700",
     color: TEXT_PRIMARY,
+  },
+  txnDate: {
     fontSize: 11,
     color: TEXT_MUTED,
     marginTop: 2,
+  },
+  txnAmount: {
     fontSize: 16,
     fontWeight: "800",
     color: TEAL,
   },
+
+  // ── Chat & Txn item rows (used in FlatList variants) ──
+  chatItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#f0f0f0",
+  },
+  chatItemAvatar: { width: 44, height: 44, borderRadius: 22 },
+  chatItemName: { fontSize: 14, fontWeight: "700", color: "#111827" },
+  chatItemDate: { fontSize: 11, color: "#9CA3AF", marginTop: 2 },
+  chatItemAmount: { fontSize: 14, fontWeight: "700", color: "#0FA688" },
+  txnItemRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#f0f0f0",
+  },
+  txnItemAvatar: { width: 44, height: 44, borderRadius: 22 },
+  txnItemName: { fontSize: 14, fontWeight: "700", color: "#111827" },
+  txnTypeBadge: {
+    alignSelf: "flex-start",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  txnTypeText: { fontSize: 10, fontWeight: "700" },
+  txnItemDate: { fontSize: 11, color: "#9CA3AF" },
+  txnItemAmount: { fontSize: 16, fontWeight: "800", color: "#0FA688" },
 
   // ── Banner ──
   promoBanner: {
@@ -1376,4 +1426,11 @@ const styles = StyleSheet.create({
     marginVertical: 20,
     fontSize: 14,
     paddingHorizontal: 18,
+  },
+  statNumber: { fontSize: 22, fontWeight: "700", color: "#0FA688" },
+  statLabel: { fontSize: 12, color: "#777", marginTop: 4 },
+  tabBtn: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20 },
+  tabActive: { backgroundColor: "#0FA688" },
+  tabText: { color: "#777" },
+  tabTextActive: { color: "#fff", fontWeight: "700" },
 });

@@ -16,9 +16,8 @@ import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
-const BASE_URL = "http://192.168.1.15:3000";
 const GREEN = "#574964";
 const GREEN_DARK = "#574964";
 const GREEN_LIGHT = "#f5ecfe";
