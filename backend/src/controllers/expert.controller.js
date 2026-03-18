@@ -1,5 +1,4 @@
 const expertService = require("../services/expert.service");
-const db = require("../models");
 
 // ================= GET ALL =================
 exports.getAllExperts = async (req, res) => {
@@ -27,6 +26,10 @@ exports.createExpertProfile = async (req, res) => {
 };
 
 // ================= SUBMIT EXPERT PROFILE FORM =================
+// ✅ called when expert fills out the profile form
+// saves to Experts table using userId from JWT token
+// ✅ FIXED: multer.fields() puts files in req.files (object), not req.file
+// req.file is only set when using upload.single()
 exports.submitExpertProfileForm = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -41,17 +44,19 @@ exports.submitExpertProfileForm = async (req, res) => {
       certificates: certificateFiles.map((f) => f.filename),
     });
 
+    // ✅ FIXED: extract gender from req.body and log it for debugging
     const gender = req.body.gender || null;
     console.log("👤 Gender received in submitExpertProfileForm:", gender);
 
+    // ✅ FIXED: pass gender inside req.body so createExpertProfile can save it
     const bodyWithGender = {
       ...req.body,
-      gender,
+      gender, // ✅ explicitly include gender
     };
 
     const expert = await expertService.createExpertProfile(
       userId,
-      bodyWithGender,
+      bodyWithGender, // ✅ FIXED: was req.body (without guaranteed gender), now bodyWithGender
       cvFile,
       imageFile,
       certificateFiles,
@@ -98,7 +103,7 @@ exports.updateMyExpertProfile = async (req, res) => {
     const body = {
       ...req.body,
       certifications: req.body.certification || req.body.certifications || null,
-      gender: req.body.gender || null,
+      gender: req.body.gender || null, // ✅ FIXED: include gender in update too
     };
 
     const expert = await expertService.createExpertProfile(userId, body, file);
@@ -208,11 +213,14 @@ exports.getExpertById = async (req, res) => {
   }
 };
 
-// ================= SUBMIT RATING =================
+// ================= SUBMIT RATING ✅ =================
+// POST /api/experts/:id/rate
+// Requires auth — saves userId, rating, comment
+// Enforces one rating per user per expert
 exports.submitRating = async (req, res) => {
   try {
     const expertId = Number(req.params.id);
-    const userId = req.user.id;
+    const userId = req.user.id; // ✅ from JWT middleware
     const { rating, comment } = req.body;
 
     if (!expertId || isNaN(expertId)) {
@@ -248,6 +256,7 @@ exports.submitRating = async (req, res) => {
   } catch (error) {
     console.error("submitRating error:", error.message);
 
+    // ✅ Return 409 Conflict for duplicate rating — frontend checks this
     if (error.message === "ALREADY_RATED") {
       return res.status(409).json({
         success: false,
@@ -259,7 +268,9 @@ exports.submitRating = async (req, res) => {
   }
 };
 
-// ================= GET RATINGS =================
+// ================= GET RATINGS ✅ =================
+// GET /api/experts/:id/ratings
+// Returns avgRating, totalReviews, and reviews with user name + image
 exports.getRatings = async (req, res) => {
   try {
     const expertId = Number(req.params.id);
@@ -283,6 +294,8 @@ exports.getRatings = async (req, res) => {
 };
 
 // ================= GET DOMAINS LIST =================
+// ✅ returns 10 domains for frontend dropdown
+// No auth required — public route
 exports.getDomainsList = async (req, res) => {
   try {
     const domains = [
@@ -300,135 +313,6 @@ exports.getDomainsList = async (req, res) => {
     res.status(200).json({ success: true, data: domains });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// ================= ✅ NEW: GET EXPERT TRANSACTIONS =================
-// GET /api/experts/my-transactions
-// Returns all wallet transactions where ref_id = this expert's id
-// Includes user name + image who paid
-exports.getExpertTransactions = async (req, res) => {
-  try {
-    const userId = req.user.id; // logged in expert's user id
-
-    // Step 1: find expert record using userId
-    const expert = await db.Expert.findOne({
-      where: { userId: userId },
-      attributes: ["id", "name"],
-    });
-
-    if (!expert) {
-      return res.status(404).json({
-        success: false,
-        message: "Expert profile not found",
-      });
-    }
-
-    // Step 2: find all transactions where ref_id = expert.id
-    const transactions = await db.WalletTransaction.findAll({
-      where: { ref_id: String(expert.id) },
-      order: [["created_at", "DESC"]],
-    });
-
-    // Step 3: enrich each transaction with user details
-    const enriched = await Promise.all(
-      transactions.map(async (tx) => {
-        const txData = tx.toJSON();
-
-        // fetch the user who made this transaction
-        try {
-          const user = await db.User.findOne({
-            where: { id: txData.user_id },
-            attributes: ["id", "fullName", "image"],
-          });
-          txData.user_name = user ? user.fullName : "User";
-          txData.user_image = user ? user.image : null;
-        } catch (e) {
-          txData.user_name = "User";
-          txData.user_image = null;
-        }
-
-        return txData;
-      })
-    );
-
-    res.status(200).json({ success: true, data: enriched });
-  } catch (err) {
-    console.error("getExpertTransactions error:", err.message);
-    res.status(500).json({ success: false, message: err.message });
-  }
-};
-
-// ================= ✅ NEW: GET EXPERT CHATS =================
-// GET /api/experts/my-chats
-// Returns all unique users who chatted with this expert
-// Uses WalletTransaction hold/debit as chat indicator (ref_id = expert.id)
-exports.getExpertChats = async (req, res) => {
-  try {
-    const userId = req.user.id;
-
-    // Step 1: find expert record
-    const expert = await db.Expert.findOne({
-      where: { userId: userId },
-      attributes: ["id", "name"],
-    });
-
-    if (!expert) {
-      return res.status(404).json({
-        success: false,
-        message: "Expert profile not found",
-      });
-    }
-
-    // Step 2: find all hold/debit transactions for this expert
-    const transactions = await db.WalletTransaction.findAll({
-      where: {
-        ref_id: String(expert.id),
-        type: ["hold", "debit"],
-      },
-      order: [["created_at", "DESC"]],
-    });
-
-    // Step 3: get unique users only (one entry per user)
-    const seenUserIds = new Set();
-    const uniqueChats = [];
-
-    for (const tx of transactions) {
-      const txData = tx.toJSON();
-      if (!seenUserIds.has(txData.user_id)) {
-        seenUserIds.add(txData.user_id);
-
-        try {
-          const user = await db.User.findOne({
-            where: { id: txData.user_id },
-            attributes: ["id", "fullName", "image"],
-          });
-
-          uniqueChats.push({
-            id: txData.id,
-            user_id: txData.user_id,
-            user_name: user ? user.fullName : "User",
-            user_image: user ? user.image : null,
-            amount: txData.amount,
-            created_at: txData.created_at,
-          });
-        } catch (e) {
-          uniqueChats.push({
-            id: txData.id,
-            user_id: txData.user_id,
-            user_name: "User",
-            user_image: null,
-            amount: txData.amount,
-            created_at: txData.created_at,
-          });
-        }
-      }
-    }
-
-    res.status(200).json({ success: true, data: uniqueChats });
-  } catch (err) {
-    console.error("getExpertChats error:", err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 };

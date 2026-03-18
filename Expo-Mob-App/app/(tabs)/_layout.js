@@ -1,6 +1,3 @@
-import { Buffer } from "buffer";
-global.Buffer = global.Buffer || Buffer;
-
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text } from "react-native";

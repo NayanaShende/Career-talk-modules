@@ -63,35 +63,15 @@ router.get(
 );
 
 // ============================
-// UPDATE MY EXPERT PROFILE (Protected + Upload)
+// ✅ NEW: UPDATE MY EXPERT PROFILE (Protected + Upload)
+// Called from edit profile screen to update language_spoken, certification etc.
+// Uses userId from JWT — no need to pass expert ID from frontend
 // ============================
 router.put(
   "/profile/me",
   protect,
   uploadFields,
   expertController.updateMyExpertProfile
-);
-
-// ============================
-// ✅ NEW: GET EXPERT TRANSACTIONS (Protected)
-// GET /api/experts/my/transactions
-// Returns all wallet transactions received by this expert with user details
-// ============================
-router.get(
-  "/my/transactions",
-  protect,
-  expertController.getExpertTransactions
-);
-
-// ============================
-// ✅ NEW: GET EXPERT CHATS (Protected)
-// GET /api/experts/my/chats
-// Returns all unique users who chatted with this expert
-// ============================
-router.get(
-  "/my/chats",
-  protect,
-  expertController.getExpertChats
 );
 
 // ============================
