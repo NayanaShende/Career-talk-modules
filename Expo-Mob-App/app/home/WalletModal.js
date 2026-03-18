@@ -35,7 +35,7 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
 
 export default function WalletModal({ visible, onClose }) {
@@ -311,7 +311,8 @@ export default function WalletModal({ visible, onClose }) {
       </View>
       <TouchableOpacity
         style={styles.refreshIconBtn}
-        onPress={() => userId && loadUserAndBalance()}>
+        onPress={() => userId && loadUserAndBalance()}
+      >
         <Ionicons name="refresh-outline" size={18} color={GREEN_DARK} />
       </TouchableOpacity>
     </View>
@@ -370,7 +371,8 @@ export default function WalletModal({ visible, onClose }) {
         visible={txDetailVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setTxDetailVisible(false)}>
+        onRequestClose={() => setTxDetailVisible(false)}
+      >
         <View style={styles.detailOverlay}>
           <View style={styles.detailSheet}>
             {/* Header */}
@@ -384,11 +386,22 @@ export default function WalletModal({ visible, onClose }) {
 
             {/* Amount */}
             <View style={styles.detailAmountWrap}>
-              <View style={[styles.detailIconCircle, { backgroundColor: color + "20" }]}>
+              <View
+                style={[
+                  styles.detailIconCircle,
+                  { backgroundColor: color + "20" },
+                ]}
+              >
                 <Ionicons name={icon} size={32} color={color} />
               </View>
-              <Text style={[styles.detailAmount, { color: isCredit ? "#10b981" : "#ef4444" }]}>
-                {isCredit ? "+" : "-"}₹{parseFloat(selectedTx.amount).toFixed(2)}
+              <Text
+                style={[
+                  styles.detailAmount,
+                  { color: isCredit ? "#10b981" : "#ef4444" },
+                ]}
+              >
+                {isCredit ? "+" : "-"}₹
+                {parseFloat(selectedTx.amount).toFixed(2)}
               </Text>
               <Text style={styles.detailType}>
                 {getTransactionLabel(selectedTx.type)}
@@ -407,7 +420,11 @@ export default function WalletModal({ visible, onClose }) {
               <View style={styles.detailRow}>
                 <Text style={styles.detailRowLabel}>Type</Text>
                 <View
-                  style={[styles.detailBadge, { backgroundColor: color + "20" }]}>
+                  style={[
+                    styles.detailBadge,
+                    { backgroundColor: color + "20" },
+                  ]}
+                >
                   <Text style={[styles.detailBadgeText, { color: color }]}>
                     {selectedTx.type.toUpperCase()}
                   </Text>
@@ -424,7 +441,8 @@ export default function WalletModal({ visible, onClose }) {
               <View style={styles.detailRow}>
                 <Text style={styles.detailRowLabel}>Status</Text>
                 <View
-                  style={[styles.detailBadge, { backgroundColor: "#e8f5e9" }]}>
+                  style={[styles.detailBadge, { backgroundColor: "#e8f5e9" }]}
+                >
                   <Text style={[styles.detailBadgeText, { color: "#27ae60" }]}>
                     COMPLETED
                   </Text>
@@ -438,7 +456,8 @@ export default function WalletModal({ visible, onClose }) {
                     styles.detailRowValue,
                     { fontSize: 10, color: "#aaa", maxWidth: "55%" },
                   ]}
-                  numberOfLines={2}>
+                  numberOfLines={2}
+                >
                   {selectedTx.id}
                 </Text>
               </View>
@@ -446,7 +465,8 @@ export default function WalletModal({ visible, onClose }) {
 
             <TouchableOpacity
               style={styles.detailCloseBtn}
-              onPress={() => setTxDetailVisible(false)}>
+              onPress={() => setTxDetailVisible(false)}
+            >
               <Text style={styles.detailCloseBtnText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -466,7 +486,8 @@ export default function WalletModal({ visible, onClose }) {
         <TouchableOpacity
           key={t.key}
           style={[styles.tabBtn, activeTab === t.key && styles.tabBtnActive]}
-          onPress={() => setActiveTab(t.key)}>
+          onPress={() => setActiveTab(t.key)}
+        >
           <Ionicons
             name={t.icon}
             size={16}
@@ -476,7 +497,8 @@ export default function WalletModal({ visible, onClose }) {
             style={[
               styles.tabBtnText,
               activeTab === t.key && styles.tabBtnTextActive,
-            ]}>
+            ]}
+          >
             {t.label}
           </Text>
         </TouchableOpacity>
@@ -497,12 +519,14 @@ export default function WalletModal({ visible, onClose }) {
               styles.quickBtn,
               amount === String(qa) && styles.quickBtnActive,
             ]}
-            onPress={() => setAmount(String(qa))}>
+            onPress={() => setAmount(String(qa))}
+          >
             <Text
               style={[
                 styles.quickBtnText,
                 amount === String(qa) && styles.quickBtnTextActive,
-              ]}>
+              ]}
+            >
               ₹{qa}
             </Text>
           </TouchableOpacity>
@@ -543,7 +567,8 @@ export default function WalletModal({ visible, onClose }) {
       <TouchableOpacity
         style={[styles.addBtn, (!amount || loading) && styles.addBtnDisabled]}
         onPress={handleAddMoney}
-        disabled={!amount || loading}>
+        disabled={!amount || loading}
+      >
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -592,9 +617,11 @@ export default function WalletModal({ visible, onClose }) {
                 setSelectedTx(tx);
                 setTxDetailVisible(true);
               }}
-              activeOpacity={0.7}>
+              activeOpacity={0.7}
+            >
               <View
-                style={[styles.txIconWrap, { backgroundColor: color + "18" }]}>
+                style={[styles.txIconWrap, { backgroundColor: color + "18" }]}
+              >
                 <Ionicons name={icon} size={22} color={color} />
               </View>
               <View style={styles.txInfo}>
@@ -618,14 +645,13 @@ export default function WalletModal({ visible, onClose }) {
                   style={[
                     styles.txAmount,
                     { color: isCredit ? "#10b981" : "#ef4444" },
-                  ]}>
+                  ]}
+                >
                   {isCredit ? "+" : "-"}₹{parseFloat(tx.amount).toFixed(2)}
                 </Text>
                 <View
-                  style={[
-                    styles.txTypePill,
-                    { backgroundColor: color + "18" },
-                  ]}>
+                  style={[styles.txTypePill, { backgroundColor: color + "18" }]}
+                >
                   <Text style={[styles.txTypePillText, { color }]}>
                     {getTransactionLabel(tx.type)}
                   </Text>
@@ -656,7 +682,8 @@ export default function WalletModal({ visible, onClose }) {
         <View style={styles.tabHeader}>
           <TouchableOpacity
             style={styles.headerBackBtn}
-            onPress={() => router.back()}>
+            onPress={() => router.back()}
+          >
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
           <View style={styles.headerTitleWrap}>
@@ -665,13 +692,15 @@ export default function WalletModal({ visible, onClose }) {
           </View>
           <TouchableOpacity
             style={styles.headerRefreshBtn}
-            onPress={() => userId && loadUserAndBalance()}>
+            onPress={() => userId && loadUserAndBalance()}
+          >
             <Ionicons name="refresh" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
         <ScrollView
           style={styles.tabContent}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           <WalletContent />
         </ScrollView>
         <TransactionDetailModal />
@@ -685,13 +714,15 @@ export default function WalletModal({ visible, onClose }) {
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}>
+      onRequestClose={onClose}
+    >
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
       </Animated.View>
 
       <Animated.View
-        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
+        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
+      >
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHeader}>
           <View>
@@ -729,7 +760,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 6,
-    marginTop:22,
+    marginTop: 22,
   },
   headerTitle: {
     fontSize: 22,

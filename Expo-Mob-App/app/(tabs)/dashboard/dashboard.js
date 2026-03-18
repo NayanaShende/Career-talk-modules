@@ -18,7 +18,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 const SKILL_FILTERS = [
   "All",
@@ -108,7 +108,8 @@ function ExpertDashboard({
   const ExpertCard = ({ e }) => (
     <Pressable
       style={styles.skillExpertCard}
-      onPress={() => router.push(`/expert/${e.id}`)}>
+      onPress={() => router.push(`/expert/${e.id}`)}
+    >
       {e.image ? (
         <Image
           source={{ uri: getImageUri(e.image, e.name) }}
@@ -165,7 +166,8 @@ function ExpertDashboard({
 
       <Pressable
         style={styles.searchBar}
-        onPress={() => router.push("/expert/search")}>
+        onPress={() => router.push("/expert/search")}
+      >
         <Ionicons name="search" size={20} color="#C4C4C4" />
         <Text style={styles.searchText}>
           Search mentors, skills, careers...
@@ -205,7 +207,8 @@ function ExpertDashboard({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.liveScrollContainer}>
+            contentContainerStyle={styles.liveScrollContainer}
+          >
             {onlineExperts.map((e) => (
               <LiveExpert
                 key={e.id}
@@ -226,7 +229,8 @@ function ExpertDashboard({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}>
+          contentContainerStyle={styles.filterList}
+        >
           {SKILL_FILTERS.map((skill) => (
             <TouchableOpacity
               key={skill}
@@ -234,12 +238,14 @@ function ExpertDashboard({
                 styles.filterChip,
                 activeSkillFilter === skill && styles.filterChipActive,
               ]}
-              onPress={() => setActiveSkillFilter(skill)}>
+              onPress={() => setActiveSkillFilter(skill)}
+            >
               <Text
                 style={[
                   styles.filterChipText,
                   activeSkillFilter === skill && styles.filterChipTextActive,
-                ]}>
+                ]}
+              >
                 {skill}
               </Text>
             </TouchableOpacity>
@@ -252,7 +258,8 @@ function ExpertDashboard({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}>
+            contentContainerStyle={styles.expertBySkillList}
+          >
             {skillFilteredExperts.map((e) => (
               <ExpertCard key={e.id} e={e} />
             ))}
@@ -266,7 +273,8 @@ function ExpertDashboard({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContainer}>
+          contentContainerStyle={styles.scrollContainer}
+        >
           {filteredExperts.map((e) => (
             <ExpertCard key={e.id} e={e} />
           ))}
@@ -340,7 +348,8 @@ function JobseekerDashboard({
         styles.skillExpertCard,
         isFeatured && styles.skillExpertCardFeatured,
       ]}
-      onPress={() => router.push(`/expert/${e.id}`)}>
+      onPress={() => router.push(`/expert/${e.id}`)}
+    >
       {isFeatured && (
         <View style={styles.topBadge}>
           <Ionicons name="star" size={11} color="#B8860B" />
@@ -358,7 +367,8 @@ function JobseekerDashboard({
         />
       ) : (
         <View
-          style={[styles.expertInitialCircle, isFeatured && { marginTop: 10 }]}>
+          style={[styles.expertInitialCircle, isFeatured && { marginTop: 10 }]}
+        >
           <Text style={styles.expertInitialText}>{getInitials(e.name)}</Text>
         </View>
       )}
@@ -408,7 +418,8 @@ function JobseekerDashboard({
 
       <Pressable
         style={styles.searchBar}
-        onPress={() => router.push("/expert/search")}>
+        onPress={() => router.push("/expert/search")}
+      >
         <Ionicons name="search-outline" size={18} color="#AAAAAA" />
         <Text style={styles.searchText}>
           Search mentors, skills, careers...
@@ -417,7 +428,8 @@ function JobseekerDashboard({
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}>
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
         <View style={styles.promoBanner}>
           <View style={styles.promoTextContainer}>
             <Text style={styles.promoTitle}>
@@ -451,7 +463,8 @@ function JobseekerDashboard({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.liveScrollContainer}>
+            contentContainerStyle={styles.liveScrollContainer}
+          >
             {onlineExperts.map((e) => (
               <LiveExpert
                 key={e.id}
@@ -473,7 +486,8 @@ function JobseekerDashboard({
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterList}>
+          contentContainerStyle={styles.filterList}
+        >
           {SKILL_FILTERS.map((skill) => (
             <TouchableOpacity
               key={skill}
@@ -481,12 +495,14 @@ function JobseekerDashboard({
                 styles.filterChip,
                 activeSkillFilter === skill && styles.filterChipActive,
               ]}
-              onPress={() => setActiveSkillFilter(skill)}>
+              onPress={() => setActiveSkillFilter(skill)}
+            >
               <Text
                 style={[
                   styles.filterChipText,
                   activeSkillFilter === skill && styles.filterChipTextActive,
-                ]}>
+                ]}
+              >
                 {skill}
               </Text>
             </TouchableOpacity>
@@ -502,7 +518,8 @@ function JobseekerDashboard({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.expertBySkillList}>
+            contentContainerStyle={styles.expertBySkillList}
+          >
             {skillFilteredExperts.map((e, idx) => (
               <ExpertCard key={e.id} e={e} isFeatured={idx === 0} />
             ))}
@@ -520,7 +537,8 @@ function JobseekerDashboard({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollContainer}>
+            contentContainerStyle={styles.scrollContainer}
+          >
             {loadingFiltered ? (
               <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
             ) : (
@@ -544,7 +562,8 @@ function JobseekerDashboard({
             <Pressable
               key={e.id}
               style={styles.recCard}
-              onPress={() => router.push(`/expert/${e.id}`)}>
+              onPress={() => router.push(`/expert/${e.id}`)}
+            >
               <View style={styles.recTop}>
                 {e.image ? (
                   <Image
@@ -834,7 +853,8 @@ export default function Dashboard() {
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: "#fff",
-        }}>
+        }}
+      >
         <ActivityIndicator size="large" color={TEAL} />
       </View>
     );

@@ -24,7 +24,7 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 // ─────────────────────────────────────────────
 // Star Rating Display
@@ -121,7 +121,8 @@ function RatingModal({ visible, onClose, onSubmit }) {
             <TouchableOpacity
               style={[styles.submitRatingBtn, submitting && { opacity: 0.6 }]}
               onPress={handleSubmit}
-              disabled={submitting}>
+              disabled={submitting}
+            >
               <Text style={styles.submitRatingBtnText}>
                 {submitting ? "Submitting..." : "Submit Review"}
               </Text>
@@ -426,7 +427,8 @@ export default function ExpertProfile() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 }}>
+        contentContainerStyle={{ paddingBottom: 130 }}
+      >
         {/* ── HERO HEADER ── */}
         <View style={styles.heroSection}>
           {/* Back button placeholder */}
@@ -484,7 +486,8 @@ export default function ExpertProfile() {
             <StarRating rating={ratingData.avgRating} size={18} />
             <TouchableOpacity
               style={styles.rateBtn}
-            onPress={() => setRatingModal(true)}>
+              onPress={() => setRatingModal(true)}
+            >
               <Ionicons name="create-outline" size={15} color="#1F5C4F" />
               <Text style={styles.rateBtnText}>Rate</Text>
             </TouchableOpacity>

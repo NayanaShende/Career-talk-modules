@@ -17,7 +17,7 @@ import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const GREEN = "#867795";

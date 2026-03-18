@@ -23,7 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -154,7 +154,7 @@ export default function ChatScreen() {
       const expertRes = await API.get("/experts");
       const allExperts = expertRes?.data?.data || [];
       const expert = allExperts.find(
-        (e) => Number(e.userId) === Number(RECEIVER_ID)
+        (e) => Number(e.userId) === Number(RECEIVER_ID),
       );
       const eId = expert ? expert.id : RECEIVER_ID;
       console.log("✅ Expert found — Expert.id:", eId);
@@ -196,7 +196,7 @@ export default function ChatScreen() {
           [
             { text: "Add Money", onPress: () => router.push("/(tabs)/wallet") },
             { text: "Cancel", style: "cancel", onPress: () => router.back() },
-          ]
+          ],
         );
       } else {
         console.log("chatStart error:", e.message);
@@ -220,7 +220,7 @@ export default function ChatScreen() {
             "⏱️ Minute",
             minutesRef.current,
             "— Balance:",
-            res.data.balance
+            res.data.balance,
           );
         }
       } catch (e) {
@@ -254,14 +254,14 @@ export default function ChatScreen() {
           "✅ Chat ended — charged: ₹" +
             totalCharged +
             ", released: ₹" +
-            released
+            released,
         );
 
         if (autoEnded) {
           Alert.alert(
             "Chat Ended — Balance Empty",
             `Duration: ${duration} min\nTotal charged: ₹${totalCharged}\n₹${released} released back to wallet.`,
-            [{ text: "OK", onPress: () => router.back() }]
+            [{ text: "OK", onPress: () => router.back() }],
           );
         }
       }
@@ -275,7 +275,7 @@ export default function ChatScreen() {
     try {
       setLoading(true);
       const res = await API.get(
-        `/chat/messages/${currentUserId}/${RECEIVER_ID}`
+        `/chat/messages/${currentUserId}/${RECEIVER_ID}`,
       );
       setMessages(dedupeMessages(sortMessages(res?.data?.data || [])));
     } catch (error) {
@@ -300,7 +300,7 @@ export default function ChatScreen() {
           message: messageToSend,
           created_at: new Date(),
         },
-      ])
+      ]),
     );
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
     try {
@@ -336,7 +336,7 @@ export default function ChatScreen() {
     socketRef.current.on("receiveMessage", (newMessage) => {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
         setMessages((prev) =>
-          dedupeMessages(sortMessages([...prev, newMessage]))
+          dedupeMessages(sortMessages([...prev, newMessage])),
         );
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
@@ -384,15 +384,14 @@ export default function ChatScreen() {
         )}
 
         <View
-          style={[
-            styles.bubble,
-            isUser ? styles.bubbleMe : styles.bubbleThem,
-          ]}>
+          style={[styles.bubble, isUser ? styles.bubbleMe : styles.bubbleThem]}
+        >
           <Text
             style={[
               styles.msgText,
               isUser ? styles.msgTextMe : styles.msgTextThem,
-            ]}>
+            ]}
+          >
             {msgText}
           </Text>
           <View style={styles.metaRow}>
@@ -400,7 +399,8 @@ export default function ChatScreen() {
               style={[
                 styles.timeText,
                 isUser ? styles.timeMine : styles.timeTheirs,
-              ]}>
+              ]}
+            >
               {timeText}
             </Text>
             {isUser && (
@@ -441,9 +441,7 @@ export default function ChatScreen() {
             <Text style={styles.billingTimer}>⏱️ {minutesUsed} min</Text>
             <Text style={styles.billingRate}>₹10/min</Text>
           </View>
-          <Text style={styles.billingBalance}>
-            ₹{walletBalance.toFixed(2)}
-          </Text>
+          <Text style={styles.billingBalance}>₹{walletBalance.toFixed(2)}</Text>
           <TouchableOpacity
             style={styles.endChatBtn}
             onPress={() => {
@@ -462,9 +460,10 @@ export default function ChatScreen() {
                     },
                   },
                   { text: "Continue", style: "cancel" },
-                ]
+                ],
               );
-            }}>
+            }}
+          >
             <Text style={styles.endChatTxt}>End</Text>
           </TouchableOpacity>
         </View>
@@ -490,12 +489,13 @@ export default function ChatScreen() {
                     },
                   },
                   { text: "Stay", style: "cancel" },
-                ]
+                ],
               );
             } else {
               router.back();
             }
-          }}>
+          }}
+        >
           <Ionicons name="chevron-back" size={22} color={TEXT_1} />
         </TouchableOpacity>
 
@@ -512,7 +512,8 @@ export default function ChatScreen() {
                 pathname: `/expert/${RECEIVER_ID}`,
               });
             }
-          }}>
+          }}
+        >
           {/* Avatar + online dot */}
           <View style={styles.headerAvatarWrap}>
             <Image
@@ -543,7 +544,8 @@ export default function ChatScreen() {
                 style={[
                   styles.headerStatus,
                   { color: isOnline ? "#16a34a" : TEXT_2 },
-                ]}>
+                ]}
+              >
                 {isOnline ? "Active now" : "Offline"}
               </Text>
             </View>
@@ -599,7 +601,8 @@ export default function ChatScreen() {
       {/* ── INPUT BAR ──────────────────────────────────────────────────── */}
       {/* FIX: wrapped input bar in KeyboardAvoidingView correctly */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <View style={styles.inputBar}>
           {/* Attachment */}
           <TouchableOpacity style={styles.attachBtn}>
@@ -630,7 +633,8 @@ export default function ChatScreen() {
               !textMessage.trim() && styles.sendBtnDisabled,
             ]}
             onPress={handleSend}
-            disabled={!textMessage.trim()}>
+            disabled={!textMessage.trim()}
+          >
             <Ionicons
               name="send"
               size={17}

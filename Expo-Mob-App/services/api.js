@@ -2,11 +2,9 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const API = axios.create({
-  baseURL: "http://192.168.1.25:3000/api",
+  baseURL: "http://192.168.1.14:3000/api",
   timeout: 10000, // prevent hanging requests
 });
-
-
 
 // ✅ FIXED: Attach token to every request automatically
 API.interceptors.request.use(
