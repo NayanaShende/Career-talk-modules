@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.16:3000";
 
 // ✅ UPDATED: Domain-specific skills — shown when expert picks a domain
 const DOMAIN_SKILLS_MAP = {
