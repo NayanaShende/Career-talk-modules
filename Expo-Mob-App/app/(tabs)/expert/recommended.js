@@ -10,16 +10,18 @@ import {
   TextInput,
   Animated,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { useEffect, useState, useRef } from "react";
 import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.25:3000";
 
-const GREEN = "#574964";
-const GREEN_DARK = "#574964";
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const GREEN = "#867795";
+const GREEN_DARK = "#867795";
 const GREEN_LIGHT = "#f5ecfe";
 const GREEN_PALE = "#e5d0f9";
 const GREEN_MID = "#e5d5f4";
@@ -28,6 +30,9 @@ const INK = "#0D1F1B";
 const MUTED = "#403649";
 const BORDER = "#e5d5f4";
 const BG = "#f7eeff";
+
+// ─── Filter Categories ─────────────────────────────────────────────────────────
+const FILTER_TYPES = ["All", "Name", "Domain", "Subdomain", "Skills"];
 
 export default function Recommended() {
   const [experts, setExperts] = useState([]);
@@ -62,6 +67,8 @@ export default function Recommended() {
         skillsList: Array.isArray(e.skills)
           ? e.skills.map((s) => s.skill_name)
           : [],
+        // Normalize subdomain — adjust field name if your API uses a different key
+        subDomain: e.sub_domain ?? e.subdomain ?? e.subDomain ?? "",
       }));
       const sorted = [...normalized].sort((a, b) => {
         const ratingDiff = (b.realRating || 0) - (a.realRating || 0);
@@ -76,9 +83,49 @@ export default function Recommended() {
     }
   };
 
-  const filteredExperts = experts.filter((e) =>
-    e.name?.toLowerCase().includes(search.toLowerCase()),
-  );
+  // ─── Filtering Logic ──────────────────────────────────────────────────────────
+  const filteredExperts = experts.filter((e) => {
+    if (!search.trim()) return true;
+    const q = search.toLowerCase().trim();
+
+    switch (activeFilter) {
+      case "Name":
+        return e.name?.toLowerCase().includes(q);
+      case "Domain":
+        return (
+          e.domain?.toLowerCase().includes(q) ||
+          e.role?.toLowerCase().includes(q)
+        );
+      case "Subdomain":
+        return e.subDomain?.toLowerCase().includes(q);
+      case "Skills":
+        return e.skillsList.some((skill) => skill.toLowerCase().includes(q));
+      case "All":
+      default:
+        return (
+          e.name?.toLowerCase().includes(q) ||
+          e.domain?.toLowerCase().includes(q) ||
+          e.role?.toLowerCase().includes(q) ||
+          e.subDomain?.toLowerCase().includes(q) ||
+          e.skillsList.some((skill) => skill.toLowerCase().includes(q))
+        );
+    }
+  });
+
+  const getPlaceholder = () => {
+    switch (activeFilter) {
+      case "Name":
+        return "Search by expert name…";
+      case "Domain":
+        return "Search by domain or role…";
+      case "Subdomain":
+        return "Search by subdomain…";
+      case "Skills":
+        return "Search by skill (e.g. React, Python)…";
+      default:
+        return "Search by name, domain, skills…";
+    }
+  };
 
   const animateIn = () =>
     Animated.spring(scaleAnim, {
@@ -108,6 +155,35 @@ export default function Recommended() {
     ));
   };
 
+  // ─── Highlight matched text ───────────────────────────────────────────────────
+  const HighlightText = ({ text, highlight, style, numberOfLines }) => {
+    if (!highlight.trim() || !text) {
+      return (
+        <Text style={style} numberOfLines={numberOfLines}>
+          {text}
+        </Text>
+      );
+    }
+    const regex = new RegExp(
+      `(${highlight.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+      "gi",
+    );
+    const parts = text.split(regex);
+    return (
+      <Text style={style} numberOfLines={numberOfLines}>
+        {parts.map((part, i) =>
+          regex.test(part) ? (
+            <Text key={i} style={[style, styles.highlight]}>
+              {part}
+            </Text>
+          ) : (
+            part
+          ),
+        )}
+      </Text>
+    );
+  };
+
   const ExpertCard = ({ item }) => (
     <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
       <Pressable
@@ -132,25 +208,73 @@ export default function Recommended() {
 
         {/* Info */}
         <View style={styles.infoContainer}>
-          <Text style={styles.name} numberOfLines={1}>
-            {item.name || ""}
-          </Text>
+          <HighlightText
+            text={item.name || ""}
+            highlight={
+              activeFilter === "Name" || activeFilter === "All" ? search : ""
+            }
+            style={styles.name}
+            numberOfLines={1}
+          />
 
           {/* Domain tag */}
           <View style={styles.domainTag}>
-            <Text style={styles.domainTagText} numberOfLines={1}>
-              {item.domain || item.role || "Expert"}
-            </Text>
+            <HighlightText
+              text={item.domain || item.role || "Expert"}
+              highlight={
+                activeFilter === "Domain" || activeFilter === "All"
+                  ? search
+                  : ""
+              }
+              style={styles.domainTagText}
+              numberOfLines={1}
+            />
           </View>
+
+          {/* Subdomain tag — shown only if present */}
+          {!!item.subDomain && (
+            <View style={styles.subDomainTag}>
+              <Ionicons name="git-branch-outline" size={10} color={MUTED} />
+              <HighlightText
+                text={item.subDomain}
+                highlight={
+                  activeFilter === "Subdomain" || activeFilter === "All"
+                    ? search
+                    : ""
+                }
+                style={styles.subDomainTagText}
+                numberOfLines={1}
+              />
+            </View>
+          )}
 
           {/* Skills */}
           {item.skillsList.length > 0 && (
             <View style={styles.skillsRow}>
-              {item.skillsList.slice(0, 2).map((skill, index) => (
-                <View key={index} style={styles.skillChip}>
-                  <Text style={styles.skillChipText}>{skill}</Text>
-                </View>
-              ))}
+              {item.skillsList.slice(0, 2).map((skill, index) => {
+                const isMatch =
+                  (activeFilter === "Skills" || activeFilter === "All") &&
+                  search.trim() &&
+                  skill.toLowerCase().includes(search.toLowerCase());
+                return (
+                  <View
+                    key={index}
+                    style={[
+                      styles.skillChip,
+                      isMatch && styles.skillChipMatched,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.skillChipText,
+                        isMatch && styles.skillChipTextMatched,
+                      ]}
+                    >
+                      {skill}
+                    </Text>
+                  </View>
+                );
+              })}
               {item.skillsList.length > 2 && (
                 <View style={styles.skillChipMore}>
                   <Text style={styles.skillChipMoreText}>
@@ -253,7 +377,7 @@ export default function Recommended() {
           <Ionicons name="search-outline" size={18} color={MUTED} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search experts by name…"
+            placeholder={getPlaceholder()}
             placeholderTextColor="#a49dab"
             value={search}
             onChangeText={setSearch}
@@ -264,6 +388,53 @@ export default function Recommended() {
             </TouchableOpacity>
           )}
         </View>
+
+        {/* ── FILTER CHIPS ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {FILTER_TYPES.map((filter) => {
+            const isActive = activeFilter === filter;
+            return (
+              <TouchableOpacity
+                key={filter}
+                style={[styles.filterChip, isActive && styles.filterChipActive]}
+                onPress={() => {
+                  setActiveFilter(filter);
+                  setSearch("");
+                }}
+                activeOpacity={0.75}
+              >
+                <Ionicons
+                  name={
+                    filter === "All"
+                      ? "apps-outline"
+                      : filter === "Name"
+                        ? "person-outline"
+                        : filter === "Domain"
+                          ? "layers-outline"
+                          : filter === "Subdomain"
+                            ? "git-branch-outline"
+                            : "code-slash-outline"
+                  }
+                  size={12}
+                  color={isActive ? WHITE : GREEN}
+                  style={{ marginRight: 4 }}
+                />
+                <Text
+                  style={[
+                    styles.filterChipText,
+                    isActive && styles.filterChipTextActive,
+                  ]}
+                >
+                  {filter}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </Animated.View>
 
       {/* ── COUNT LABEL ── */}
@@ -273,6 +444,12 @@ export default function Recommended() {
             Showing{" "}
             <Text style={styles.countNum}>{filteredExperts.length}</Text>{" "}
             experts
+            {search.trim() ? (
+              <Text style={styles.countMuted}>
+                {" "}
+                for "{search}" in {activeFilter}
+              </Text>
+            ) : null}
           </Text>
         </View>
       )}
@@ -296,7 +473,8 @@ export default function Recommended() {
               <Text style={styles.emptyIcon}>🔍</Text>
               <Text style={styles.emptyText}>No experts found</Text>
               <Text style={styles.emptySubText}>
-                Try a different search term
+                Try searching by a different {activeFilter.toLowerCase()} or
+                switch filters
               </Text>
             </View>
           }
@@ -321,7 +499,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop:22,
+    marginTop: 22,
   },
   backBtn: {
     width: 42,
@@ -384,16 +562,49 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 11,
     gap: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: BORDER,
   },
   searchInput: { flex: 1, fontSize: 14, color: INK, fontWeight: "500" },
+
+  // Filter chips
+  filterRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingBottom: 2,
+  },
+  filterChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: WHITE,
+    borderWidth: 1.5,
+    borderColor: GREEN_PALE,
+  },
+  filterChipActive: {
+    backgroundColor: GREEN,
+    borderColor: GREEN,
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: GREEN,
+  },
+  filterChipTextActive: {
+    color: WHITE,
+  },
 
   // Count
   countRow: {
     paddingHorizontal: 18,
-    paddingVertical: 10,
+    paddingVertical: 8,
   },
   countText: { fontSize: 13, color: MUTED },
   countNum: { fontWeight: "800", color: GREEN },
+  countMuted: { fontWeight: "500", color: MUTED },
 
   // Card
   card: {
@@ -444,11 +655,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-    marginBottom: 5,
+    marginBottom: 4,
     borderWidth: 1,
     borderColor: GREEN_PALE,
   },
   domainTagText: { fontSize: 11, color: GREEN, fontWeight: "700" },
+
+  subDomainTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    backgroundColor: "#f0eaf7",
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 7,
+    marginBottom: 4,
+    gap: 3,
+    borderWidth: 1,
+    borderColor: "#ddd0ea",
+  },
+  subDomainTagText: { fontSize: 10, color: MUTED, fontWeight: "600" },
 
   skillsRow: {
     flexDirection: "row",
@@ -464,7 +690,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: GREEN_PALE,
   },
+  skillChipMatched: {
+    backgroundColor: GREEN,
+    borderColor: GREEN,
+  },
   skillChipText: { fontSize: 10, color: GREEN, fontWeight: "700" },
+  skillChipTextMatched: { color: WHITE },
   skillChipMore: {
     backgroundColor: GREEN,
     paddingHorizontal: 7,
@@ -537,9 +768,21 @@ const styles = StyleSheet.create({
   },
   chatBtnText: { color: GREEN, fontWeight: "800", fontSize: 12 },
 
+  // Highlight
+  highlight: {
+    backgroundColor: "#FFE680",
+    color: "#6B4F00",
+    borderRadius: 3,
+  },
+
   // Empty
   emptyBox: { alignItems: "center", paddingTop: 80, gap: 8 },
   emptyIcon: { fontSize: 40 },
   emptyText: { fontSize: 16, fontWeight: "800", color: INK },
-  emptySubText: { fontSize: 13, color: MUTED },
+  emptySubText: {
+    fontSize: 13,
+    color: MUTED,
+    textAlign: "center",
+    paddingHorizontal: 32,
+  },
 });

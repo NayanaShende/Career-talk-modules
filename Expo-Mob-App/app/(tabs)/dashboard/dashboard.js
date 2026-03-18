@@ -18,7 +18,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.25:3000";
 
 const SKILL_FILTERS = [
   "All",
@@ -877,9 +877,12 @@ export default function Dashboard() {
   );
 }
 
-const TEAL = "#574964";
+// ─────────────────────────────────────────────────────────────────────────────
+//  STYLES
+// ─────────────────────────────────────────────────────────────────────────────
+const TEAL = "#867795";
 const TEAL_LIGHT = "#efddff";
-const TEAL_TEXT = "#574964";
+const TEAL_TEXT = "#867795";
 const PAGE_BG = "#f5f6f8";
 const CARD_BG = "#FFFFFF";
 const TEXT_PRIMARY = "#1a1a2e";
@@ -1140,7 +1143,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#574964",
+    backgroundColor: "#867795",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 8,
@@ -1236,7 +1239,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#574964",
+    backgroundColor: "#867795",
     justifyContent: "center",
     alignItems: "center",
   },

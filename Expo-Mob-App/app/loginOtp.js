@@ -23,8 +23,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const { width, height } = Dimensions.get("window");
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
-const GREEN = "#574964";
-const GREEN_DARK = "#574964";
+const GREEN = "#867795";
+const GREEN_DARK = "#746583";
 const GREEN_LIGHT = "#f4eafd";
 const GREEN_MID = "#574964";
 const GREEN_PALE = "#c6b0db";

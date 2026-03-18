@@ -18,13 +18,13 @@ import axios from "axios";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.25:3000";
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const TEAL = "#574964";
+const TEAL = "#867795";
 const TEAL_LIGHT = "#ebddf8";
-const TEAL_TEXT = "#574964";
+const TEAL_TEXT = "#867795";
 const PAGE_BG = "#f5f6f8";
 const CARD_BG = "#ffffff";
 const TEXT_1 = "#1a1a2e";

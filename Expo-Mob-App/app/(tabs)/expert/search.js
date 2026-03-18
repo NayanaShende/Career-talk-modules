@@ -9,23 +9,50 @@ import {
   SafeAreaView,
   Image,
   TouchableOpacity,
+  ScrollView,
 } from "react-native";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const BASE_URL = "http://172.20.10.3:3000";
+const BASE_URL = "http://192.168.1.25:3000";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const TEAL = "#574964";
+const TEAL = "#867795";
 const TEAL_LIGHT = "#f6ebff";
-const TEAL_TEXT = "#574964";
+const TEAL_TEXT = "#867795";
 const PAGE_BG = "#f5f6f8";
 const CARD_BG = "#ffffff";
 const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#eff0f2";
+
+// ── Search filter types ────────────────────────────────────────────────────
+const SEARCH_FILTERS = [
+  { key: "All", icon: "apps-outline" },
+  { key: "Name", icon: "person-outline" },
+  { key: "Domain", icon: "layers-outline" },
+  { key: "Subdomain", icon: "git-branch-outline" },
+  { key: "Skills", icon: "code-slash-outline" },
+];
+
+// ── Skill quick-filter chips ───────────────────────────────────────────────
+const SKILL_CHIPS = [
+  "All",
+  "React",
+  "React Native",
+  "Python",
+  "Node.js",
+  "Java",
+  "Angular",
+  "DevOps",
+  "UI/UX Design",
+  "Data Analysis",
+  "Machine Learning",
+  "PHP",
+  "Flutter",
+];
 
 export default function Home() {
   const router = useRouter();
@@ -34,6 +61,7 @@ export default function Home() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedSkill, setSelectedSkill] = useState("All");
+  const [searchFilter, setSearchFilter] = useState("All");
 
   useEffect(() => {
     fetchExperts();
@@ -42,7 +70,13 @@ export default function Home() {
   const fetchExperts = async () => {
     try {
       const res = await axiosInstance.get("/experts");
-      setExperts(res?.data?.data || []);
+      const raw = res?.data?.data || [];
+      // Normalize subdomain field — adjust key to match your API
+      const normalized = raw.map((e) => ({
+        ...e,
+        subDomain: e.sub_domain ?? e.subdomain ?? e.subDomain ?? "",
+      }));
+      setExperts(normalized);
     } catch (error) {
       console.log("Error fetching experts:", error?.message);
     } finally {
@@ -50,7 +84,7 @@ export default function Home() {
     }
   };
 
-  const getImageUri = (image, name) => {
+  const getImageUri = (image) => {
     if (image) {
       const cleanImage = image.replace(/^uploads\//, "");
       return `${BASE_URL}/uploads/${cleanImage}`;
@@ -66,45 +100,107 @@ export default function Home() {
     return item?.role || "Expert";
   };
 
+  // ── Filtering Logic ────────────────────────────────────────────────────────
   const filteredExperts = experts.filter((e) => {
-    const matchesSearch =
-      e?.name?.toLowerCase().includes(search.toLowerCase()) ||
-      e?.domain?.toLowerCase().includes(search.toLowerCase()) ||
-      e?.role?.toLowerCase().includes(search.toLowerCase()) ||
-      (Array.isArray(e?.skills) &&
-        e.skills.some((s) =>
-          s.skill_name?.toLowerCase().includes(search.toLowerCase()),
-        ));
-
-    const matchesSkill =
+    // Skill quick-filter chip
+    const matchesSkillChip =
       selectedSkill === "All" ||
       (Array.isArray(e?.skills) &&
         e.skills.some(
           (s) => s.skill_name?.toLowerCase() === selectedSkill.toLowerCase(),
         ));
 
-    return matchesSearch && matchesSkill;
+    // Search bar filter
+    const q = search.toLowerCase().trim();
+    let matchesSearch = true;
+    if (q) {
+      switch (searchFilter) {
+        case "Name":
+          matchesSearch = e?.name?.toLowerCase().includes(q);
+          break;
+        case "Domain":
+          matchesSearch =
+            e?.domain?.toLowerCase().includes(q) ||
+            e?.role?.toLowerCase().includes(q);
+          break;
+        case "Subdomain":
+          matchesSearch = e?.subDomain?.toLowerCase().includes(q);
+          break;
+        case "Skills":
+          matchesSearch =
+            Array.isArray(e?.skills) &&
+            e.skills.some((s) => s.skill_name?.toLowerCase().includes(q));
+          break;
+        case "All":
+        default:
+          matchesSearch =
+            e?.name?.toLowerCase().includes(q) ||
+            e?.domain?.toLowerCase().includes(q) ||
+            e?.role?.toLowerCase().includes(q) ||
+            e?.subDomain?.toLowerCase().includes(q) ||
+            (Array.isArray(e?.skills) &&
+              e.skills.some((s) => s.skill_name?.toLowerCase().includes(q)));
+      }
+    }
+
+    return matchesSkillChip && matchesSearch;
   });
 
-  const skills = [
-    "All",
-    "React",
-    "React Native",
-    "Python",
-    "Node.js",
-    "Java",
-    "Angular",
-    "DevOps",
-    "UI/UX Design",
-    "Data Analysis",
-    "Machine Learning",
-    "PHP",
-    "Flutter",
-  ];
+  const getPlaceholder = () => {
+    switch (searchFilter) {
+      case "Name":
+        return "Search by expert name…";
+      case "Domain":
+        return "Search by domain or role…";
+      case "Subdomain":
+        return "Search by subdomain…";
+      case "Skills":
+        return "Search by skill (e.g. React, Python)…";
+      default:
+        return "Search experts, skills, domain…";
+    }
+  };
 
-  // ── Expert list card ───────────────────────────────────────────────────
+  // ── Highlight matched text ─────────────────────────────────────────────────
+  const HighlightText = ({ text, style, numberOfLines }) => {
+    const q = search.trim();
+    const shouldHighlight =
+      q &&
+      (searchFilter === "All" ||
+        searchFilter === "Name" ||
+        searchFilter === "Domain" ||
+        searchFilter === "Subdomain");
+
+    if (!shouldHighlight || !text) {
+      return (
+        <Text style={style} numberOfLines={numberOfLines}>
+          {text}
+        </Text>
+      );
+    }
+    const regex = new RegExp(
+      `(${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
+      "gi",
+    );
+    const parts = text.split(regex);
+    return (
+      <Text style={style} numberOfLines={numberOfLines}>
+        {parts.map((part, i) =>
+          regex.test(part) ? (
+            <Text key={i} style={[style, styles.highlight]}>
+              {part}
+            </Text>
+          ) : (
+            part
+          ),
+        )}
+      </Text>
+    );
+  };
+
+  // ── Expert list card ───────────────────────────────────────────────────────
   const renderItem = ({ item, index }) => {
-    const imageUri = getImageUri(item.image, item.name);
+    const imageUri = getImageUri(item.image);
     const initials = item?.name
       ? item.name
           .trim()
@@ -117,9 +213,14 @@ export default function Home() {
     const rating = parseFloat(item?.rating) || 0;
     const stars = Math.round(rating);
 
-    // soft avatar bg cycle
     const BG_CYCLE = ["#4a4869", "#2d6a5e", "#7a3d5e", "#1f5c8a", "#5e4a2d"];
     const avatarBg = BG_CYCLE[index % BG_CYCLE.length];
+
+    const skillsList = Array.isArray(item?.skills)
+      ? item.skills.map((s) => s.skill_name)
+      : [];
+
+    const q = search.toLowerCase().trim();
 
     return (
       <Pressable
@@ -137,7 +238,6 @@ export default function Home() {
               <Text style={styles.avatarInitials}>{initials}</Text>
             </View>
           )}
-          {/* online dot */}
           <View
             style={[
               styles.onlineDot,
@@ -148,14 +248,70 @@ export default function Home() {
 
         {/* ── Info ── */}
         <View style={styles.infoCol}>
-          <Text style={styles.expertName} numberOfLines={1}>
-            {item?.name}
-          </Text>
-          <Text style={styles.expertRole} numberOfLines={1}>
-            {getExpertDomain(item)}
-          </Text>
+          {/* Name */}
+          <HighlightText
+            text={item?.name}
+            style={styles.expertName}
+            numberOfLines={1}
+          />
 
-          {/* stars + experience */}
+          {/* Domain */}
+          <HighlightText
+            text={getExpertDomain(item)}
+            style={styles.expertRole}
+            numberOfLines={1}
+          />
+
+          {/* Subdomain — shown only if present */}
+          {!!item.subDomain && (
+            <View style={styles.subDomainRow}>
+              <Ionicons name="git-branch-outline" size={10} color={TEXT_2} />
+              <HighlightText
+                text={item.subDomain}
+                style={styles.subDomainText}
+                numberOfLines={1}
+              />
+            </View>
+          )}
+
+          {/* Skills chips */}
+          {skillsList.length > 0 && (
+            <View style={styles.skillsRow}>
+              {skillsList.slice(0, 2).map((skill, i) => {
+                const isMatch =
+                  (searchFilter === "Skills" || searchFilter === "All") &&
+                  q &&
+                  skill.toLowerCase().includes(q);
+                return (
+                  <View
+                    key={i}
+                    style={[
+                      styles.skillChip,
+                      isMatch && styles.skillChipMatched,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.skillChipText,
+                        isMatch && styles.skillChipTextMatched,
+                      ]}
+                    >
+                      {skill}
+                    </Text>
+                  </View>
+                );
+              })}
+              {skillsList.length > 2 && (
+                <View style={styles.skillChipMore}>
+                  <Text style={styles.skillChipMoreText}>
+                    +{skillsList.length - 2}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Stars + experience */}
           <View style={styles.metaRow}>
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((s) => (
@@ -176,7 +332,7 @@ export default function Home() {
             </View>
           </View>
 
-          {/* availability badge */}
+          {/* Availability badge */}
           <View
             style={[
               styles.availBadge,
@@ -255,7 +411,7 @@ export default function Home() {
           <Ionicons name="search-outline" size={18} color="#AAAAAA" />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search experts, skills, roles..."
+            placeholder={getPlaceholder()}
             placeholderTextColor="#AAAAAA"
             value={search}
             onChangeText={setSearch}
@@ -266,12 +422,52 @@ export default function Home() {
             </Pressable>
           )}
         </View>
+
+        {/* ── SEARCH FILTER CHIPS ── */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.searchFilterRow}
+        >
+          {SEARCH_FILTERS.map(({ key, icon }) => {
+            const isActive = searchFilter === key;
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[
+                  styles.searchFilterChip,
+                  isActive && styles.searchFilterChipActive,
+                ]}
+                onPress={() => {
+                  setSearchFilter(key);
+                  setSearch("");
+                }}
+                activeOpacity={0.75}
+              >
+                <Ionicons
+                  name={icon}
+                  size={12}
+                  color={isActive ? "#fff" : TEAL_TEXT}
+                  style={{ marginRight: 4 }}
+                />
+                <Text
+                  style={[
+                    styles.searchFilterText,
+                    isActive && styles.searchFilterTextActive,
+                  ]}
+                >
+                  {key}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
-      {/* ── SKILL FILTER ───────────────────────────────────────────────── */}
+      {/* ── SKILL QUICK-FILTER ─────────────────────────────────────────── */}
       <View style={styles.filterWrap}>
         <FlatList
-          data={skills}
+          data={SKILL_CHIPS}
           horizontal
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item, index) => index.toString()}
@@ -303,7 +499,11 @@ export default function Home() {
           <Text style={styles.resultsText}>
             {filteredExperts.length} result
             {filteredExperts.length !== 1 ? "s" : ""}
-            {selectedSkill !== "All" ? ` for "${selectedSkill}"` : ""}
+            {search.trim()
+              ? ` for "${search}" in ${searchFilter}`
+              : selectedSkill !== "All"
+                ? ` for "${selectedSkill}"`
+                : ""}
           </Text>
         </View>
       )}
@@ -330,7 +530,7 @@ export default function Home() {
               </View>
               <Text style={styles.emptyTitle}>No experts found</Text>
               <Text style={styles.emptySubtitle}>
-                Try a different search term or skill filter
+                Try a different {searchFilter.toLowerCase()} or switch filters
               </Text>
             </View>
           )}
@@ -343,21 +543,9 @@ export default function Home() {
 
 // ── STYLES ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: PAGE_BG,
-  },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: TEXT_2,
-    fontWeight: "500",
-  },
+  container: { flex: 1, backgroundColor: PAGE_BG },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  loadingText: { fontSize: 14, color: TEXT_2, fontWeight: "500" },
 
   // ── Header ──
   header: {
@@ -380,10 +568,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  headerCenter: {
-    flex: 1,
-    paddingHorizontal: 12,
-  },
+  headerCenter: { flex: 1, paddingHorizontal: 12 },
   headerTitle: {
     fontSize: 20,
     fontWeight: "800",
@@ -424,6 +609,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
+    gap: 10,
   },
   searchBox: {
     flexDirection: "row",
@@ -434,14 +620,38 @@ const styles = StyleSheet.create({
     paddingVertical: 11,
     gap: 10,
   },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: TEXT_1,
-    fontWeight: "500",
+  searchInput: { flex: 1, fontSize: 14, color: TEXT_1, fontWeight: "500" },
+
+  // ── Search filter chips ──
+  searchFilterRow: {
+    flexDirection: "row",
+    gap: 8,
+    paddingBottom: 2,
+  },
+  searchFilterChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: CARD_BG,
+    borderWidth: 1.5,
+    borderColor: "#D0D0D8",
+  },
+  searchFilterChipActive: {
+    backgroundColor: TEAL,
+    borderColor: TEAL,
+  },
+  searchFilterText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: TEAL_TEXT,
+  },
+  searchFilterTextActive: {
+    color: "#fff",
   },
 
-  // ── Skill Filter ──
+  // ── Skill quick-filter ──
   filterWrap: {
     backgroundColor: CARD_BG,
     paddingBottom: 12,
@@ -449,10 +659,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
   },
-  filterList: {
-    paddingHorizontal: 16,
-    gap: 8,
-  },
+  filterList: { paddingHorizontal: 16, gap: 8 },
   filterChip: {
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -461,37 +668,16 @@ const styles = StyleSheet.create({
     borderColor: "#D0D0D8",
     backgroundColor: CARD_BG,
   },
-  filterChipActive: {
-    backgroundColor: TEAL,
-    borderColor: TEAL,
-  },
-  filterChipText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#555",
-  },
-  filterChipTextActive: {
-    color: "#fff",
-  },
+  filterChipActive: { backgroundColor: TEAL, borderColor: TEAL },
+  filterChipText: { fontSize: 13, fontWeight: "700", color: "#555" },
+  filterChipTextActive: { color: "#fff" },
 
   // ── Results count ──
-  resultsRow: {
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 6,
-  },
-  resultsText: {
-    fontSize: 13,
-    color: TEXT_2,
-    fontWeight: "600",
-  },
+  resultsRow: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 6 },
+  resultsText: { fontSize: 13, color: TEXT_2, fontWeight: "600" },
 
   // ── List ──
-  listContent: {
-    paddingHorizontal: 16,
-    paddingTop: 6,
-    paddingBottom: 30,
-  },
+  listContent: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 30 },
 
   // ── Expert Card ──
   card: {
@@ -506,9 +692,7 @@ const styles = StyleSheet.create({
   },
 
   // ── Avatar ──
-  avatarWrap: {
-    position: "relative",
-  },
+  avatarWrap: { position: "relative" },
   avatarImg: {
     width: 68,
     height: 68,
@@ -523,11 +707,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarInitials: {
-    color: "#fff",
-    fontSize: 20,
-    fontWeight: "800",
-  },
+  avatarInitials: { color: "#fff", fontSize: 20, fontWeight: "800" },
   onlineDot: {
     width: 12,
     height: 12,
@@ -540,32 +720,62 @@ const styles = StyleSheet.create({
   },
 
   // ── Info ──
-  infoCol: {
-    flex: 1,
-    gap: 3,
-  },
+  infoCol: { flex: 1, gap: 3 },
   expertName: {
     fontSize: 15,
     fontWeight: "800",
     color: TEXT_1,
     letterSpacing: -0.2,
   },
-  expertRole: {
-    fontSize: 13,
-    color: TEXT_2,
-    fontWeight: "500",
+  expertRole: { fontSize: 13, color: TEXT_2, fontWeight: "500" },
+
+  subDomainRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 1,
   },
+  subDomainText: {
+    fontSize: 11,
+    color: TEXT_2,
+    fontWeight: "600",
+  },
+
+  skillsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 4,
+    marginTop: 2,
+  },
+  skillChip: {
+    backgroundColor: TEAL_LIGHT,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#e0d0f0",
+  },
+  skillChipMatched: {
+    backgroundColor: TEAL,
+    borderColor: TEAL,
+  },
+  skillChipText: { fontSize: 10, color: TEAL_TEXT, fontWeight: "700" },
+  skillChipTextMatched: { color: "#fff" },
+  skillChipMore: {
+    backgroundColor: TEAL,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  skillChipMoreText: { fontSize: 10, color: "#fff", fontWeight: "700" },
+
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     marginTop: 2,
   },
-  starsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 2,
-  },
+  starsRow: { flexDirection: "row", alignItems: "center", gap: 2 },
   ratingNum: {
     fontSize: 12,
     fontWeight: "700",
@@ -581,11 +791,8 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 50,
   },
-  expPillText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: TEAL_TEXT,
-  },
+  expPillText: { fontSize: 11, fontWeight: "700", color: TEAL_TEXT },
+
   availBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -596,22 +803,11 @@ const styles = StyleSheet.create({
     marginTop: 3,
     gap: 5,
   },
-  availDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  availText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
+  availDot: { width: 6, height: 6, borderRadius: 3 },
+  availText: { fontSize: 11, fontWeight: "700" },
 
   // ── Buttons ──
-  btnCol: {
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 8,
-  },
+  btnCol: { flexDirection: "column", alignItems: "center", gap: 8 },
   viewBtn: {
     backgroundColor: TEAL,
     paddingVertical: 9,
@@ -620,11 +816,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  viewBtnText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 13,
-  },
+  viewBtnText: { color: "#fff", fontWeight: "800", fontSize: 13 },
   chatBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -637,18 +829,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: TEAL_LIGHT,
   },
-  chatBtnText: {
-    color: TEAL_TEXT,
-    fontWeight: "800",
-    fontSize: 13,
+  chatBtnText: { color: TEAL_TEXT, fontWeight: "800", fontSize: 13 },
+
+  // ── Highlight ──
+  highlight: {
+    backgroundColor: "#FFE680",
+    color: "#6B4F00",
+    borderRadius: 3,
   },
 
   // ── Empty state ──
-  emptyWrap: {
-    alignItems: "center",
-    paddingTop: 60,
-    gap: 10,
-  },
+  emptyWrap: { alignItems: "center", paddingTop: 60, gap: 10 },
   emptyIcon: {
     width: 72,
     height: 72,
@@ -658,11 +849,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: TEXT_1,
-  },
+  emptyTitle: { fontSize: 17, fontWeight: "800", color: TEXT_1 },
   emptySubtitle: {
     fontSize: 13,
     color: TEXT_2,
