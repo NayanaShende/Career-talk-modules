@@ -46,8 +46,6 @@ sequelize
     // ✅ Sync models with DB — alter: true adds any missing columns automatically
     return sequelize.sync();
   })
-  .then(() => console.log("✅ Database synced successfully"))
-  .catch((err) => console.log("❌ Database connection error:", err));
 
 /* ---------------- API ROUTES ---------------- */
 app.use("/api", (req, res, next) => {
