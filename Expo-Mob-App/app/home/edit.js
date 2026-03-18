@@ -23,7 +23,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "https://career-talk-modules-backend.onrender.com";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const TEAL = "#867795";

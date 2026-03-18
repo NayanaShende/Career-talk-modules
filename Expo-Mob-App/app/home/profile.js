@@ -18,7 +18,7 @@ import axios from "axios";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "https://career-talk-modules-backend.onrender.com";
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 // ── Design tokens ──────────────────────────────────────────────────────────
