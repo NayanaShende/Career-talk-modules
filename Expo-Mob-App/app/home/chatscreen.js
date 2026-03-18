@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: TEXT_1,
     letterSpacing: -0.2,
-    paddingTop:10,
+    paddingTop: 10,
   },
   statusRow: {
     flexDirection: "row",
@@ -710,6 +710,6 @@ const styles = StyleSheet.create({
     marginBottom: 1,
   },
   sendBtnDisabled: {
-    backgroundColor:TEAL,
+    backgroundColor: TEAL,
   },
 });
