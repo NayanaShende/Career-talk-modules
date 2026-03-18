@@ -18,7 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 console.log("🚀 NotificationContext.js FILE LOADED");
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 const NotificationContext = createContext({
   unreadCounts: {},
@@ -52,7 +52,7 @@ export function NotificationProvider({ children }) {
               uid = u?.id || u?.userId || u?.user?.id;
               if (uid) {
                 console.log(
-                  `👤 NotificationContext found userId ${uid} in key "${key}"`
+                  `👤 NotificationContext found userId ${uid} in key "${key}"`,
                 );
                 break;
               }
@@ -119,14 +119,17 @@ export function NotificationProvider({ children }) {
         "🌐 Global socket connected:",
         socket.id,
         "for user:",
-        currentUserId
+        currentUserId,
       );
       socket.emit("joinRoom", { userId: currentUserId });
       console.log("🏠 Global joinRoom emitted for:", currentUserId);
     });
 
     socket.on("reconnect", () => {
-      console.log("🔄 Global socket reconnected, rejoining room:", currentUserId);
+      console.log(
+        "🔄 Global socket reconnected, rejoining room:",
+        currentUserId,
+      );
       socket.emit("joinRoom", { userId: currentUserId });
     });
 
@@ -170,7 +173,7 @@ export function NotificationProvider({ children }) {
       ) {
         console.log(
           "📱 App foregrounded, rejoining socket room:",
-          currentUserId
+          currentUserId,
         );
         if (socketRef.current?.connected && currentUserId) {
           socketRef.current.emit("joinRoom", { userId: currentUserId });

@@ -21,7 +21,7 @@ import axios from "axios";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 const getImageUri = (image) => {
   if (image) {

@@ -17,7 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 import { useNotification } from "../../../context/NotificationContext";
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 const SKILLS = [
   "All",
@@ -151,7 +151,7 @@ export default function Dashboard() {
                 });
               } else {
                 setOnlineExperts((prev) =>
-                  prev.filter((e) => e.id !== expertId)
+                  prev.filter((e) => e.id !== expertId),
                 );
               }
             });
@@ -274,8 +274,8 @@ export default function Dashboard() {
               (e) =>
                 Array.isArray(e.skills) &&
                 e.skills.some((s) =>
-                  s.skill_name?.toLowerCase().includes(skill.toLowerCase())
-                )
+                  s.skill_name?.toLowerCase().includes(skill.toLowerCase()),
+                ),
             );
       filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       setSkillFilteredExperts(filtered);
@@ -305,7 +305,7 @@ export default function Dashboard() {
                 e.language_spoken &&
                 e.language_spoken
                   .toLowerCase()
-                  .includes(language.toLowerCase())
+                  .includes(language.toLowerCase()),
             );
       filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       setLanguageExperts(filtered);
@@ -333,7 +333,7 @@ export default function Dashboard() {
           : normalized.filter(
               (e) =>
                 e.certification &&
-                e.certification.toLowerCase().includes(cert.toLowerCase())
+                e.certification.toLowerCase().includes(cert.toLowerCase()),
             );
       filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
       setCertificationExperts(filtered);
@@ -354,7 +354,7 @@ export default function Dashboard() {
       return `${BASE_URL}/uploads/${cleanImage}`;
     }
     return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-      name || "User"
+      name || "User",
     )}&background=1A2B4C&color=fff`;
   };
 

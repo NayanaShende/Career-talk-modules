@@ -20,7 +20,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 const sortMessages = (msgs) =>
@@ -90,7 +90,7 @@ const getImageUri = (image, name) => {
     return `${BASE_URL}/uploads/${cleanImage}`;
   }
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    name || "Expert"
+    name || "Expert",
   )}&background=0B2D72&color=fff`;
 };
 
@@ -146,7 +146,7 @@ export default function ChatScreen() {
     try {
       setLoading(true);
       const res = await API.get(
-        `/chat/messages/${currentUserId}/${RECEIVER_ID}`
+        `/chat/messages/${currentUserId}/${RECEIVER_ID}`,
       );
       setMessages(dedupeMessages(sortMessages(res?.data?.data || [])));
     } catch (error) {
@@ -178,7 +178,7 @@ export default function ChatScreen() {
           message: messageToSend,
           created_at: new Date(),
         },
-      ])
+      ]),
     );
 
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
@@ -214,7 +214,7 @@ export default function ChatScreen() {
     const onReceiveMessage = (newMessage) => {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
         setMessages((prev) =>
-          dedupeMessages(sortMessages([...prev, newMessage]))
+          dedupeMessages(sortMessages([...prev, newMessage])),
         );
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });

@@ -15,7 +15,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 export default function Home() {
   const router = useRouter();
@@ -46,7 +46,10 @@ export default function Home() {
     // ✅ Priority 1: expert's own image
     const expertImage = item?.image;
     if (expertImage) {
-      if (expertImage.startsWith("http://") || expertImage.startsWith("https://")) {
+      if (
+        expertImage.startsWith("http://") ||
+        expertImage.startsWith("https://")
+      ) {
         return expertImage;
       }
       const clean = expertImage.replace(/^uploads\//, "");
@@ -97,9 +100,19 @@ export default function Home() {
   });
 
   const skills = [
-    "All", "React", "React Native", "Python", "Node.js", "Java",
-    "Angular", "DevOps", "UI/UX Design", "Data Analysis",
-    "Machine Learning", "PHP", "Flutter",
+    "All",
+    "React",
+    "React Native",
+    "Python",
+    "Node.js",
+    "Java",
+    "Angular",
+    "DevOps",
+    "UI/UX Design",
+    "Data Analysis",
+    "Machine Learning",
+    "PHP",
+    "Flutter",
   ];
 
   return (
@@ -116,7 +129,12 @@ export default function Home() {
       {/* --- SEARCH BAR --- */}
       <View style={styles.searchContainer}>
         <View style={styles.searchBox}>
-          <Ionicons name="search" size={20} color="#0B2D72" style={styles.searchIcon} />
+          <Ionicons
+            name="search"
+            size={20}
+            color="#0B2D72"
+            style={styles.searchIcon}
+          />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for an expert..."
@@ -141,10 +159,18 @@ export default function Home() {
           keyExtractor={(item, index) => index.toString()}
           renderItem={({ item }) => (
             <TouchableOpacity
-              style={[styles.skillChip, selectedSkill === item && styles.activeChip]}
+              style={[
+                styles.skillChip,
+                selectedSkill === item && styles.activeChip,
+              ]}
               onPress={() => setSelectedSkill(item)}
             >
-              <Text style={[styles.skillText, selectedSkill === item && styles.activeChipText]}>
+              <Text
+                style={[
+                  styles.skillText,
+                  selectedSkill === item && styles.activeChipText,
+                ]}
+              >
                 {item}
               </Text>
             </TouchableOpacity>
@@ -167,7 +193,9 @@ export default function Home() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           ListEmptyComponent={() => (
             <View style={styles.center}>
-              <Text style={{ marginTop: 50, color: "#999" }}>No experts found.</Text>
+              <Text style={{ marginTop: 50, color: "#999" }}>
+                No experts found.
+              </Text>
             </View>
           )}
           renderItem={({ item }) => {
@@ -185,7 +213,11 @@ export default function Home() {
                     style={styles.image}
                     // ✅ If image fails to load, show ui-avatars fallback
                     onError={(e) => {
-                      console.log("Image load error for", item.name, e.nativeEvent.error);
+                      console.log(
+                        "Image load error for",
+                        item.name,
+                        e.nativeEvent.error,
+                      );
                     }}
                   />
                 </View>
@@ -207,7 +239,11 @@ export default function Home() {
                     <View
                       style={[
                         styles.dot,
-                        { backgroundColor: item?.is_online ? "#22C55E" : "#9CA3AF" },
+                        {
+                          backgroundColor: item?.is_online
+                            ? "#22C55E"
+                            : "#9CA3AF",
+                        },
                       ]}
                     />
                     <Text
@@ -238,12 +274,16 @@ export default function Home() {
                         params: {
                           expertId: item.userId || item.id,
                           expertName: item.name,
-                          expertImage: imageUri,  // ✅ pass resolved imageUri not raw null
+                          expertImage: imageUri, // ✅ pass resolved imageUri not raw null
                         },
                       })
                     }
                   >
-                    <Ionicons name="chatbubble-outline" size={14} color="#0B2D72" />
+                    <Ionicons
+                      name="chatbubble-outline"
+                      size={14}
+                      color="#0B2D72"
+                    />
                     <Text style={styles.chatBtnText}>Chat</Text>
                   </TouchableOpacity>
                 </View>
@@ -298,7 +338,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 85,
     borderRadius: 8,
-    backgroundColor: "#E0E7FF",  // ✅ placeholder color while loading
+    backgroundColor: "#E0E7FF", // ✅ placeholder color while loading
   },
   placeholderImg: {
     backgroundColor: "#E0E0E0",

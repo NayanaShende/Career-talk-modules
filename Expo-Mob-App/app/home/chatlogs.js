@@ -16,7 +16,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useNotification } from "../../context/NotificationContext";
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 const formatTime = (dateStr) => {
@@ -32,7 +32,12 @@ const formatTime = (dateStr) => {
 
 // ✅ Smart image URL — handles Cloudinary full URLs AND local paths
 const getImageUri = (image, name) => {
-  if (image && image !== "undefined" && image !== "null" && image.trim() !== "") {
+  if (
+    image &&
+    image !== "undefined" &&
+    image !== "null" &&
+    image.trim() !== ""
+  ) {
     // Already a full URL (Cloudinary, S3, etc.) → use directly, no prefix needed
     if (image.startsWith("http://") || image.startsWith("https://")) {
       return image;
@@ -43,7 +48,7 @@ const getImageUri = (image, name) => {
   }
   // Fallback to generated avatar
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    name || "Expert"
+    name || "Expert",
   )}&background=0B2D72&color=fff`;
 };
 
@@ -82,7 +87,7 @@ export default function ChatLogs() {
   useFocusEffect(
     useCallback(() => {
       if (currentUserId) loadConversations();
-    }, [currentUserId])
+    }, [currentUserId]),
   );
 
   const onRefresh = () => {

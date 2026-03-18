@@ -22,43 +22,346 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.17:3000";
+const BASE_URL = "http://192.168.1.14:3000";
 
 // ✅ UPDATED: Domain-specific skills — shown when expert picks a domain
 const DOMAIN_SKILLS_MAP = {
-  "Career Counseling": ["Career Coaching","Resume Writing","LinkedIn Optimization","Mock Interviews","Group Discussion","Aptitude Training","Soft Skills","Communication Skills","Body Language","Goal Setting","Motivation & Mindset","Personality Assessment"],
-  "Software Engineering": ["React","React Native","Next.js","Vue.js","Angular","Node.js","Express.js","Django","FastAPI","Spring Boot","Flutter","Android (Kotlin)","iOS (Swift)","AWS","Azure","GCP","Docker","Kubernetes","PostgreSQL","MongoDB","Redis","GraphQL","System Design","DSA","Git & GitHub","Cybersecurity","Blockchain","Unity (Game Dev)"],
-  "Data Science & AI": ["Python","R","SQL","Pandas","NumPy","Scikit-learn","TensorFlow","PyTorch","Keras","Power BI","Tableau","Excel (Advanced)","Spark","Hadoop","Feature Engineering","Model Deployment","MLflow","OpenAI API","LangChain","Prompt Engineering","Statistics & Probability","A/B Testing"],
-  "Finance & Investment": ["Stock Analysis (Technical)","Stock Analysis (Fundamental)","Mutual Fund Planning","Portfolio Management","Tax Planning","GST Filing","Income Tax Returns","Financial Modeling (Excel)","Valuation","Crypto Trading","Forex Trading","Options & Futures","Insurance Planning","Tally","Zoho Books","CA / CFA / CFP Knowledge"],
-  "Marketing & Branding": ["SEO","Google Ads","Meta Ads (Facebook/Instagram)","Content Writing","Copywriting","Email Marketing","Canva","Adobe Photoshop","Adobe Premiere Pro","Google Analytics","HubSpot","Mailchimp","YouTube Marketing","Influencer Outreach","Brand Strategy","Market Research","WhatsApp Marketing","Affiliate Marketing"],
-  "Health & Wellness": ["Nutrition Planning","Diet Charting","Weight Management","Yoga","Pranayama","Meditation","Zumba","CrossFit","Ayurvedic Consultation","Physiotherapy Exercises","Mental Health Counseling","CBT Therapy","First Aid & CPR","Sports Nutrition","Homeopathy","Child Nutrition","Naturopathy"],
-  "Legal Advisory": ["Contract Drafting","Legal Research","Case Filing","IP Registration","Trademark","Patent","GST & Tax Law","Labour Law","Consumer Law","Company Incorporation","MCA Filings","Cyber Law","Property Law","Family Law","Arbitration & Mediation","Legal Document Review"],
-  "Business Strategy": ["Business Plan Writing","Market Research","Financial Projections","Pitch Deck Creation","SWOT & PESTLE Analysis","OKR Framework","Agile & Scrum","PMP Certification","Operations Optimization","Supply Chain","CRM Strategy","SAP / Oracle ERP","Product Roadmap","Go-to-Market Strategy","Fundraising Strategy","Startup Mentoring"],
-  "Education & Tutoring": ["Mathematics (Class 8-12)","Physics","Chemistry","Biology","English Grammar","Essay Writing","JEE Preparation","NEET Preparation","UPSC Preparation","Vedic Maths","Abacus","Scratch (Kids Coding)","Python for Beginners","Accountancy","Economics","Marathi Literature","Hindi Literature","Music (Vocal/Instrumental)","Drawing & Painting","Cricket Coaching","Football Coaching"],
-  "Human Resources": ["Recruitment & Sourcing","LinkedIn Hiring","ATS Tools (Naukri/LinkedIn)","HR Policies & Compliance","Payroll Management","HRMS Tools (Keka/Darwinbox/SAP)","Performance Appraisal","Employee Engagement","Training & Development","Labor Law","Diversity & Inclusion","HR Analytics","Leadership Training","Conflict Resolution"],
-  "Civil Services & Government": ["General Studies (GS Paper 1-4)","CSAT","Essay Writing","Current Affairs","Indian Polity & Constitution","Indian Economy","History & Culture","Geography","Banking Awareness","Quantitative Aptitude","Reasoning Ability","English (Descriptive)","Marathi (Descriptive)","UPSC Interview Preparation"],
-  "Architecture & Design": ["AutoCAD","Revit","SketchUp","Rhino 3D","Adobe Photoshop","Adobe Illustrator","Adobe InDesign","Figma","Adobe XD","3ds Max","Blender","V-Ray Rendering","Interior Space Planning","Landscape Design","UI/UX Research","Wireframing & Prototyping","Fashion Illustration","Textile Design"],
-  "Media & Journalism": ["News Writing","Feature Writing","Investigative Journalism","Video Editing (Premiere Pro)","Video Editing (DaVinci)","Photography (DSLR)","YouTube Content Creation","Podcast Production","Script Writing","Adobe Audition","Final Cut Pro","Social Media Management","Fact Checking","Interviewing Techniques"],
-  "Agriculture & Farming": ["Organic Farming Techniques","Soil Testing","Drip Irrigation","Hydroponics Setup","Crop Disease Management","Pesticide Management","Government Agri Schemes","Agri Export & Marketing","Dairy Management","Poultry Farming","Horticulture","Farm Accounting","Agri Drone Technology"],
-  "Hospitality & Tourism": ["Front Office Operations","Housekeeping Management","Food & Beverage Service","Culinary Skills","Event Planning","Tour Package Design","Travel Agency Operations","Hotel Revenue Management","Customer Service","GDS - Amadeus/Galileo","Restaurant Management","Bartending & Mixology"],
+  "Career Counseling": [
+    "Career Coaching",
+    "Resume Writing",
+    "LinkedIn Optimization",
+    "Mock Interviews",
+    "Group Discussion",
+    "Aptitude Training",
+    "Soft Skills",
+    "Communication Skills",
+    "Body Language",
+    "Goal Setting",
+    "Motivation & Mindset",
+    "Personality Assessment",
+  ],
+  "Software Engineering": [
+    "React",
+    "React Native",
+    "Next.js",
+    "Vue.js",
+    "Angular",
+    "Node.js",
+    "Express.js",
+    "Django",
+    "FastAPI",
+    "Spring Boot",
+    "Flutter",
+    "Android (Kotlin)",
+    "iOS (Swift)",
+    "AWS",
+    "Azure",
+    "GCP",
+    "Docker",
+    "Kubernetes",
+    "PostgreSQL",
+    "MongoDB",
+    "Redis",
+    "GraphQL",
+    "System Design",
+    "DSA",
+    "Git & GitHub",
+    "Cybersecurity",
+    "Blockchain",
+    "Unity (Game Dev)",
+  ],
+  "Data Science & AI": [
+    "Python",
+    "R",
+    "SQL",
+    "Pandas",
+    "NumPy",
+    "Scikit-learn",
+    "TensorFlow",
+    "PyTorch",
+    "Keras",
+    "Power BI",
+    "Tableau",
+    "Excel (Advanced)",
+    "Spark",
+    "Hadoop",
+    "Feature Engineering",
+    "Model Deployment",
+    "MLflow",
+    "OpenAI API",
+    "LangChain",
+    "Prompt Engineering",
+    "Statistics & Probability",
+    "A/B Testing",
+  ],
+  "Finance & Investment": [
+    "Stock Analysis (Technical)",
+    "Stock Analysis (Fundamental)",
+    "Mutual Fund Planning",
+    "Portfolio Management",
+    "Tax Planning",
+    "GST Filing",
+    "Income Tax Returns",
+    "Financial Modeling (Excel)",
+    "Valuation",
+    "Crypto Trading",
+    "Forex Trading",
+    "Options & Futures",
+    "Insurance Planning",
+    "Tally",
+    "Zoho Books",
+    "CA / CFA / CFP Knowledge",
+  ],
+  "Marketing & Branding": [
+    "SEO",
+    "Google Ads",
+    "Meta Ads (Facebook/Instagram)",
+    "Content Writing",
+    "Copywriting",
+    "Email Marketing",
+    "Canva",
+    "Adobe Photoshop",
+    "Adobe Premiere Pro",
+    "Google Analytics",
+    "HubSpot",
+    "Mailchimp",
+    "YouTube Marketing",
+    "Influencer Outreach",
+    "Brand Strategy",
+    "Market Research",
+    "WhatsApp Marketing",
+    "Affiliate Marketing",
+  ],
+  "Health & Wellness": [
+    "Nutrition Planning",
+    "Diet Charting",
+    "Weight Management",
+    "Yoga",
+    "Pranayama",
+    "Meditation",
+    "Zumba",
+    "CrossFit",
+    "Ayurvedic Consultation",
+    "Physiotherapy Exercises",
+    "Mental Health Counseling",
+    "CBT Therapy",
+    "First Aid & CPR",
+    "Sports Nutrition",
+    "Homeopathy",
+    "Child Nutrition",
+    "Naturopathy",
+  ],
+  "Legal Advisory": [
+    "Contract Drafting",
+    "Legal Research",
+    "Case Filing",
+    "IP Registration",
+    "Trademark",
+    "Patent",
+    "GST & Tax Law",
+    "Labour Law",
+    "Consumer Law",
+    "Company Incorporation",
+    "MCA Filings",
+    "Cyber Law",
+    "Property Law",
+    "Family Law",
+    "Arbitration & Mediation",
+    "Legal Document Review",
+  ],
+  "Business Strategy": [
+    "Business Plan Writing",
+    "Market Research",
+    "Financial Projections",
+    "Pitch Deck Creation",
+    "SWOT & PESTLE Analysis",
+    "OKR Framework",
+    "Agile & Scrum",
+    "PMP Certification",
+    "Operations Optimization",
+    "Supply Chain",
+    "CRM Strategy",
+    "SAP / Oracle ERP",
+    "Product Roadmap",
+    "Go-to-Market Strategy",
+    "Fundraising Strategy",
+    "Startup Mentoring",
+  ],
+  "Education & Tutoring": [
+    "Mathematics (Class 8-12)",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "English Grammar",
+    "Essay Writing",
+    "JEE Preparation",
+    "NEET Preparation",
+    "UPSC Preparation",
+    "Vedic Maths",
+    "Abacus",
+    "Scratch (Kids Coding)",
+    "Python for Beginners",
+    "Accountancy",
+    "Economics",
+    "Marathi Literature",
+    "Hindi Literature",
+    "Music (Vocal/Instrumental)",
+    "Drawing & Painting",
+    "Cricket Coaching",
+    "Football Coaching",
+  ],
+  "Human Resources": [
+    "Recruitment & Sourcing",
+    "LinkedIn Hiring",
+    "ATS Tools (Naukri/LinkedIn)",
+    "HR Policies & Compliance",
+    "Payroll Management",
+    "HRMS Tools (Keka/Darwinbox/SAP)",
+    "Performance Appraisal",
+    "Employee Engagement",
+    "Training & Development",
+    "Labor Law",
+    "Diversity & Inclusion",
+    "HR Analytics",
+    "Leadership Training",
+    "Conflict Resolution",
+  ],
+  "Civil Services & Government": [
+    "General Studies (GS Paper 1-4)",
+    "CSAT",
+    "Essay Writing",
+    "Current Affairs",
+    "Indian Polity & Constitution",
+    "Indian Economy",
+    "History & Culture",
+    "Geography",
+    "Banking Awareness",
+    "Quantitative Aptitude",
+    "Reasoning Ability",
+    "English (Descriptive)",
+    "Marathi (Descriptive)",
+    "UPSC Interview Preparation",
+  ],
+  "Architecture & Design": [
+    "AutoCAD",
+    "Revit",
+    "SketchUp",
+    "Rhino 3D",
+    "Adobe Photoshop",
+    "Adobe Illustrator",
+    "Adobe InDesign",
+    "Figma",
+    "Adobe XD",
+    "3ds Max",
+    "Blender",
+    "V-Ray Rendering",
+    "Interior Space Planning",
+    "Landscape Design",
+    "UI/UX Research",
+    "Wireframing & Prototyping",
+    "Fashion Illustration",
+    "Textile Design",
+  ],
+  "Media & Journalism": [
+    "News Writing",
+    "Feature Writing",
+    "Investigative Journalism",
+    "Video Editing (Premiere Pro)",
+    "Video Editing (DaVinci)",
+    "Photography (DSLR)",
+    "YouTube Content Creation",
+    "Podcast Production",
+    "Script Writing",
+    "Adobe Audition",
+    "Final Cut Pro",
+    "Social Media Management",
+    "Fact Checking",
+    "Interviewing Techniques",
+  ],
+  "Agriculture & Farming": [
+    "Organic Farming Techniques",
+    "Soil Testing",
+    "Drip Irrigation",
+    "Hydroponics Setup",
+    "Crop Disease Management",
+    "Pesticide Management",
+    "Government Agri Schemes",
+    "Agri Export & Marketing",
+    "Dairy Management",
+    "Poultry Farming",
+    "Horticulture",
+    "Farm Accounting",
+    "Agri Drone Technology",
+  ],
+  "Hospitality & Tourism": [
+    "Front Office Operations",
+    "Housekeeping Management",
+    "Food & Beverage Service",
+    "Culinary Skills",
+    "Event Planning",
+    "Tour Package Design",
+    "Travel Agency Operations",
+    "Hotel Revenue Management",
+    "Customer Service",
+    "GDS - Amadeus/Galileo",
+    "Restaurant Management",
+    "Bartending & Mixology",
+  ],
 };
 
 // ✅ Fallback skills for jobseeker / no domain selected
 const SKILL_OPTIONS = [
-  "React","React Native","Node.js","Python","Java",
-  "Angular","Vue.js","DevOps","UI/UX Design","Data Analysis",
-  "Machine Learning","PHP","Laravel","Django","Flutter",
-  "Marathi Teacher","English Teacher","Mathematics","Science",
-  "SEO","Digital Marketing","Content Writing","Graphic Design",
-  "Stock Market","Tax Planning","Yoga","Counseling",
-  "Legal Research","Business Strategy","HR Recruitment",
-  "Photography","Video Editing","Other",
+  "React",
+  "React Native",
+  "Node.js",
+  "Python",
+  "Java",
+  "Angular",
+  "Vue.js",
+  "DevOps",
+  "UI/UX Design",
+  "Data Analysis",
+  "Machine Learning",
+  "PHP",
+  "Laravel",
+  "Django",
+  "Flutter",
+  "Marathi Teacher",
+  "English Teacher",
+  "Mathematics",
+  "Science",
+  "SEO",
+  "Digital Marketing",
+  "Content Writing",
+  "Graphic Design",
+  "Stock Market",
+  "Tax Planning",
+  "Yoga",
+  "Counseling",
+  "Legal Research",
+  "Business Strategy",
+  "HR Recruitment",
+  "Photography",
+  "Video Editing",
+  "Other",
 ];
 
 const LANGUAGE_OPTIONS = [
-  "English","Hindi","Marathi","Gujarati","Bengali",
-  "Tamil","Telugu","Kannada","Punjabi","Urdu",
-  "Sanskrit","Odia","Assamese","Konkani","Other",
+  "English",
+  "Hindi",
+  "Marathi",
+  "Gujarati",
+  "Bengali",
+  "Tamil",
+  "Telugu",
+  "Kannada",
+  "Punjabi",
+  "Urdu",
+  "Sanskrit",
+  "Odia",
+  "Assamese",
+  "Konkani",
+  "Other",
 ];
 
 // ✅ UPDATED: 16 domains (was 11)
@@ -73,7 +376,10 @@ const DOMAIN_OPTIONS = [
   { label: "Business Strategy", value: "Business Strategy" },
   { label: "Education & Tutoring", value: "Education & Tutoring" },
   { label: "Human Resources", value: "Human Resources" },
-  { label: "Civil Services & Government", value: "Civil Services & Government" },
+  {
+    label: "Civil Services & Government",
+    value: "Civil Services & Government",
+  },
   { label: "Architecture & Design", value: "Architecture & Design" },
   { label: "Media & Journalism", value: "Media & Journalism" },
   { label: "Agriculture & Farming", value: "Agriculture & Farming" },
@@ -84,12 +390,18 @@ const DOMAIN_OPTIONS = [
 // ✅ UPDATED: Rich sub-domain map with 7–12 options per domain
 const SUBDOMAIN_MAP = {
   "Career Counseling": [
-    { label: "Resume & LinkedIn Building", value: "Resume & LinkedIn Building" },
+    {
+      label: "Resume & LinkedIn Building",
+      value: "Resume & LinkedIn Building",
+    },
     { label: "Interview Preparation", value: "Interview Preparation" },
     { label: "Career Switch Guidance", value: "Career Switch Guidance" },
     { label: "Job Search Strategy", value: "Job Search Strategy" },
     { label: "Salary Negotiation", value: "Salary Negotiation" },
-    { label: "College Admission Counseling", value: "College Admission Counseling" },
+    {
+      label: "College Admission Counseling",
+      value: "College Admission Counseling",
+    },
     { label: "Study Abroad Guidance", value: "Study Abroad Guidance" },
     { label: "Scholarship Guidance", value: "Scholarship Guidance" },
     { label: "Freshers Career Planning", value: "Freshers Career Planning" },
@@ -100,7 +412,10 @@ const SUBDOMAIN_MAP = {
     { label: "Backend Development", value: "Backend Development" },
     { label: "Full Stack Development", value: "Full Stack Development" },
     { label: "Mobile App Development", value: "Mobile App Development" },
-    { label: "System Design & Architecture", value: "System Design & Architecture" },
+    {
+      label: "System Design & Architecture",
+      value: "System Design & Architecture",
+    },
     { label: "DevOps & CI/CD", value: "DevOps & CI/CD" },
     { label: "Cloud Computing", value: "Cloud Computing" },
     { label: "Cybersecurity", value: "Cybersecurity" },
@@ -112,7 +427,10 @@ const SUBDOMAIN_MAP = {
   "Data Science & AI": [
     { label: "Machine Learning", value: "Machine Learning" },
     { label: "Deep Learning", value: "Deep Learning" },
-    { label: "Natural Language Processing", value: "Natural Language Processing" },
+    {
+      label: "Natural Language Processing",
+      value: "Natural Language Processing",
+    },
     { label: "Computer Vision", value: "Computer Vision" },
     { label: "Data Analytics", value: "Data Analytics" },
     { label: "Data Engineering", value: "Data Engineering" },
@@ -148,18 +466,30 @@ const SUBDOMAIN_MAP = {
     { label: "Video & YouTube Marketing", value: "Video & YouTube Marketing" },
     { label: "E-commerce Marketing", value: "E-commerce Marketing" },
     { label: "Public Relations", value: "Public Relations" },
-    { label: "Market Research & Analytics", value: "Market Research & Analytics" },
+    {
+      label: "Market Research & Analytics",
+      value: "Market Research & Analytics",
+    },
   ],
   "Health & Wellness": [
     { label: "Nutrition & Dietetics", value: "Nutrition & Dietetics" },
-    { label: "Mental Health & Counseling", value: "Mental Health & Counseling" },
-    { label: "Fitness & Personal Training", value: "Fitness & Personal Training" },
+    {
+      label: "Mental Health & Counseling",
+      value: "Mental Health & Counseling",
+    },
+    {
+      label: "Fitness & Personal Training",
+      value: "Fitness & Personal Training",
+    },
     { label: "Yoga & Meditation", value: "Yoga & Meditation" },
     { label: "Ayurveda", value: "Ayurveda" },
     { label: "Physiotherapy", value: "Physiotherapy" },
     { label: "Women's Health", value: "Women's Health" },
     { label: "Child & Pediatric Health", value: "Child & Pediatric Health" },
-    { label: "Chronic Disease Management", value: "Chronic Disease Management" },
+    {
+      label: "Chronic Disease Management",
+      value: "Chronic Disease Management",
+    },
     { label: "Sports Medicine", value: "Sports Medicine" },
     { label: "Homeopathy", value: "Homeopathy" },
     { label: "Naturopathy", value: "Naturopathy" },
@@ -170,7 +500,10 @@ const SUBDOMAIN_MAP = {
     { label: "Criminal Law", value: "Criminal Law" },
     { label: "Intellectual Property Law", value: "Intellectual Property Law" },
     { label: "Startup & Business Legal", value: "Startup & Business Legal" },
-    { label: "Property & Real Estate Law", value: "Property & Real Estate Law" },
+    {
+      label: "Property & Real Estate Law",
+      value: "Property & Real Estate Law",
+    },
     { label: "Cyber Law", value: "Cyber Law" },
     { label: "Labour & Employment Law", value: "Labour & Employment Law" },
     { label: "Tax & GST Law", value: "Tax & GST Law" },
@@ -180,22 +513,40 @@ const SUBDOMAIN_MAP = {
   "Business Strategy": [
     { label: "Startup Consulting", value: "Startup Consulting" },
     { label: "Operations Management", value: "Operations Management" },
-    { label: "Product Strategy & Roadmap", value: "Product Strategy & Roadmap" },
+    {
+      label: "Product Strategy & Roadmap",
+      value: "Product Strategy & Roadmap",
+    },
     { label: "Growth Hacking", value: "Growth Hacking" },
     { label: "Business Development", value: "Business Development" },
     { label: "Franchising & Licensing", value: "Franchising & Licensing" },
     { label: "Supply Chain Management", value: "Supply Chain Management" },
     { label: "Project Management", value: "Project Management" },
-    { label: "Fundraising & Investor Pitch", value: "Fundraising & Investor Pitch" },
+    {
+      label: "Fundraising & Investor Pitch",
+      value: "Fundraising & Investor Pitch",
+    },
     { label: "International Business", value: "International Business" },
     { label: "E-commerce Strategy", value: "E-commerce Strategy" },
   ],
   "Education & Tutoring": [
     { label: "Mathematics", value: "Mathematics" },
-    { label: "Science (Physics/Chemistry/Biology)", value: "Science (Physics/Chemistry/Biology)" },
-    { label: "English Language & Grammar", value: "English Language & Grammar" },
-    { label: "Competitive Exams (JEE/NEET/UPSC)", value: "Competitive Exams (JEE/NEET/UPSC)" },
-    { label: "Coding for Kids & Beginners", value: "Coding for Kids & Beginners" },
+    {
+      label: "Science (Physics/Chemistry/Biology)",
+      value: "Science (Physics/Chemistry/Biology)",
+    },
+    {
+      label: "English Language & Grammar",
+      value: "English Language & Grammar",
+    },
+    {
+      label: "Competitive Exams (JEE/NEET/UPSC)",
+      value: "Competitive Exams (JEE/NEET/UPSC)",
+    },
+    {
+      label: "Coding for Kids & Beginners",
+      value: "Coding for Kids & Beginners",
+    },
     { label: "History & Social Studies", value: "History & Social Studies" },
     { label: "Commerce & Accountancy", value: "Commerce & Accountancy" },
     { label: "Foreign Language Teaching", value: "Foreign Language Teaching" },
@@ -204,24 +555,48 @@ const SUBDOMAIN_MAP = {
     { label: "Sports Coaching", value: "Sports Coaching" },
   ],
   "Human Resources": [
-    { label: "Talent Acquisition & Recruitment", value: "Talent Acquisition & Recruitment" },
-    { label: "HR Operations & Compliance", value: "HR Operations & Compliance" },
-    { label: "Learning & Development (L&D)", value: "Learning & Development (L&D)" },
+    {
+      label: "Talent Acquisition & Recruitment",
+      value: "Talent Acquisition & Recruitment",
+    },
+    {
+      label: "HR Operations & Compliance",
+      value: "HR Operations & Compliance",
+    },
+    {
+      label: "Learning & Development (L&D)",
+      value: "Learning & Development (L&D)",
+    },
     { label: "Performance Management", value: "Performance Management" },
-    { label: "Employee Relations & Engagement", value: "Employee Relations & Engagement" },
+    {
+      label: "Employee Relations & Engagement",
+      value: "Employee Relations & Engagement",
+    },
     { label: "Payroll & Compensation", value: "Payroll & Compensation" },
     { label: "Diversity & Inclusion", value: "Diversity & Inclusion" },
     { label: "HR Analytics", value: "HR Analytics" },
-    { label: "Organizational Development", value: "Organizational Development" },
+    {
+      label: "Organizational Development",
+      value: "Organizational Development",
+    },
     { label: "Leadership Coaching", value: "Leadership Coaching" },
   ],
   "Civil Services & Government": [
-    { label: "UPSC Civil Services (IAS/IPS/IFS)", value: "UPSC Civil Services (IAS/IPS/IFS)" },
+    {
+      label: "UPSC Civil Services (IAS/IPS/IFS)",
+      value: "UPSC Civil Services (IAS/IPS/IFS)",
+    },
     { label: "State PSC Exams", value: "State PSC Exams" },
     { label: "Banking & Insurance Exams", value: "Banking & Insurance Exams" },
     { label: "SSC & Railway Exams", value: "SSC & Railway Exams" },
-    { label: "Defence Services (NDA/CDS/CAPF)", value: "Defence Services (NDA/CDS/CAPF)" },
-    { label: "Government Policy & Governance", value: "Government Policy & Governance" },
+    {
+      label: "Defence Services (NDA/CDS/CAPF)",
+      value: "Defence Services (NDA/CDS/CAPF)",
+    },
+    {
+      label: "Government Policy & Governance",
+      value: "Government Policy & Governance",
+    },
     { label: "Public Administration", value: "Public Administration" },
   ],
   "Architecture & Design": [
@@ -230,55 +605,101 @@ const SUBDOMAIN_MAP = {
     { label: "Urban & Landscape Design", value: "Urban & Landscape Design" },
     { label: "UI/UX Design", value: "UI/UX Design" },
     { label: "Graphic Design", value: "Graphic Design" },
-    { label: "Product & Industrial Design", value: "Product & Industrial Design" },
+    {
+      label: "Product & Industrial Design",
+      value: "Product & Industrial Design",
+    },
     { label: "Fashion Design", value: "Fashion Design" },
     { label: "3D Modeling & Rendering", value: "3D Modeling & Rendering" },
   ],
   "Media & Journalism": [
-    { label: "Print & Digital Journalism", value: "Print & Digital Journalism" },
+    {
+      label: "Print & Digital Journalism",
+      value: "Print & Digital Journalism",
+    },
     { label: "Broadcast & TV Journalism", value: "Broadcast & TV Journalism" },
     { label: "Photography & Videography", value: "Photography & Videography" },
     { label: "Film Making & Direction", value: "Film Making & Direction" },
-    { label: "Podcast & Audio Production", value: "Podcast & Audio Production" },
-    { label: "Content Writing & Copywriting", value: "Content Writing & Copywriting" },
-    { label: "Social Media Content Creation", value: "Social Media Content Creation" },
+    {
+      label: "Podcast & Audio Production",
+      value: "Podcast & Audio Production",
+    },
+    {
+      label: "Content Writing & Copywriting",
+      value: "Content Writing & Copywriting",
+    },
+    {
+      label: "Social Media Content Creation",
+      value: "Social Media Content Creation",
+    },
   ],
   "Agriculture & Farming": [
     { label: "Organic Farming", value: "Organic Farming" },
-    { label: "Hydroponics & Vertical Farming", value: "Hydroponics & Vertical Farming" },
+    {
+      label: "Hydroponics & Vertical Farming",
+      value: "Hydroponics & Vertical Farming",
+    },
     { label: "Agri Business & Marketing", value: "Agri Business & Marketing" },
     { label: "Animal Husbandry & Dairy", value: "Animal Husbandry & Dairy" },
-    { label: "Horticulture & Floriculture", value: "Horticulture & Floriculture" },
+    {
+      label: "Horticulture & Floriculture",
+      value: "Horticulture & Floriculture",
+    },
     { label: "Government Agri Schemes", value: "Government Agri Schemes" },
     { label: "Farm Management", value: "Farm Management" },
   ],
   "Hospitality & Tourism": [
     { label: "Hotel & Resort Management", value: "Hotel & Resort Management" },
     { label: "Travel & Tourism Planning", value: "Travel & Tourism Planning" },
-    { label: "Food & Beverage Management", value: "Food & Beverage Management" },
-    { label: "Event Planning & Management", value: "Event Planning & Management" },
+    {
+      label: "Food & Beverage Management",
+      value: "Food & Beverage Management",
+    },
+    {
+      label: "Event Planning & Management",
+      value: "Event Planning & Management",
+    },
     { label: "Culinary Arts & Cooking", value: "Culinary Arts & Cooking" },
-    { label: "Airlines & Airport Operations", value: "Airlines & Airport Operations" },
+    {
+      label: "Airlines & Airport Operations",
+      value: "Airlines & Airport Operations",
+    },
   ],
 };
 
 const DOMAIN_CERTIFICATE_GUIDE = {
-  "Career Counseling": "Upload your Certified Career Counselor (CCC), NCDA certificate, or a relevant degree/diploma certificate (PDF or image).",
-  "Software Engineering": "Upload your AWS / Google / Microsoft certification, or your CS/IT degree certificate (PDF or image).",
-  "Data Science & AI": "Upload your IBM Data Science, Coursera ML, or university degree certificate in Data Science/AI (PDF or image).",
-  "Finance & Investment": "Upload your CFA, CFP, CA, MBA-Finance marksheet, SEBI/NISM certificate (PDF or image).",
-  "Marketing & Branding": "Upload your Google Digital Marketing, HubSpot, or MBA-Marketing degree certificate (PDF or image).",
-  "Health & Wellness": "Upload your MBBS, BDS, BSc Nursing, Physiotherapy, or certified trainer/dietitian certificate (PDF or image).",
-  "Legal Advisory": "Upload your LLB/LLM degree or Bar Council Enrollment certificate (PDF or image).",
-  "Business Strategy": "Upload your MBA degree, CMC certification, or Business Strategy programme certificate (PDF or image).",
-  "Education & Tutoring": "Upload your B.Ed/M.Ed degree, TET/CTET scorecard, or school-affiliation proof (PDF or image).",
-  "Human Resources": "Upload your SHRM-CP, PHR, MBA-HR, or XLRI/TISS HR programme certificate (PDF or image).",
-  "Civil Services & Government": "Upload your relevant degree, scorecard, or government exam rank letter (PDF or image).",
-  "Architecture & Design": "Upload your B.Arch/M.Arch degree, COA registration, or design certification (PDF or image).",
-  "Media & Journalism": "Upload your Mass Communication/Journalism degree or press card/media credential (PDF or image).",
-  "Agriculture & Farming": "Upload your B.Sc Agriculture degree, Krishi Vigyan Kendra certificate, or relevant diploma (PDF or image).",
-  "Hospitality & Tourism": "Upload your Hotel Management degree, IATA certification, or relevant hospitality diploma (PDF or image).",
-  Other: "Upload any official certificate, degree, or document that proves your expertise in your domain (PDF or image).",
+  "Career Counseling":
+    "Upload your Certified Career Counselor (CCC), NCDA certificate, or a relevant degree/diploma certificate (PDF or image).",
+  "Software Engineering":
+    "Upload your AWS / Google / Microsoft certification, or your CS/IT degree certificate (PDF or image).",
+  "Data Science & AI":
+    "Upload your IBM Data Science, Coursera ML, or university degree certificate in Data Science/AI (PDF or image).",
+  "Finance & Investment":
+    "Upload your CFA, CFP, CA, MBA-Finance marksheet, SEBI/NISM certificate (PDF or image).",
+  "Marketing & Branding":
+    "Upload your Google Digital Marketing, HubSpot, or MBA-Marketing degree certificate (PDF or image).",
+  "Health & Wellness":
+    "Upload your MBBS, BDS, BSc Nursing, Physiotherapy, or certified trainer/dietitian certificate (PDF or image).",
+  "Legal Advisory":
+    "Upload your LLB/LLM degree or Bar Council Enrollment certificate (PDF or image).",
+  "Business Strategy":
+    "Upload your MBA degree, CMC certification, or Business Strategy programme certificate (PDF or image).",
+  "Education & Tutoring":
+    "Upload your B.Ed/M.Ed degree, TET/CTET scorecard, or school-affiliation proof (PDF or image).",
+  "Human Resources":
+    "Upload your SHRM-CP, PHR, MBA-HR, or XLRI/TISS HR programme certificate (PDF or image).",
+  "Civil Services & Government":
+    "Upload your relevant degree, scorecard, or government exam rank letter (PDF or image).",
+  "Architecture & Design":
+    "Upload your B.Arch/M.Arch degree, COA registration, or design certification (PDF or image).",
+  "Media & Journalism":
+    "Upload your Mass Communication/Journalism degree or press card/media credential (PDF or image).",
+  "Agriculture & Farming":
+    "Upload your B.Sc Agriculture degree, Krishi Vigyan Kendra certificate, or relevant diploma (PDF or image).",
+  "Hospitality & Tourism":
+    "Upload your Hotel Management degree, IATA certification, or relevant hospitality diploma (PDF or image).",
+  Other:
+    "Upload any official certificate, degree, or document that proves your expertise in your domain (PDF or image).",
 };
 
 // ─── Reusable dropdown ────────────────────────────────────────────────────────
@@ -342,9 +763,10 @@ function SkillsPicker({ selectedSkills, onChange, domain }) {
   const [customSkill, setCustomSkill] = useState("");
 
   // ✅ Use domain-specific skills if available, else fallback
-  const skillList = domain && DOMAIN_SKILLS_MAP[domain]
-    ? DOMAIN_SKILLS_MAP[domain]
-    : SKILL_OPTIONS;
+  const skillList =
+    domain && DOMAIN_SKILLS_MAP[domain]
+      ? DOMAIN_SKILLS_MAP[domain]
+      : SKILL_OPTIONS;
 
   const toggleSkill = (skill) => {
     if (selectedSkills.includes(skill)) {
@@ -416,7 +838,15 @@ function SkillsPicker({ selectedSkills, onChange, domain }) {
           <Text style={styles.modalTitle}>Select Skills (max 5)</Text>
           {/* ✅ Show which domain's skills are being shown */}
           {domain && DOMAIN_SKILLS_MAP[domain] && (
-            <Text style={{ color: "#0B2D72", textAlign: "center", marginBottom: 4, fontSize: 12, fontWeight: "600" }}>
+            <Text
+              style={{
+                color: "#0B2D72",
+                textAlign: "center",
+                marginBottom: 4,
+                fontSize: 12,
+                fontWeight: "600",
+              }}
+            >
               Skills for: {domain}
             </Text>
           )}
@@ -963,9 +1393,15 @@ export default function ProfileScreen() {
       };
 
       const skipFields = [
-        "cv", "image", "certFile", "customLocation",
-        "customQualification", "customExperience",
-        "customLanguages", "customDomain", "gender",
+        "cv",
+        "image",
+        "certFile",
+        "customLocation",
+        "customQualification",
+        "customExperience",
+        "customLanguages",
+        "customDomain",
+        "gender",
       ];
 
       Object.keys(resolvedData).forEach((key) => {
@@ -1020,7 +1456,7 @@ export default function ProfileScreen() {
       }
 
       await axios.post(
-        "http://192.168.1.17:3000/api/users/save-profile",
+        "http://192.168.1.14:3000/api/users/save-profile",
         form,
         {
           headers: {
@@ -1220,8 +1656,8 @@ export default function ProfileScreen() {
               setField("domain", v);
               setField("certFile", null);
               setField("customDomain", "");
-              setField("sub_domain", "");       // ✅ reset sub_domain
-              setSelectedSkills([]);             // ✅ reset skills for new domain
+              setField("sub_domain", ""); // ✅ reset sub_domain
+              setSelectedSkills([]); // ✅ reset skills for new domain
             }}
             options={DOMAIN_OPTIONS}
           />
@@ -1350,7 +1786,14 @@ export default function ProfileScreen() {
               <Text style={styles.label}>Skills * (select up to 5)</Text>
               {/* ✅ Show hint about domain-specific skills */}
               {formData.domain && DOMAIN_SKILLS_MAP[formData.domain] && (
-                <Text style={{ fontSize: 12, color: "#0B2D72", marginTop: 4, fontWeight: "600" }}>
+                <Text
+                  style={{
+                    fontSize: 12,
+                    color: "#0B2D72",
+                    marginTop: 4,
+                    fontWeight: "600",
+                  }}
+                >
                   💡 Showing skills for: {formData.domain}
                 </Text>
               )}
@@ -1388,7 +1831,10 @@ export default function ProfileScreen() {
                   { label: "Pune", value: "Pune" },
                   { label: "Nashik", value: "Nashik" },
                   { label: "Nagpur", value: "Nagpur" },
-                  { label: "Chhatrapati SambhajiNagar", value: "Chhatrapati SambhajiNagar" },
+                  {
+                    label: "Chhatrapati SambhajiNagar",
+                    value: "Chhatrapati SambhajiNagar",
+                  },
                   { label: "Other", value: "Other" },
                 ]}
               />
