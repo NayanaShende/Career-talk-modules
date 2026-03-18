@@ -46,7 +46,9 @@ export default function WalletModal({ visible, onClose }) {
   const [loadingBalance, setLoadingBalance] = useState(true);
   const [userId, setUserId] = useState(null);
   const [activeTab, setActiveTab] = useState("topup");
-  const [userData, setUserData] = useState(null); // ✅ user name + image
+  const [userData, setUserData] = useState(null);
+  const [selectedTx, setSelectedTx] = useState(null);
+  const [txDetailVisible, setTxDetailVisible] = useState(false);
 
   const isTabMode = visible === undefined;
 
@@ -95,9 +97,8 @@ export default function WalletModal({ visible, onClose }) {
       const user = userStr ? JSON.parse(userStr) : null;
       if (user?.id) {
         setUserId(user.id);
-        setUserData(user); // set basic user first (fast)
+        setUserData(user);
 
-        // ✅ FIX: fetch real user data from API so name/image are always correct
         try {
           const token = await AsyncStorage.getItem("token");
           if (token) {
@@ -106,11 +107,9 @@ export default function WalletModal({ visible, onClose }) {
             });
             const apiUser = res?.data?.user;
             if (apiUser) {
-              // merge API data with stored data for complete picture
               setUserData({
                 ...user,
                 ...apiUser,
-                // normalise name fields
                 fullName:
                   apiUser.fullName ||
                   apiUser.full_name ||
@@ -123,7 +122,6 @@ export default function WalletModal({ visible, onClose }) {
           }
         } catch (apiErr) {
           console.log("wallet user fetch error:", apiErr.message);
-          // fallback to AsyncStorage data already set above
         }
 
         await fetchBalance(user.id);
@@ -262,7 +260,6 @@ export default function WalletModal({ visible, onClose }) {
   const getUserAvatarUri = () => {
     const img = userData?.image || userData?.profileImage || userData?.avatar;
     if (img && img !== "null" && img !== "undefined" && img !== "") {
-      // handle both "uploads/file.jpg" and "file.jpg" and full URLs
       if (img.startsWith("http")) return img;
       const clean = img.replace(/^uploads\//, "");
       return `${BASE_URL}/uploads/${clean}`;
@@ -272,7 +269,6 @@ export default function WalletModal({ visible, onClose }) {
   };
 
   const getUserDisplayName = () => {
-    // Check every possible field the backend might store the name under
     return (
       userData?.fullName ||
       userData?.full_name ||
@@ -296,7 +292,7 @@ export default function WalletModal({ visible, onClose }) {
       .toUpperCase();
   };
 
-  // ── User card shown at top ─────────────────────────────────────────────────
+  // ── User card ──────────────────────────────────────────────────────────────
   const UserCard = () => (
     <View style={styles.userCard}>
       <View style={styles.userAvatarWrap}>
@@ -315,14 +311,15 @@ export default function WalletModal({ visible, onClose }) {
       </View>
       <TouchableOpacity
         style={styles.refreshIconBtn}
-        onPress={() => userId && loadUserAndBalance()}
-      >
+        onPress={() => userId && loadUserAndBalance()}>
         <Ionicons name="refresh-outline" size={18} color={GREEN_DARK} />
       </TouchableOpacity>
     </View>
   );
 
   // ── Balance card ───────────────────────────────────────────────────────────
+  // FIX: BalanceCard was completely broken — it contained TransactionDetailModal
+  // JSX mixed inside it. Restored it as a clean standalone component.
   const BalanceCard = () => (
     <View style={styles.balanceCard}>
       <View style={styles.balanceCardBg} />
@@ -362,7 +359,104 @@ export default function WalletModal({ visible, onClose }) {
     </View>
   );
 
+  // ── Transaction Detail Modal ───────────────────────────────────────────────
+  // FIX: extracted TransactionDetailModal as its own proper component
+  const TransactionDetailModal = () => {
+    if (!selectedTx) return null;
+    const { icon, color } = getTransactionIcon(selectedTx.type);
+    const isCredit = ["topup", "refund", "release"].includes(selectedTx.type);
+    return (
+      <Modal
+        visible={txDetailVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTxDetailVisible(false)}>
+        <View style={styles.detailOverlay}>
+          <View style={styles.detailSheet}>
+            {/* Header */}
+            <View style={styles.detailHeader}>
+              <TouchableOpacity onPress={() => setTxDetailVisible(false)}>
+                <Ionicons name="close" size={22} color={TEXT_2} />
+              </TouchableOpacity>
+              <Text style={styles.detailTitle}>Transaction Detail</Text>
+              <View style={{ width: 22 }} />
+            </View>
+
+            {/* Amount */}
+            <View style={styles.detailAmountWrap}>
+              <View style={[styles.detailIconCircle, { backgroundColor: color + "20" }]}>
+                <Ionicons name={icon} size={32} color={color} />
+              </View>
+              <Text style={[styles.detailAmount, { color: isCredit ? "#10b981" : "#ef4444" }]}>
+                {isCredit ? "+" : "-"}₹{parseFloat(selectedTx.amount).toFixed(2)}
+              </Text>
+              <Text style={styles.detailType}>
+                {getTransactionLabel(selectedTx.type)}
+              </Text>
+            </View>
+
+            {/* Detail rows */}
+            <View style={styles.detailBody}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailRowLabel}>Date</Text>
+                <Text style={styles.detailRowValue}>
+                  {formatDate(selectedTx.created_at)}
+                </Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailRowLabel}>Type</Text>
+                <View
+                  style={[styles.detailBadge, { backgroundColor: color + "20" }]}>
+                  <Text style={[styles.detailBadgeText, { color: color }]}>
+                    {selectedTx.type.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailRowLabel}>Currency</Text>
+                <Text style={styles.detailRowValue}>
+                  {selectedTx.currency || "INR"}
+                </Text>
+              </View>
+
+              <View style={styles.detailRow}>
+                <Text style={styles.detailRowLabel}>Status</Text>
+                <View
+                  style={[styles.detailBadge, { backgroundColor: "#e8f5e9" }]}>
+                  <Text style={[styles.detailBadgeText, { color: "#27ae60" }]}>
+                    COMPLETED
+                  </Text>
+                </View>
+              </View>
+
+              <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
+                <Text style={styles.detailRowLabel}>Transaction ID</Text>
+                <Text
+                  style={[
+                    styles.detailRowValue,
+                    { fontSize: 10, color: "#aaa", maxWidth: "55%" },
+                  ]}
+                  numberOfLines={2}>
+                  {selectedTx.id}
+                </Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.detailCloseBtn}
+              onPress={() => setTxDetailVisible(false)}>
+              <Text style={styles.detailCloseBtnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   // ── Tab switcher ───────────────────────────────────────────────────────────
+  // FIX: TouchableOpacity was missing closing > before its children
   const TabBar = () => (
     <View style={styles.tabBar}>
       {[
@@ -372,8 +466,7 @@ export default function WalletModal({ visible, onClose }) {
         <TouchableOpacity
           key={t.key}
           style={[styles.tabBtn, activeTab === t.key && styles.tabBtnActive]}
-          onPress={() => setActiveTab(t.key)}
-        >
+          onPress={() => setActiveTab(t.key)}>
           <Ionicons
             name={t.icon}
             size={16}
@@ -383,8 +476,7 @@ export default function WalletModal({ visible, onClose }) {
             style={[
               styles.tabBtnText,
               activeTab === t.key && styles.tabBtnTextActive,
-            ]}
-          >
+            ]}>
             {t.label}
           </Text>
         </TouchableOpacity>
@@ -393,6 +485,7 @@ export default function WalletModal({ visible, onClose }) {
   );
 
   // ── Add Money tab ──────────────────────────────────────────────────────────
+  // FIX: removed duplicate style array on the add button
   const TopupTab = () => (
     <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
       <Text style={styles.sectionLabel}>Quick Add</Text>
@@ -404,14 +497,12 @@ export default function WalletModal({ visible, onClose }) {
               styles.quickBtn,
               amount === String(qa) && styles.quickBtnActive,
             ]}
-            onPress={() => setAmount(String(qa))}
-          >
+            onPress={() => setAmount(String(qa))}>
             <Text
               style={[
                 styles.quickBtnText,
                 amount === String(qa) && styles.quickBtnTextActive,
-              ]}
-            >
+              ]}>
               ₹{qa}
             </Text>
           </TouchableOpacity>
@@ -452,8 +543,7 @@ export default function WalletModal({ visible, onClose }) {
       <TouchableOpacity
         style={[styles.addBtn, (!amount || loading) && styles.addBtnDisabled]}
         onPress={handleAddMoney}
-        disabled={!amount || loading}
-      >
+        disabled={!amount || loading}>
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -478,6 +568,8 @@ export default function WalletModal({ visible, onClose }) {
   );
 
   // ── History tab ────────────────────────────────────────────────────────────
+  // FIX: removed misplaced TouchableOpacity open/close fragments that were
+  // orphaned inside the map, and fixed broken ref/from_user_name Text tags
   const HistoryTab = () => (
     <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
       {transactions.length === 0 ? (
@@ -493,10 +585,16 @@ export default function WalletModal({ visible, onClose }) {
           const { icon, color } = getTransactionIcon(tx.type);
           const isCredit = ["topup", "refund", "release"].includes(tx.type);
           return (
-            <View key={tx.id} style={styles.txRow}>
+            <TouchableOpacity
+              key={tx.id}
+              style={styles.txRow}
+              onPress={() => {
+                setSelectedTx(tx);
+                setTxDetailVisible(true);
+              }}
+              activeOpacity={0.7}>
               <View
-                style={[styles.txIconWrap, { backgroundColor: color + "18" }]}
-              >
+                style={[styles.txIconWrap, { backgroundColor: color + "18" }]}>
                 <Ionicons name={icon} size={22} color={color} />
               </View>
               <View style={styles.txInfo}>
@@ -509,25 +607,31 @@ export default function WalletModal({ visible, onClose }) {
                     Ref: {tx.ref_id}
                   </Text>
                 )}
+                {tx.from_user_name && (
+                  <Text style={styles.txRef} numberOfLines={1}>
+                    From: {tx.from_user_name}
+                  </Text>
+                )}
               </View>
               <View style={styles.txRight}>
                 <Text
                   style={[
                     styles.txAmount,
                     { color: isCredit ? "#10b981" : "#ef4444" },
-                  ]}
-                >
+                  ]}>
                   {isCredit ? "+" : "-"}₹{parseFloat(tx.amount).toFixed(2)}
                 </Text>
                 <View
-                  style={[styles.txTypePill, { backgroundColor: color + "18" }]}
-                >
+                  style={[
+                    styles.txTypePill,
+                    { backgroundColor: color + "18" },
+                  ]}>
                   <Text style={[styles.txTypePillText, { color }]}>
                     {getTransactionLabel(tx.type)}
                   </Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           );
         })
       )}
@@ -552,8 +656,7 @@ export default function WalletModal({ visible, onClose }) {
         <View style={styles.tabHeader}>
           <TouchableOpacity
             style={styles.headerBackBtn}
-            onPress={() => router.back()}
-          >
+            onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
           <View style={styles.headerTitleWrap}>
@@ -562,17 +665,16 @@ export default function WalletModal({ visible, onClose }) {
           </View>
           <TouchableOpacity
             style={styles.headerRefreshBtn}
-            onPress={() => userId && loadUserAndBalance()}
-          >
+            onPress={() => userId && loadUserAndBalance()}>
             <Ionicons name="refresh" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
         <ScrollView
           style={styles.tabContent}
-          showsVerticalScrollIndicator={false}
-        >
+          showsVerticalScrollIndicator={false}>
           <WalletContent />
         </ScrollView>
+        <TransactionDetailModal />
       </SafeAreaView>
     );
   }
@@ -583,15 +685,13 @@ export default function WalletModal({ visible, onClose }) {
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
       </Animated.View>
 
       <Animated.View
-        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
-      >
+        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHeader}>
           <View>
@@ -604,6 +704,8 @@ export default function WalletModal({ visible, onClose }) {
         </View>
         <WalletContent />
       </Animated.View>
+
+      <TransactionDetailModal />
     </Modal>
   );
 }
@@ -611,6 +713,7 @@ export default function WalletModal({ visible, onClose }) {
 // ── STYLES ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   // ── Tab mode ──
+  // FIX: tabContainer was missing its opening brace
   tabContainer: {
     flex: 1,
     backgroundColor: PAGE_BG,
@@ -700,6 +803,7 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     marginTop: 4,
   },
+  // FIX: sheetHeaderTitle, sheetHeaderSub, closeBtn were broken/missing braces
   sheetHeaderTitle: {
     fontSize: 20,
     fontWeight: "800",
@@ -707,9 +811,10 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   sheetHeaderSub: {
-    fontSize: 12,
+    fontSize: 13,
     color: TEXT_2,
     marginTop: 2,
+    fontWeight: "500",
   },
   closeBtn: {
     width: 34,
@@ -1111,6 +1216,101 @@ const styles = StyleSheet.create({
   },
   txTypePillText: {
     fontSize: 10,
+    fontWeight: "700",
+  },
+
+  // ── Transaction detail modal ──
+  // FIX: these styles were orphaned fragments; restored as proper objects
+  detailOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  detailSheet: {
+    backgroundColor: CARD_BG,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 20,
+    paddingBottom: 34,
+    paddingTop: 16,
+  },
+  detailHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+  },
+  detailTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: TEXT_1,
+  },
+  detailAmountWrap: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  detailIconCircle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  detailAmount: {
+    fontSize: 32,
+    fontWeight: "800",
+    marginBottom: 4,
+  },
+  detailType: {
+    fontSize: 15,
+    color: "#888",
+    fontWeight: "500",
+  },
+  detailBody: {
+    backgroundColor: "#f8f9ff",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+  },
+  detailRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 14,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e8eeff",
+  },
+  detailRowLabel: {
+    fontSize: 13,
+    color: "#888",
+    fontWeight: "600",
+  },
+  detailRowValue: {
+    fontSize: 13,
+    color: "#1a1a2e",
+    fontWeight: "700",
+    textAlign: "right",
+  },
+  detailBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  detailBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+  detailCloseBtn: {
+    backgroundColor: "#0B2D72",
+    borderRadius: 14,
+    height: 52,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  detailCloseBtnText: {
+    color: "#fff",
+    fontSize: 16,
     fontWeight: "700",
   },
 });

@@ -6,6 +6,8 @@ const API = axios.create({
   timeout: 10000, // prevent hanging requests
 });
 
+
+
 // ✅ FIXED: Attach token to every request automatically
 API.interceptors.request.use(
   async (config) => {

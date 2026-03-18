@@ -121,8 +121,7 @@ function RatingModal({ visible, onClose, onSubmit }) {
             <TouchableOpacity
               style={[styles.submitRatingBtn, submitting && { opacity: 0.6 }]}
               onPress={handleSubmit}
-              disabled={submitting}
-            >
+              disabled={submitting}>
               <Text style={styles.submitRatingBtnText}>
                 {submitting ? "Submitting..." : "Submit Review"}
               </Text>
@@ -326,7 +325,8 @@ export default function ExpertProfile() {
     }
   };
 
-  const handleChatPress = () => {
+  // ✅ UPDATED: Check wallet balance before allowing chat
+  const handleChatPress = async () => {
     if (!expert) {
       Alert.alert("Error", "Expert data not loaded");
       return;
@@ -336,14 +336,55 @@ export default function ExpertProfile() {
       Alert.alert("Error", "Cannot chat with yourself");
       return;
     }
-    router.push({
-      pathname: "/home/chatscreen",
-      params: {
-        expertId: receiverUserId,
-        name: expert?.name,
-        avatar: expert?.image,
-      },
-    });
+    // ✅ STEP 1: Check wallet balance before proceeding to chat
+    try {
+      const balanceRes = await axiosInstance.get(
+        `/wallet/balance/${currentUserId}`,
+      );
+      const walletBalance = parseFloat(balanceRes?.data?.balance || 0);
+
+      const MINIMUM_BALANCE = 150; // ✅ minimum ₹150 required to start chat
+
+      if (walletBalance < MINIMUM_BALANCE) {
+        // ✅ Not enough balance — show alert with option to add money
+        Alert.alert(
+          "Insufficient Balance",
+          `You need at least ₹${MINIMUM_BALANCE} to start a chat.\nYour current balance is ₹${walletBalance.toFixed(2)}.`,
+          [
+            {
+              text: "Add Money",
+              onPress: () => router.push("/(tabs)/wallet"), // ✅ go to wallet tab
+            },
+            {
+              text: "Cancel",
+              style: "cancel",
+            },
+          ],
+        );
+        return; // ✅ stop here — do not go to chat
+      }
+
+      // ✅ STEP 2: Balance is enough — proceed to chat
+      router.push({
+        pathname: "/home/chatscreen",
+        params: {
+          expertId: receiverUserId,
+          name: expert?.name,
+          avatar: expert?.image,
+        },
+      });
+    } catch (error) {
+      console.log("Balance check error:", error.message);
+      // ✅ If balance check fails, still allow chat (don't block user)
+      router.push({
+        pathname: "/home/chatscreen",
+        params: {
+          expertId: receiverUserId,
+          name: expert?.name,
+          avatar: expert?.image,
+        },
+      });
+    }
   };
 
   if (loading) {
@@ -385,8 +426,7 @@ export default function ExpertProfile() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 110 }}
-      >
+        contentContainerStyle={{ paddingBottom: 130 }}>
         {/* ── HERO HEADER ── */}
         <View style={styles.heroSection}>
           {/* Back button placeholder */}
@@ -444,8 +484,7 @@ export default function ExpertProfile() {
             <StarRating rating={ratingData.avgRating} size={18} />
             <TouchableOpacity
               style={styles.rateBtn}
-              onPress={() => setRatingModal(true)}
-            >
+            onPress={() => setRatingModal(true)}>
               <Ionicons name="create-outline" size={15} color="#1F5C4F" />
               <Text style={styles.rateBtnText}>Rate</Text>
             </TouchableOpacity>
@@ -534,7 +573,7 @@ export default function ExpertProfile() {
             </View>
           )}
 
-          {/* Reviews */}
+          {/* ✅ Reviews Section — shows each user's rating + comment */}
           <ReviewsSection reviews={reviews} />
         </View>
       </ScrollView>

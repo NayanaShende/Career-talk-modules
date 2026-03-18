@@ -526,7 +526,6 @@ const EditProfile = () => {
       const user = res.data.user;
       const expertRole = user?.role === "expert";
       setIsExpert(expertRole);
-
       setForm((prev) => ({
         ...prev,
         full_name: user.full_name || user.fullName || "",
@@ -635,7 +634,6 @@ const EditProfile = () => {
     try {
       setSaving(true);
       const token = await AsyncStorage.getItem("token");
-
       const formData = new FormData();
       formData.append("full_name", form.full_name);
       formData.append("fullName", form.full_name);
@@ -650,7 +648,6 @@ const EditProfile = () => {
       formData.append("expertise", form.expertise);
       formData.append("years_of_experience", form.years_of_experience);
       formData.append("linkedin", form.linkedin);
-
       if (isExpert) {
         formData.append("bio", form.bio);
         formData.append("location", form.location);
@@ -681,7 +678,6 @@ const EditProfile = () => {
           type: ext === "pdf" ? "application/pdf" : `image/${ext}`,
         });
       }
-
       await axios.post(`${BASE_URL}/api/users/save-profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
