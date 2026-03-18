@@ -22,7 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://192.168.1.25:3000";
 
 const SKILL_OPTIONS = [
   "React",
@@ -101,15 +101,15 @@ const DOMAIN_CERTIFICATE_GUIDE = {
 };
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
-const GREEN = "#574964";
-const GREEN_DARK = "#574964";
-const GREEN_MID = "#574964";
+const GREEN = "#867795";
+const GREEN_DARK = "#867795";
+const GREEN_MID = "#867795";
 const GREEN_LIGHT = "#f5ebff";
-const GREEN_PALE = "#574964";
+const GREEN_PALE = "#867795";
 const WHITE = "#FFFFFF";
-const INK = "#574964";
-const MUTED = "#574964";
-const MUTED2 = "#574964";
+const INK = "#867795";
+const MUTED = "#867795";
+const MUTED2 = "#867795";
 const BORDER = "#b59ccc";
 const BG = "#fcf9ff";
 const BG_INPUT = "#fefeff";
