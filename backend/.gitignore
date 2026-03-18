@@ -1,9 +1,7 @@
 node_modules/
-
 dist/
 coverage/
-# Ignore config file
 src/config/config.js
-
-# .gitignore
 .env
+.env.local
+.env.production
