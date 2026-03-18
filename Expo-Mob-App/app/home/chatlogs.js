@@ -18,7 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useNotification } from "../../context/NotificationContext";
 
-const BASE_URL = "http://192.168.1.16:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -160,18 +160,6 @@ export default function ChatLogs() {
                 </Text>
               </View>
             )}
-            <View style={styles.rightCol}>
-              <Text style={styles.date}>
-                {formatTime(item.lastMessageTime)}
-              </Text>
-              {unread > 0 && (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadText}>
-                    {unread > 99 ? "99+" : unread}
-                  </Text>
-                </View>
-              )}
-            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -491,12 +479,4 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "800",
   },
-  unreadText: { fontSize: 11, fontWeight: "700", color: "#fff" },
-  status: { fontSize: 13, color: "#757575", lineHeight: 18 },
-  statusUnread: { fontWeight: "700", color: "#1A1A2E" },
-  divider: { height: 1, backgroundColor: "#F0F0F5", marginLeft: 84 },
-  emptyWrap: { alignItems: "center", marginTop: 100 },
-  emptyIcon: { fontSize: 56, marginBottom: 16 },
-  emptyText: { fontSize: 18, fontWeight: "700", color: "#333" },
-  emptySubText: { fontSize: 14, color: "#999", marginTop: 6 },
 });
