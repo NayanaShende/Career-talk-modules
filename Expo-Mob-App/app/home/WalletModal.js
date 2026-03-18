@@ -24,18 +24,18 @@ import { router } from "expo-router";
 const { height } = Dimensions.get("window");
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const TEAL = "#1f5c4f";
-const TEAL_MID = "#2d6a5e";
+const TEAL = "#867795";
+const TEAL_MID = "#867795";
 const TEAL_LIGHT = "#e4f0ed";
-const TEAL_TEXT = "#1f5c4f";
-const GREEN_DARK = "#574964";
+const TEAL_TEXT = "#867795";
+const GREEN_DARK = "#867795";
 const PAGE_BG = "#f5f6f8";
 const CARD_BG = "#ffffff";
 const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://192.168.1.25:3000";
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
 
 export default function WalletModal({ visible, onClose }) {
@@ -626,6 +626,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 6,
+    marginTop:22,
   },
   headerTitle: {
     fontSize: 22,

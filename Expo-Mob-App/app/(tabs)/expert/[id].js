@@ -24,7 +24,7 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.19:3000";
+const BASE_URL = "http://192.168.1.25:3000";
 
 // ─────────────────────────────────────────────
 // Star Rating Display
@@ -609,7 +609,7 @@ const styles = StyleSheet.create({
 
   // Hero
   heroSection: {
-    backgroundColor: "#574964",
+    backgroundColor: "#867795",
     marginTop: 22,
     alignItems: "center",
     paddingTop: 20,
@@ -702,7 +702,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     borderRadius: 20,
   },
-  rateBtnText: { color: "#574964", fontWeight: "700", fontSize: 13 },
+  rateBtnText: { color: "#867795", fontWeight: "700", fontSize: 13 },
 
   // Content card
   contentCard: {
@@ -737,7 +737,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   tabText: { fontSize: 13, color: "#9CA3AF", fontWeight: "600" },
-  tabTextActive: { color: "#574964", fontWeight: "700" },
+  tabTextActive: { color: "#867795", fontWeight: "700" },
 
   // Section
   sectionHeader: {
@@ -753,7 +753,7 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: 10,
   },
-  countBadgeText: { fontSize: 12, color: "#574964", fontWeight: "700" },
+  countBadgeText: { fontSize: 12, color: "#867795", fontWeight: "700" },
 
   // About
   aboutBox: {
@@ -828,12 +828,12 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 52,
     borderRadius: 14,
-    backgroundColor: "#574964",
+    backgroundColor: "#867795",
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
     gap: 8,
-    shadowColor: "#574964",
+    shadowColor: "#867795",
     shadowOpacity: 0.35,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
@@ -911,7 +911,7 @@ const styles = StyleSheet.create({
     flex: 2,
     height: 50,
     borderRadius: 14,
-    backgroundColor: "#574964",
+    backgroundColor: "#867795",
     justifyContent: "center",
     alignItems: "center",
   },
