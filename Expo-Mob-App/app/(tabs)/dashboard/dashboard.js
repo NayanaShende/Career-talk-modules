@@ -18,7 +18,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 
-const BASE_URL = "http://192.168.1.16:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 const SKILL_FILTERS = [
   "All",
@@ -50,60 +50,6 @@ function ExpertDashboard({
   getSkillChips,
 }) {
   const [walletVisible, setWalletVisible] = useState(false);
-  const [transactions, setTransactions] = useState([]);
-  const [chats, setChats] = useState([]);
-  const [loadingTxn, setLoadingTxn] = useState(true);
-  const [loadingChats, setLoadingChats] = useState(true);
-
-  useEffect(() => {
-    fetchTransactions();
-    fetchChats();
-  }, []);
-
-  const fetchTransactions = async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const res = await axiosInstance.get("/experts/my/transactions", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setTransactions(res?.data?.data || []);
-    } catch (e) {
-      console.log("fetchTransactions error:", e.message);
-      setTransactions([]);
-    } finally {
-      setLoadingTxn(false);
-    }
-  };
-
-  const fetchChats = async () => {
-    try {
-      const token = await AsyncStorage.getItem("token");
-      const res = await axiosInstance.get("/experts/my/chats", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setChats(res?.data?.data || []);
-    } catch (e) {
-      console.log("fetchChats error:", e.message);
-      setChats([]);
-    } finally {
-      setLoadingChats(false);
-    }
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "short",
-      year: "numeric",
-    });
-  };
-
-  const getUserImageUri = (image, name) => {
-    if (image) return `${BASE_URL}/uploads/${image}`;
-    return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "User")}&background=0B2D72&color=fff&size=80`;
-  };
 
   const ExpertCard = ({ e }) => (
     <Pressable
@@ -222,7 +168,6 @@ function ExpertDashboard({
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
         </View>
 
-        {/* FIX: added closing > on TouchableOpacity, removed duplicate style prop */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -271,39 +216,6 @@ function ExpertDashboard({
             <ExpertCard key={e.id} e={e} />
           ))}
         </ScrollView>
-
-        {/* Chats Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Recent Chats</Text>
-        </View>
-        {loadingChats ? (
-          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
-        ) : (
-          chats.map((c) => (
-            <View key={c.id} style={styles.chatRow}>
-              <Text style={styles.chatName}>{c.user_name}</Text>
-              <Text style={styles.chatTime}>{c.created_at}</Text>
-            </View>
-          ))
-        )}
-
-        {/* Transactions Section */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Transactions</Text>
-        </View>
-        {loadingTxn ? (
-          <ActivityIndicator color={TEAL} style={{ marginVertical: 20 }} />
-        ) : (
-          transactions.map((t) => (
-            <View key={t.id} style={styles.txnRow}>
-              <View>
-                <Text style={styles.txnUser}>{t.user_name}</Text>
-                <Text style={styles.txnDate}>{t.created_at}</Text>
-              </View>
-              <Text style={styles.txnAmount}>+₹{t.amount}</Text>
-            </View>
-          ))
-        )}
       </ScrollView>
 
       <WalletModal
@@ -1039,7 +951,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "800",
   },
-  // FIX: restored liveOverlay as a proper style object
   liveOverlay: {
     position: "absolute",
     bottom: 0,
@@ -1264,7 +1175,6 @@ const styles = StyleSheet.create({
     gap: 5,
     marginBottom: 10,
   },
-  // FIX: restored recTag and recTagText as proper style objects
   recTag: {
     backgroundColor: TEAL_LIGHT,
     paddingHorizontal: 10,
@@ -1276,7 +1186,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
-  // FIX: restored recFooter and recViewText as proper style objects
   recFooter: {
     borderTopWidth: 1,
     borderTopColor: "#F0F0F3",

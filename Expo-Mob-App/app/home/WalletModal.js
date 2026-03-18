@@ -35,7 +35,7 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 
-const BASE_URL = "http://192.168.1.16:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
 
 export default function WalletModal({ visible, onClose }) {
