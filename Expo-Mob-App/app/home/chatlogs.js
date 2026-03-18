@@ -18,13 +18,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useNotification } from "../../context/NotificationContext";
 
-const BASE_URL = "http://192.168.1.14:3000";
+const BASE_URL = "http://192.168.1.25:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const TEAL = "#574964";
+const TEAL = "#867795";
 const TEAL_LIGHT = "#eaddf5";
-const TEAL_TEXT = "#574964";
+const TEAL_TEXT = "#867795";
 const PAGE_BG = "#f5f6f8";
 const CARD_BG = "#ffffff";
 const TEXT_1 = "#1a1a2e";
