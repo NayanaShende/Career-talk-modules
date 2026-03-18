@@ -23,7 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "https://career-talk-modules-backend.onrender.com";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────

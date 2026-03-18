@@ -24,7 +24,7 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "https://career-talk-modules-backend.onrender.com";
 
 // ─────────────────────────────────────────────
 // Star Rating Display

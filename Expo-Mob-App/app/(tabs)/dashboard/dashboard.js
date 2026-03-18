@@ -18,7 +18,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 
-const BASE_URL = "http://192.168.1.25:3000";
+const BASE_URL = "https://career-talk-modules-backend.onrender.com";
 
 const SKILL_FILTERS = [
   "All",
