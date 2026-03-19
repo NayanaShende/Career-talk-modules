@@ -19,7 +19,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 
 // import { SOCKET_URL as BASE_URL } from "../../../constants/config";
-const BASE_URL = "http://192.168.1.14:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 const SKILL_FILTERS = [
   "All",

@@ -23,7 +23,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 // import { SOCKET_URL as BASE_URL } from "../../constants/config";
-const BASE_URL = "http://192.168.1.14:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 // ── Domain-specific skills ───────────────────────────────────────────────────
 const DOMAIN_SKILLS_MAP = {
