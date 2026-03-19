@@ -18,7 +18,7 @@ import axios from "axios";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "https://career-talk-modules-backend.onrender.com";
+import { SOCKET_URL as BASE_URL } from "../../constants/config";
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -895,3 +895,4 @@ const modalStyles = StyleSheet.create({
     lineHeight: 22,
   },
 });
+

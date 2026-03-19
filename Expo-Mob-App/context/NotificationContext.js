@@ -25,6 +25,7 @@ const NotificationContext = createContext({
   clearUnread: () => {},
   totalUnread: 0,
   currentUserId: null,
+  socket: null, // ✅ expose global socket so chatscreen reuses it
 });
 
 export function NotificationProvider({ children }) {
@@ -36,11 +37,10 @@ export function NotificationProvider({ children }) {
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const appState = useRef(AppState.currentState);
 
-  // ✅ FIXED: try all possible storage keys + retry until found
+  // ✅ Try all possible storage keys + retry until found
   useEffect(() => {
     const tryLoadUser = async () => {
       try {
-        // ✅ Try all possible keys your app uses
         const keys = ["user", "userData", "currentUser", "token"];
         let uid = null;
 
@@ -69,7 +69,6 @@ export function NotificationProvider({ children }) {
       } catch (e) {
         console.log("AsyncStorage error:", e.message);
       }
-      // retry after 1s if user not found yet
       setTimeout(tryLoadUser, 1000);
     };
     tryLoadUser();
@@ -95,46 +94,47 @@ export function NotificationProvider({ children }) {
     }).start(() => setBanner(null));
   };
 
-  // ✅ connect socket and JOIN ROOM immediately on userId load
+  // ✅ Single global socket — shared with chatscreen via context
   useEffect(() => {
     if (!currentUserId) return;
 
     console.log("🔌 Connecting global socket for user:", currentUserId);
 
-    // cleanup previous socket if any
     if (socketRef.current) {
       socketRef.current.disconnect();
       socketRef.current = null;
     }
 
-    socketRef.current = io(BASE_URL, {
+    const socket = io(BASE_URL, {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: 20,
       reconnectionDelay: 1000,
     });
 
-    socketRef.current.on("connect", () => {
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
       console.log(
         "🌐 Global socket connected:",
-        socketRef.current.id,
+        socket.id,
         "for user:",
         currentUserId,
       );
-      socketRef.current.emit("joinRoom", { userId: currentUserId });
+      socket.emit("joinRoom", { userId: currentUserId });
       console.log("🏠 Global joinRoom emitted for:", currentUserId);
     });
 
-    // ✅ Rejoin room on reconnect
-    socketRef.current.on("reconnect", () => {
+    socket.on("reconnect", () => {
       console.log(
         "🔄 Global socket reconnected, rejoining room:",
         currentUserId,
       );
-      socketRef.current.emit("joinRoom", { userId: currentUserId });
+      socket.emit("joinRoom", { userId: currentUserId });
     });
 
-    socketRef.current.on("newNotification", (notif) => {
+    // ✅ Only NotificationContext handles newNotification — no chatscreen socket needed
+    socket.on("newNotification", (notif) => {
       console.log("🔔 Global newNotification received:", notif);
       if (Number(notif.sender_id) !== Number(currentUserId)) {
         showBanner(notif);
@@ -145,25 +145,26 @@ export function NotificationProvider({ children }) {
       }
     });
 
-    socketRef.current.on("disconnect", (reason) => {
+    socket.on("disconnect", (reason) => {
       console.log("🔌 Global socket disconnected:", reason);
     });
 
-    socketRef.current.on("connect_error", (err) => {
+    socket.on("connect_error", (err) => {
       console.log("❌ Global socket connect error:", err.message);
     });
 
     return () => {
-      socketRef.current?.off("newNotification");
-      socketRef.current?.off("connect");
-      socketRef.current?.off("reconnect");
-      socketRef.current?.off("disconnect");
-      socketRef.current?.off("connect_error");
-      socketRef.current?.disconnect();
+      socket.off("newNotification");
+      socket.off("connect");
+      socket.off("reconnect");
+      socket.off("disconnect");
+      socket.off("connect_error");
+      socket.disconnect();
+      socketRef.current = null;
     };
   }, [currentUserId]);
 
-  // ✅ rejoin room when app comes back to foreground
+  // ✅ Rejoin room when app comes back to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (
@@ -194,7 +195,13 @@ export function NotificationProvider({ children }) {
 
   return (
     <NotificationContext.Provider
-      value={{ unreadCounts, clearUnread, totalUnread, currentUserId }}
+      value={{
+        unreadCounts,
+        clearUnread,
+        totalUnread,
+        currentUserId,
+        socket: socketRef, // ✅ expose socketRef so chatscreen can use .current
+      }}
     >
       {children}
 

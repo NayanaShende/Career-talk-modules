@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     senderId: {
       type: DataTypes.INTEGER,
       field: 'senderId', // ✅ explicit field name
-    },
+          },
     receiverId: {
       type: DataTypes.INTEGER,
       field: 'receiverId',
@@ -13,6 +13,13 @@ module.exports = (sequelize, DataTypes) => {
     },
   }, {
     tableName: 'Chats', // ✅ explicit table name
+    isSeen: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
+      field: 'isSeen',
+    },
+  }, {
+    tableName: 'Chats',
     timestamps: true,
   });
 

@@ -61,6 +61,37 @@ module.exports = {
       // ❌ qualification, experience, domain, cvFile, skills NOT here
       // ✅ Those columns live in the Experts table
 
+      // ✅ ADDED: extra profile fields required by User model
+      qualification: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      experience: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      domain: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      gender: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      image: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      cvFile: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,

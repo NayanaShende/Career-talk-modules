@@ -23,7 +23,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "https://career-talk-modules-backend.onrender.com";
+// import { SOCKET_URL as BASE_URL } from "../../constants/config";
+const BASE_URL = "http://192.168.1.14:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -83,7 +84,26 @@ const formatTime = (date) =>
       })
     : "";
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Smart image URL ────────────────────────────────────────────────────────
+const getImageUri = (image, name) => {
+  if (
+    image &&
+    image !== "undefined" &&
+    image !== "null" &&
+    image.trim() !== ""
+  ) {
+    if (image.startsWith("http://") || image.startsWith("https://")) {
+      return image;
+    }
+    const cleanImage = image.replace(/^uploads\//, "");
+    return `${BASE_URL}/uploads/${cleanImage}`;
+  }
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    name || "Expert",
+  )}&background=0B2D72&color=fff`;
+};
+
+// ── Main Component ─────────────────────────────────────────────────────────
 export default function ChatScreen() {
   const {
     expertId,
@@ -94,7 +114,9 @@ export default function ChatScreen() {
   } = useLocalSearchParams();
 
   const RECEIVER_ID = Number(expertId);
-  const { clearUnread } = useNotification();
+
+  // Get global socket from NotificationContext
+  const { clearUnread, socket: globalSocketRef } = useNotification();
 
   const rawName = paramExpertName || name;
   const rawImage = expertImage || avatar;
@@ -104,19 +126,10 @@ export default function ChatScreen() {
       ? rawName
       : "Expert";
 
-  const cleanImage = rawImage ? rawImage.replace(/^uploads\//, "") : null;
-  const expertAvatarUrl =
-    cleanImage &&
-    cleanImage !== "undefined" &&
-    cleanImage !== "null" &&
-    cleanImage !== ""
-      ? `${BASE_URL}/uploads/${cleanImage}`
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          expertName,
-        )}&background=2d6a5e&color=fff`;
+  const expertAvatarUrl = getImageUri(rawImage, expertName);
 
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+  const [userRole, setUserRole] = useState("user"); // ✅ fixed: was missing
   const [messages, setMessages] = useState([]);
   const [textMessage, setTextMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -132,7 +145,9 @@ export default function ChatScreen() {
   const preauthDone = useRef(false);
   const tickIntervalRef = useRef(null);
   const minutesRef = useRef(0);
+  const isSendingRef = useRef(false); // prevent double-send on fast taps
 
+  // ── Load user from storage ───────────────────────────────────────────────
   useEffect(() => {
     AsyncStorage.getItem("user").then((str) => {
       if (str) {
@@ -149,12 +164,13 @@ export default function ChatScreen() {
     if (RECEIVER_ID) clearUnread(RECEIVER_ID);
   }, [RECEIVER_ID]);
 
+  // ── Find expert DB id ────────────────────────────────────────────────────
   const findExpertId = async () => {
     try {
       const expertRes = await API.get("/experts");
       const allExperts = expertRes?.data?.data || [];
       const expert = allExperts.find(
-        (e) => Number(e.userId) === Number(RECEIVER_ID)
+        (e) => Number(e.userId) === Number(RECEIVER_ID),
       );
       const eId = expert ? expert.id : RECEIVER_ID;
       console.log("✅ Expert found — Expert.id:", eId);
@@ -165,6 +181,7 @@ export default function ChatScreen() {
     }
   };
 
+  // ── Billing ──────────────────────────────────────────────────────────────
   const startChatBilling = async (userId) => {
     if (preauthDone.current) return;
     preauthDone.current = true;
@@ -196,7 +213,7 @@ export default function ChatScreen() {
           [
             { text: "Add Money", onPress: () => router.push("/(tabs)/wallet") },
             { text: "Cancel", style: "cancel", onPress: () => router.back() },
-          ]
+          ],
         );
       } else {
         console.log("chatStart error:", e.message);
@@ -220,7 +237,7 @@ export default function ChatScreen() {
             "⏱️ Minute",
             minutesRef.current,
             "— Balance:",
-            res.data.balance
+            res.data.balance,
           );
         }
       } catch (e) {
@@ -254,14 +271,14 @@ export default function ChatScreen() {
           "✅ Chat ended — charged: ₹" +
             totalCharged +
             ", released: ₹" +
-            released
+            released,
         );
 
         if (autoEnded) {
           Alert.alert(
             "Chat Ended — Balance Empty",
             `Duration: ${duration} min\nTotal charged: ₹${totalCharged}\n₹${released} released back to wallet.`,
-            [{ text: "OK", onPress: () => router.back() }]
+            [{ text: "OK", onPress: () => router.back() }],
           );
         }
       }
@@ -270,12 +287,13 @@ export default function ChatScreen() {
     }
   };
 
+  // ── Load messages ────────────────────────────────────────────────────────
   const loadChats = async () => {
     if (!RECEIVER_ID || !currentUserId) return;
     try {
       setLoading(true);
       const res = await API.get(
-        `/chat/messages/${currentUserId}/${RECEIVER_ID}`
+        `/chat/messages/${currentUserId}/${RECEIVER_ID}`,
       );
       setMessages(dedupeMessages(sortMessages(res?.data?.data || [])));
     } catch (error) {
@@ -285,8 +303,12 @@ export default function ChatScreen() {
     }
   };
 
+  // ── Send message ─────────────────────────────────────────────────────────
   const handleSend = async () => {
     if (!textMessage.trim() || !RECEIVER_ID || !currentUserId) return;
+    if (isSendingRef.current) return; // prevent double-send
+    isSendingRef.current = true;
+
     const messageToSend = textMessage;
     setTextMessage("");
     const tempId = `temp_${Date.now()}`;
@@ -300,7 +322,7 @@ export default function ChatScreen() {
           message: messageToSend,
           created_at: new Date(),
         },
-      ])
+      ]),
     );
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
     try {
@@ -311,12 +333,16 @@ export default function ChatScreen() {
       });
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    } finally {
+      isSendingRef.current = false;
     }
   };
 
+  // ── Socket + billing setup ───────────────────────────────────────────────
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
     loadChats();
+
     // Only start billing for users — experts earn, they don't pay
     if (userRole !== "expert") {
       startChatBilling(currentUserId);
@@ -328,21 +354,25 @@ export default function ChatScreen() {
       reconnectionAttempts: 5,
       reconnectionDelay: 2000,
     });
+
     socketRef.current.on("connect", () => {
       setIsOnline(true);
       socketRef.current.emit("joinRoom", { userId: currentUserId });
     });
+
     socketRef.current.on("disconnect", () => setIsOnline(false));
+
     socketRef.current.on("receiveMessage", (newMessage) => {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
         setMessages((prev) =>
-          dedupeMessages(sortMessages([...prev, newMessage]))
+          dedupeMessages(sortMessages([...prev, newMessage])),
         );
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
       }
     });
+
     return () => {
       socketRef.current.off("receiveMessage");
       socketRef.current.off("connect");
@@ -355,7 +385,7 @@ export default function ChatScreen() {
     };
   }, [currentUserId, RECEIVER_ID, userRole]);
 
-  // ── Render item ───────────────────────────────────────────────────────────
+  // ── Render message item ──────────────────────────────────────────────────
   const renderItem = ({ item }) => {
     if (item.type === "date") {
       return (
@@ -374,9 +404,6 @@ export default function ChatScreen() {
     const timeText = formatTime(item.created_at);
 
     return (
-      // FIX: restored proper JSX structure — removed orphaned style lines,
-      // added opening <Text>, fixed <View> closing tag for metaRow, added
-      // <Text> for timeText inside metaRow
       <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
         {/* Expert avatar on the left */}
         {!isUser && (
@@ -384,15 +411,14 @@ export default function ChatScreen() {
         )}
 
         <View
-          style={[
-            styles.bubble,
-            isUser ? styles.bubbleMe : styles.bubbleThem,
-          ]}>
+          style={[styles.bubble, isUser ? styles.bubbleMe : styles.bubbleThem]}
+        >
           <Text
             style={[
               styles.msgText,
               isUser ? styles.msgTextMe : styles.msgTextThem,
-            ]}>
+            ]}
+          >
             {msgText}
           </Text>
           <View style={styles.metaRow}>
@@ -400,7 +426,8 @@ export default function ChatScreen() {
               style={[
                 styles.timeText,
                 isUser ? styles.timeMine : styles.timeTheirs,
-              ]}>
+              ]}
+            >
               {timeText}
             </Text>
             {isUser && (
@@ -420,7 +447,7 @@ export default function ChatScreen() {
     );
   };
 
-  // ── Loading gate ──────────────────────────────────────────────────────────
+  // ── Loading gate ─────────────────────────────────────────────────────────
   if (!currentUserId) {
     return (
       <View style={styles.loadingScreen}>
@@ -429,21 +456,19 @@ export default function ChatScreen() {
     );
   }
 
-  // ── Main render ───────────────────────────────────────────────────────────
+  // ── Main render ──────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar backgroundColor={TEAL} barStyle="light-content" />
 
-      {/* ── BILLING BAR ────────────────────────────────────────────────── */}
+      {/* ── BILLING BAR ── */}
       {chatActive && (
         <View style={styles.billingBar}>
           <View style={styles.billingLeft}>
             <Text style={styles.billingTimer}>⏱️ {minutesUsed} min</Text>
             <Text style={styles.billingRate}>₹10/min</Text>
           </View>
-          <Text style={styles.billingBalance}>
-            ₹{walletBalance.toFixed(2)}
-          </Text>
+          <Text style={styles.billingBalance}>₹{walletBalance.toFixed(2)}</Text>
           <TouchableOpacity
             style={styles.endChatBtn}
             onPress={() => {
@@ -462,17 +487,17 @@ export default function ChatScreen() {
                     },
                   },
                   { text: "Continue", style: "cancel" },
-                ]
+                ],
               );
-            }}>
+            }}
+          >
             <Text style={styles.endChatTxt}>End</Text>
           </TouchableOpacity>
         </View>
       )}
 
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      {/* ── HEADER ── */}
       <View style={styles.header}>
-        {/* FIX: restored TouchableOpacity with correct onPress and children */}
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => {
@@ -490,29 +515,24 @@ export default function ChatScreen() {
                     },
                   },
                   { text: "Stay", style: "cancel" },
-                ]
+                ],
               );
             } else {
               router.back();
             }
-          }}>
+          }}
+        >
           <Ionicons name="chevron-back" size={22} color={TEXT_1} />
         </TouchableOpacity>
 
-        {/* FIX: restored TouchableOpacity wrapping avatar + info with correct
-            onPress, removed orphaned code fragments */}
         <TouchableOpacity
           style={styles.headerAvatarPressable}
           onPress={() => {
-            if (userRole === "expert") {
-              // Expert clicking → show user's profile or do nothing
-            } else {
-              // User clicking → show expert's profile
-              router.push({
-                pathname: `/expert/${RECEIVER_ID}`,
-              });
+            if (userRole !== "expert") {
+              router.push({ pathname: `/expert/${RECEIVER_ID}` });
             }
-          }}>
+          }}
+        >
           {/* Avatar + online dot */}
           <View style={styles.headerAvatarWrap}>
             <Image
@@ -543,7 +563,8 @@ export default function ChatScreen() {
                 style={[
                   styles.headerStatus,
                   { color: isOnline ? "#16a34a" : TEXT_2 },
-                ]}>
+                ]}
+              >
                 {isOnline ? "Active now" : "Offline"}
               </Text>
             </View>
@@ -561,7 +582,7 @@ export default function ChatScreen() {
         </View>
       </View>
 
-      {/* ── CHAT AREA ──────────────────────────────────────────────────── */}
+      {/* ── CHAT AREA ── */}
       <View style={styles.chatBg}>
         {loading && messages.length === 0 ? (
           <View style={styles.center}>
@@ -596,10 +617,10 @@ export default function ChatScreen() {
         )}
       </View>
 
-      {/* ── INPUT BAR ──────────────────────────────────────────────────── */}
-      {/* FIX: wrapped input bar in KeyboardAvoidingView correctly */}
+      {/* ── INPUT BAR ── */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <View style={styles.inputBar}>
           {/* Attachment */}
           <TouchableOpacity style={styles.attachBtn}>
@@ -630,7 +651,8 @@ export default function ChatScreen() {
               !textMessage.trim() && styles.sendBtnDisabled,
             ]}
             onPress={handleSend}
-            disabled={!textMessage.trim()}>
+            disabled={!textMessage.trim()}
+          >
             <Ionicons
               name="send"
               size={17}
@@ -644,7 +666,7 @@ export default function ChatScreen() {
   );
 }
 
-// ── STYLES ──────────────────────────────────────────────────────────────────
+// ── STYLES ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -669,7 +691,6 @@ const styles = StyleSheet.create({
   },
 
   // ── Billing bar ──
-  // FIX: restored billingBar as a proper style object (was orphaned/cut off)
   billingBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -696,7 +717,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#ffffff",
     paddingHorizontal: 14,
-    paddingVertical: 10,
+    paddingTop: 16,
+    paddingBottom: 16,
     borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
     elevation: 3,
@@ -704,8 +726,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     gap: 10,
-    paddingTop: 16,
-    paddingBottom: 16,
   },
   backBtn: {
     width: 36,
@@ -715,7 +735,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  // FIX: added headerAvatarPressable (wraps avatar + info as a tappable area)
   headerAvatarPressable: {
     flex: 1,
     flexDirection: "row",
@@ -746,11 +765,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerName: {
-    fontSize: 19,
+    fontSize: 16,
     fontWeight: "800",
     color: TEXT_1,
     letterSpacing: -0.2,
-    paddingTop: 10,
   },
   statusRow: {
     flexDirection: "row",
@@ -806,6 +824,7 @@ const styles = StyleSheet.create({
   dateSepPill: {
     backgroundColor: "#e5e7eb",
     paddingVertical: 4,
+    paddingHorizontal: 10,
     borderRadius: 20,
   },
   dateSepText: {
@@ -829,7 +848,6 @@ const styles = StyleSheet.create({
     marginRight: 6,
     marginBottom: 2,
   },
-  // FIX: restored msgAvatarLarge (was orphaned fragment with no key)
   msgAvatarLarge: {
     width: 32,
     height: 32,
@@ -855,7 +873,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
   },
-  // FIX: restored bubbleThem closing brace (was missing)
   bubbleThem: {
     backgroundColor: BUBBLE_THEM,
     borderBottomLeftRadius: 4,
@@ -941,7 +958,6 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     minHeight: 42,
   },
-  // FIX: restored input style (orphaned color/fontWeight lines merged in)
   input: {
     flex: 1,
     fontSize: 15,
@@ -964,5 +980,6 @@ const styles = StyleSheet.create({
   },
   sendBtnDisabled: {
     backgroundColor: TEAL,
+    opacity: 0.5,
   },
 });

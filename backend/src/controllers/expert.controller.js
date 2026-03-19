@@ -27,6 +27,10 @@ exports.createExpertProfile = async (req, res) => {
 };
 
 // ================= SUBMIT EXPERT PROFILE FORM =================
+// ✅ called when expert fills out the profile form
+// saves to Experts table using userId from JWT token
+// ✅ FIXED: multer.fields() puts files in req.files (object), not req.file
+// req.file is only set when using upload.single()
 exports.submitExpertProfileForm = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -52,6 +56,7 @@ exports.submitExpertProfileForm = async (req, res) => {
     const expert = await expertService.createExpertProfile(
       userId,
       bodyWithGender,
+      req.body,
       cvFile,
       imageFile,
       certificateFiles,
@@ -208,11 +213,14 @@ exports.getExpertById = async (req, res) => {
   }
 };
 
-// ================= SUBMIT RATING =================
+// ================= SUBMIT RATING ✅ =================
+// POST /api/experts/:id/rate
+// Requires auth — saves userId, rating, comment
+// Enforces one rating per user per expert
 exports.submitRating = async (req, res) => {
   try {
     const expertId = Number(req.params.id);
-    const userId = req.user.id;
+    const userId = req.user.id; // ✅ from JWT middleware
     const { rating, comment } = req.body;
 
     if (!expertId || isNaN(expertId)) {
@@ -248,6 +256,7 @@ exports.submitRating = async (req, res) => {
   } catch (error) {
     console.error("submitRating error:", error.message);
 
+    // ✅ Return 409 Conflict for duplicate rating — frontend checks this
     if (error.message === "ALREADY_RATED") {
       return res.status(409).json({
         success: false,
@@ -259,7 +268,9 @@ exports.submitRating = async (req, res) => {
   }
 };
 
-// ================= GET RATINGS =================
+// ================= GET RATINGS ✅ =================
+// GET /api/experts/:id/ratings
+// Returns avgRating, totalReviews, and reviews with user name + image
 exports.getRatings = async (req, res) => {
   try {
     const expertId = Number(req.params.id);
@@ -283,6 +294,8 @@ exports.getRatings = async (req, res) => {
 };
 
 // ================= GET DOMAINS LIST =================
+// ✅ returns 10 domains for frontend dropdown
+// No auth required — public route
 exports.getDomainsList = async (req, res) => {
   try {
     const domains = [

@@ -35,7 +35,7 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 
-const BASE_URL = "https://career-talk-modules-backend.onrender.com";
+import { SOCKET_URL as BASE_URL } from "../../constants/config";
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
 
 export default function WalletModal({ visible, onClose }) {
@@ -534,7 +534,7 @@ export default function WalletModal({ visible, onClose }) {
           />
           <Text style={styles.payingRowText}>
             Adding to{" "}
-            <Text style={styles.payingRowName}>{getUserDisplayName()}'s</Text>{" "}
+     <Text style={styles.payingRowName}>{`${getUserDisplayName()}'s`}</Text>{" "}
             wallet
           </Text>
         </View>

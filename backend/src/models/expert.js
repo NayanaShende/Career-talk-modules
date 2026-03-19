@@ -65,6 +65,12 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.STRING,
         allowNull: true,
       },
+
+      sub_domain: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+      },
+      
       gender: {
         type: DataTypes.STRING(10),
         allowNull: true,
