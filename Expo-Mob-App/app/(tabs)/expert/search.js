@@ -87,6 +87,11 @@ export default function Home() {
 
   const getImageUri = (image) => {
     if (image) {
+      // ✅ If already a full Cloudinary or external URL, return as-is
+      if (image.startsWith("http://") || image.startsWith("https://")) {
+        return image;
+      }
+      // ✅ Otherwise it's a local file, prepend base URL
       const cleanImage = image.replace(/^uploads\//, "");
       return `${BASE_URL}/uploads/${cleanImage}`;
     }

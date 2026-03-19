@@ -37,6 +37,7 @@ const INPUT_BG = "#f8fafa";
 // ── Helpers ────────────────────────────────────────────────────────────────
 const getImageUri = (image) => {
   if (image) {
+    // ✅ Already a full Cloudinary or external URL — return as-is
     if (image.startsWith("http://") || image.startsWith("https://"))
       return image;
     const cleanImage = image.replace(/^uploads\//, "");
@@ -172,7 +173,6 @@ const DOMAIN_SKILLS_MAP = {
     "Child Nutrition",
     "Naturopathy",
   ],
-
   "Legal Advisory": [
     "Contract Drafting",
     "Legal Research",
@@ -1149,7 +1149,8 @@ const EditProfile = () => {
         years_of_experience: user.years_of_experience || "",
         linkedin: user.linkedin || "",
         image_file: null,
-        image_url: user.image ? `${BASE_URL}/uploads/${user.image}` : "",
+        // ✅ FIXED: use getImageUri helper so Cloudinary URLs are not double-prefixed
+        image_url: user.image ? getImageUri(user.image) : "",
         existing_cv: user.cvFile || user.cv || "",
       }));
 
@@ -1157,7 +1158,9 @@ const EditProfile = () => {
         try {
           const expertRes = await axios.get(
             `${BASE_URL}/api/experts/profile/me`,
-            { headers: { Authorization: `Bearer ${token}` } },
+            {
+              headers: { Authorization: `Bearer ${token}` },
+            },
           );
           const ep = expertRes.data.data;
           if (ep) {
@@ -1176,9 +1179,8 @@ const EditProfile = () => {
                 ep.years_of_experience != null
                   ? String(ep.years_of_experience)
                   : prev.years_of_experience,
-              image_url: ep.image
-                ? `${BASE_URL}/uploads/${ep.image}`
-                : prev.image_url,
+              // ✅ FIXED: use getImageUri helper so Cloudinary URLs are not double-prefixed
+              image_url: ep.image ? getImageUri(ep.image) : prev.image_url,
               existing_cv: ep.cv || prev.existing_cv,
             }));
             if (ep.skills && ep.skills.length > 0) {
@@ -1458,9 +1460,14 @@ const EditProfile = () => {
             {form.cv_file
               ? form.cv_file.name
               : form.existing_cv
-                ? `Current: ${form.existing_cv}`
+                ? // ✅ FIXED: show only filename/short label, not full Cloudinary URL
+                  "📄 CV Uploaded ✓"
                 : "Choose CV File"}
           </Text>
+          {/* ✅ Show a change icon if CV already exists */}
+          {(form.cv_file || form.existing_cv) && (
+            <Ionicons name="pencil-outline" size={16} color={TEAL} />
+          )}
         </TouchableOpacity>
 
         {/* ── Jobseeker Only ── */}
@@ -1590,11 +1597,7 @@ export default EditProfile;
 
 // ── Styles ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    padding: 16,
-    paddingBottom: 50,
-    backgroundColor: PAGE_BG,
-  },
+  container: { padding: 16, paddingBottom: 50, backgroundColor: PAGE_BG },
   loadingScreen: {
     flex: 1,
     justifyContent: "center",
@@ -1602,18 +1605,8 @@ const styles = StyleSheet.create({
     backgroundColor: PAGE_BG,
     gap: 12,
   },
-  loadingText: {
-    color: TEAL,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  // Avatar
-  imageContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-    paddingTop: 8,
-  },
+  loadingText: { color: TEAL, fontSize: 14, fontWeight: "600" },
+  imageContainer: { alignItems: "center", marginBottom: 20, paddingTop: 8 },
   profileImage: {
     width: 100,
     height: 100,
@@ -1634,14 +1627,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
   },
-  changePhoto: {
-    color: TEAL,
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 8,
-  },
-
-  // Section
+  changePhoto: { color: TEAL, fontSize: 13, fontWeight: "600", marginTop: 8 },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1667,11 +1653,7 @@ const styles = StyleSheet.create({
     marginTop: 16,
     marginBottom: 8,
   },
-
-  // Fields
-  fieldGroup: {
-    marginBottom: 14,
-  },
+  fieldGroup: { marginBottom: 14 },
   fieldLabel: {
     fontSize: 12,
     fontWeight: "700",
@@ -1698,12 +1680,7 @@ const styles = StyleSheet.create({
     color: TEXT_1,
     fontWeight: "500",
   },
-  inputDisabled: {
-    backgroundColor: "#f0f0f0",
-    color: TEXT_2,
-  },
-
-  // Dropdown
+  inputDisabled: { backgroundColor: "#f0f0f0", color: TEXT_2 },
   dropdownBox: {
     backgroundColor: INPUT_BG,
     borderWidth: 1,
@@ -1715,8 +1692,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-
-  // Upload
   uploadBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1728,14 +1703,7 @@ const styles = StyleSheet.create({
     paddingVertical: 13,
     gap: 10,
   },
-  uploadBtnText: {
-    flex: 1,
-    fontSize: 14,
-    color: TEAL,
-    fontWeight: "600",
-  },
-
-  // Chips
+  uploadBtnText: { flex: 1, fontSize: 14, color: TEAL, fontWeight: "600" },
   chipsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1747,10 +1715,7 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 48,
   },
-  chipsEmpty: {
-    color: TEXT_2,
-    fontSize: 13,
-  },
+  chipsEmpty: { color: TEXT_2, fontSize: 13 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
@@ -1759,11 +1724,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
   },
-  chipText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "700",
-  },
+  chipText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   addChipBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1778,13 +1739,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: TEAL_LIGHT,
   },
-  addChipText: {
-    color: TEAL,
-    fontWeight: "700",
-    fontSize: 13,
-  },
-
-  // Save button
+  addChipText: { color: TEAL, fontWeight: "700", fontSize: 13 },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1799,19 +1754,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
-  saveBtnText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 16,
-  },
+  saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
 });
 
 // ── Modal styles ───────────────────────────────────────────────────────────
 const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: {
     backgroundColor: CARD_BG,
     borderTopLeftRadius: 24,
@@ -1851,24 +1799,10 @@ const modalStyles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
   },
-  itemSelected: {
-    backgroundColor: TEAL_LIGHT,
-    borderRadius: 10,
-  },
-  itemText: {
-    fontSize: 15,
-    color: TEXT_1,
-    fontWeight: "400",
-  },
-  itemTextSelected: {
-    color: TEAL,
-    fontWeight: "700",
-  },
-  customRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
+  itemSelected: { backgroundColor: TEAL_LIGHT, borderRadius: 10 },
+  itemText: { fontSize: 15, color: TEXT_1, fontWeight: "400" },
+  itemTextSelected: { color: TEAL, fontWeight: "700" },
+  customRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
   customInput: {
     flex: 1,
     backgroundColor: INPUT_BG,
@@ -1887,11 +1821,7 @@ const modalStyles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  customAddText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 14,
-  },
+  customAddText: { color: "#fff", fontWeight: "800", fontSize: 14 },
   doneBtn: {
     backgroundColor: TEAL,
     paddingVertical: 13,
@@ -1899,9 +1829,5 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     marginTop: 12,
   },
-  doneBtnText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 15,
-  },
+  doneBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });

@@ -137,6 +137,11 @@ export default function Recommended() {
 
   const getImageUri = (image, name) => {
     if (image) {
+      // ✅ If already a full Cloudinary or external URL, return as-is
+      if (image.startsWith("http://") || image.startsWith("https://")) {
+        return image;
+      }
+      // ✅ Otherwise it's a local file, prepend base URL
       const cleanImage = image.replace(/^uploads\//, "");
       return `${BASE_URL}/uploads/${cleanImage}`;
     }
@@ -447,7 +452,7 @@ export default function Recommended() {
             {search.trim() ? (
               <Text style={styles.countMuted}>
                 {" "}
-                for "{search}" in {activeFilter}
+                for &quot;{search}&quot; in {activeFilter}
               </Text>
             ) : null}
           </Text>

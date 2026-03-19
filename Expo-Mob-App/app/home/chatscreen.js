@@ -456,6 +456,14 @@ export default function ChatScreen() {
     );
   }
 
+  // ── Navigate to expert profile ───────────────────────────────────────────
+  const handleHeaderPress = () => {
+    if (userRole !== "expert") {
+      // ✅ Fixed: use the correct route path matching your file structure
+      router.push(`/(tabs)/expert/${RECEIVER_ID}`);
+    }
+  };
+
   // ── Main render ──────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -525,13 +533,11 @@ export default function ChatScreen() {
           <Ionicons name="chevron-back" size={22} color={TEXT_1} />
         </TouchableOpacity>
 
+        {/* ✅ FIXED: Clicking name/avatar navigates to expert profile */}
         <TouchableOpacity
           style={styles.headerAvatarPressable}
-          onPress={() => {
-            if (userRole !== "expert") {
-              router.push({ pathname: `/expert/${RECEIVER_ID}` });
-            }
-          }}
+          onPress={handleHeaderPress}
+          activeOpacity={userRole !== "expert" ? 0.7 : 1}
         >
           {/* Avatar + online dot */}
           <View style={styles.headerAvatarWrap}>
@@ -568,6 +574,10 @@ export default function ChatScreen() {
                 {isOnline ? "Active now" : "Offline"}
               </Text>
             </View>
+            {/* ✅ Small hint to show it's tappable (only for users) */}
+            {userRole !== "expert" && (
+              <Text style={styles.viewProfileHint}>Tap to view profile</Text>
+            )}
           </View>
         </TouchableOpacity>
 
@@ -784,6 +794,14 @@ const styles = StyleSheet.create({
   headerStatus: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  // ✅ NEW: subtle hint text below status
+  viewProfileHint: {
+    fontSize: 10,
+    color: TEAL_TEXT,
+    fontWeight: "500",
+    marginTop: 1,
+    opacity: 0.7,
   },
   headerActions: {
     flexDirection: "row",

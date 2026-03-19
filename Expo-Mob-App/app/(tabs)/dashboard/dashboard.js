@@ -231,7 +231,6 @@ function ExpertDashboard({
           <Text style={styles.sectionTitle}>Browse by Skill</Text>
         </View>
 
-        {/* FIX: added closing > on TouchableOpacity, removed duplicate style prop */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -286,8 +285,8 @@ function ExpertDashboard({
           ))}
         </ScrollView>
 
-        {/* Chats Section */}
-        <View style={styles.sectionHeader}>
+        {/* Recent Chats Section - HIDDEN (data still fetches in background) */}
+        {/* <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recent Chats</Text>
         </View>
         {loadingChats ? (
@@ -299,10 +298,10 @@ function ExpertDashboard({
               <Text style={styles.chatTime}>{c.created_at}</Text>
             </View>
           ))
-        )}
+        )} */}
 
-        {/* Transactions Section */}
-        <View style={styles.sectionHeader}>
+        {/* Transactions Section - HIDDEN (data still fetches in background) */}
+        {/* <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Transactions</Text>
         </View>
         {loadingTxn ? (
@@ -317,7 +316,8 @@ function ExpertDashboard({
               <Text style={styles.txnAmount}>+₹{t.amount}</Text>
             </View>
           ))
-        )}
+        )} */}
+
       </ScrollView>
 
       <WalletModal
@@ -347,7 +347,6 @@ function JobseekerDashboard({
 }) {
   const [walletVisible, setWalletVisible] = useState(false);
 
-  // FIX: added onPress prop and closing > on Pressable
   const ExpertCard = ({ e, isFeatured }) => (
     <Pressable
       style={[
@@ -637,7 +636,6 @@ const LiveExpert = ({ name, title, image, onPress }) => (
 );
 
 export default function Dashboard() {
-  // FIX: removed duplicate useState for userRole
   const [userRole, setUserRole] = useState(null);
   const [userData, setUserData] = useState(null);
   const [checking, setChecking] = useState(true);
@@ -665,6 +663,11 @@ export default function Dashboard() {
 
   const getImageUri = (image, name) => {
     if (image) {
+      // ✅ If already a full Cloudinary or external URL, return as-is
+      if (image.startsWith("http://") || image.startsWith("https://")) {
+        return image;
+      }
+      // ✅ Otherwise it's a local file, prepend base URL
       const cleanImage = image.replace(/^uploads\//, "");
       return `${BASE_URL}/uploads/${cleanImage}`;
     }
@@ -1068,7 +1071,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "800",
   },
-  // FIX: restored liveOverlay as a proper style object
   liveOverlay: {
     position: "absolute",
     bottom: 0,
@@ -1293,7 +1295,6 @@ const styles = StyleSheet.create({
     gap: 5,
     marginBottom: 10,
   },
-  // FIX: restored recTag and recTagText as proper style objects
   recTag: {
     backgroundColor: TEAL_LIGHT,
     paddingHorizontal: 10,
@@ -1305,7 +1306,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
   },
-  // FIX: restored recFooter and recViewText as proper style objects
   recFooter: {
     borderTopWidth: 1,
     borderTopColor: "#F0F0F3",
