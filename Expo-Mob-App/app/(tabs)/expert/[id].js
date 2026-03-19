@@ -24,7 +24,25 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "https://career-talk-modules-backend.onrender.com";
+// import { SOCKET_URL as BASE_URL } from "../../../constants/config";
+const BASE_URL = "http://192.168.1.14:3000";
+
+// ─────────────────────────────────────────────
+// ✅ Helper: resolve any image (Cloudinary or local)
+// ─────────────────────────────────────────────
+const getImageUri = (image, fallbackName = "Expert") => {
+  if (image) {
+    // ✅ Already a full Cloudinary or external URL — return as-is
+    if (image.startsWith("http://") || image.startsWith("https://")) {
+      return image;
+    }
+    // ✅ Local file — prepend base URL
+    const cleanImage = image.replace(/^uploads\//, "");
+    return `${BASE_URL}/uploads/${cleanImage}`;
+  }
+  // ✅ Fallback avatar
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=1F5C4F&color=fff&size=128`;
+};
 
 // ─────────────────────────────────────────────
 // Star Rating Display
@@ -113,7 +131,6 @@ function RatingModal({ visible, onClose, onSubmit }) {
             multiline
             numberOfLines={3}
           />
-
           <View style={styles.modalBtns}>
             <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
               <Text style={styles.cancelBtnText}>Cancel</Text>
@@ -121,7 +138,8 @@ function RatingModal({ visible, onClose, onSubmit }) {
             <TouchableOpacity
               style={[styles.submitRatingBtn, submitting && { opacity: 0.6 }]}
               onPress={handleSubmit}
-              disabled={submitting}>
+              disabled={submitting}
+            >
               <Text style={styles.submitRatingBtnText}>
                 {submitting ? "Submitting..." : "Submit Review"}
               </Text>
@@ -141,9 +159,10 @@ const ReviewCard = ({ review }) => {
     review.user?.name || review.userName || review.reviewer_name || "Anonymous";
   const userImage =
     review.user?.image || review.userImage || review.reviewer_image || null;
-  const avatarUri = userImage
-    ? `${BASE_URL}/uploads/${userImage}`
-    : `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=1F5C4F&color=fff&size=80`;
+
+  // ✅ Use shared getImageUri helper
+  const avatarUri = getImageUri(userImage, userName);
+
   const reviewDate = review.createdAt || review.created_at || null;
 
   return (
@@ -426,7 +445,8 @@ export default function ExpertProfile() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 }}>
+        contentContainerStyle={{ paddingBottom: 130 }}
+      >
         {/* ── HERO HEADER ── */}
         <View style={styles.heroSection}>
           {/* Back button placeholder */}
@@ -437,13 +457,11 @@ export default function ExpertProfile() {
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
 
-          {/* Avatar */}
+          {/* ✅ Avatar — uses shared getImageUri helper */}
           <View style={styles.avatarRing}>
             <Image
               source={{
-                uri: expert.image
-                  ? `${BASE_URL}/uploads/${expert.image}`
-                  : `https://ui-avatars.com/api/?name=${encodeURIComponent(expert.name || "Expert")}&background=4338CA&color=fff`,
+                uri: getImageUri(expert.image, expert.name || "Expert"),
               }}
               style={styles.avatar}
               onError={(e) => {
@@ -484,7 +502,8 @@ export default function ExpertProfile() {
             <StarRating rating={ratingData.avgRating} size={18} />
             <TouchableOpacity
               style={styles.rateBtn}
-            onPress={() => setRatingModal(true)}>
+              onPress={() => setRatingModal(true)}
+            >
               <Ionicons name="create-outline" size={15} color="#1F5C4F" />
               <Text style={styles.rateBtnText}>Rate</Text>
             </TouchableOpacity>
@@ -495,7 +514,7 @@ export default function ExpertProfile() {
         <View style={styles.contentCard}>
           {/* Tab Bar */}
           <View style={styles.tabBar}>
-            {["Overview", "Sessions", "Articles"].map((tab) => (
+            {["Overview"].map((tab) => (
               <TouchableOpacity
                 key={tab}
                 style={[

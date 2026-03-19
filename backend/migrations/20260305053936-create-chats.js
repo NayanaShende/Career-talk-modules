@@ -2,19 +2,21 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable("chats", {
+    await queryInterface.createTable("Chats", {
       id: {
         type: Sequelize.INTEGER,
         primaryKey: true,
         autoIncrement: true,
       },
 
-      sender_id: {
+      // ✅ FIXED: renamed from sender_id to senderId to match Chat model
+      senderId: {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
 
-      receiver_id: {
+      // ✅ FIXED: renamed from receiver_id to receiverId to match Chat model
+      receiverId: {
         type: Sequelize.INTEGER,
         allowNull: false,
       },
@@ -24,18 +26,19 @@ module.exports = {
         allowNull: false,
       },
 
-      is_seen: {
+      // ✅ FIXED: renamed from is_seen to isSeen to match Chat model
+      isSeen: {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
       },
 
-      created_at: {
+      createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.NOW,
       },
 
-      updated_at: {
+      updatedAt: {
         type: Sequelize.DATE,
         allowNull: false,
         defaultValue: Sequelize.NOW,
@@ -44,6 +47,6 @@ module.exports = {
   },
 
   async down(queryInterface) {
-    await queryInterface.dropTable("chats");
+    await queryInterface.dropTable("Chats");
   },
 };

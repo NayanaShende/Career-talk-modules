@@ -53,7 +53,19 @@ module.exports = {
         allowNull: true,
       },
 
+      // ✅ ADDED: language_spoken used by Expert queries
+      language_spoken: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
       city: {
+        type: Sequelize.STRING,
+        allowNull: true,
+      },
+
+      // ✅ ADDED: location used by Expert queries
+      location: {
         type: Sequelize.STRING,
         allowNull: true,
       },
@@ -76,6 +88,18 @@ module.exports = {
       is_online: {
         type: Sequelize.BOOLEAN,
         defaultValue: false,
+      },
+
+      // ✅ ADDED: verified used by Expert queries
+      verified: {
+        type: Sequelize.BOOLEAN,
+        defaultValue: false,
+      },
+
+      // ✅ ADDED: gender used by Expert queries
+      gender: {
+        type: Sequelize.STRING,
+        allowNull: true,
       },
 
       createdAt: {

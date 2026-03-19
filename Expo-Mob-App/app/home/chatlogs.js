@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -17,8 +17,8 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useNotification } from "../../context/NotificationContext";
+import { SOCKET_URL as BASE_URL } from "../../constants/config";
 
-const BASE_URL = "https://career-talk-modules-backend.onrender.com";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -31,6 +31,9 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#eff0f2";
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+const BG_CYCLE = ["#4a4869", "#2d6a5e", "#7a3d5e", "#1f5c8a", "#5e4a2d"];
+
 const formatTime = (dateStr) => {
   if (!dateStr) return "";
   const date = new Date(dateStr);
@@ -42,9 +45,26 @@ const formatTime = (dateStr) => {
   return date.toLocaleDateString([], { day: "numeric", month: "short" });
 };
 
-// Avatar background cycle (same as dashboard)
-const BG_CYCLE = ["#4a4869", "#2d6a5e", "#7a3d5e", "#1f5c8a", "#5e4a2d"];
+// ✅ Smart image URL — handles Cloudinary full URLs AND local paths
+const getImageUri = (image, name) => {
+  if (
+    image &&
+    image !== "undefined" &&
+    image !== "null" &&
+    image.trim() !== ""
+  ) {
+    if (image.startsWith("http://") || image.startsWith("https://")) {
+      return image;
+    }
+    const cleanImage = image.replace(/^uploads\//, "");
+    return `${BASE_URL}/uploads/${cleanImage}`;
+  }
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    name || "Expert",
+  )}&background=0B2D72&color=fff`;
+};
 
+// ── Main Component ─────────────────────────────────────────────────────────
 export default function ChatLogs() {
   const [chatData, setChatData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -67,7 +87,8 @@ export default function ChatLogs() {
     try {
       setLoading(true);
       const res = await API.get(`/chat/conversations/${currentUserId}`);
-      setChatData(res?.data?.data || []);
+      const data = res?.data?.data || [];
+      setChatData(data);
     } catch (error) {
       console.log("Load conversations error:", error.message);
     } finally {
@@ -87,12 +108,12 @@ export default function ChatLogs() {
     loadConversations();
   };
 
+  // ── Render chat item ───────────────────────────────────────────────────
   const renderChatItem = ({ item, index }) => {
-    const avatarUri = item.avatar
-      ? `${BASE_URL}/uploads/${item.avatar}`
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(item.name)}&background=2d6a5e&color=fff`;
-
+    // ✅ Smart image URL handles Cloudinary URLs and local paths
+    const avatarUri = getImageUri(item.avatar, item.name);
     const unread = unreadCounts[item.otherUserId] || 0;
+    const timeStr = formatTime(item.lastMessageTime);
     const initials = item.name
       ? item.name
           .trim()
@@ -103,7 +124,6 @@ export default function ChatLogs() {
           .toUpperCase()
       : "EX";
     const avatarBg = BG_CYCLE[index % BG_CYCLE.length];
-    const timeStr = formatTime(item.lastMessageTime);
 
     return (
       <TouchableOpacity
@@ -166,11 +186,12 @@ export default function ChatLogs() {
     );
   };
 
+  // ── Main render ────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor={TEAL} barStyle="light-content" />
 
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+      {/* ── HEADER ── */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={TEAL_LIGHT} />
@@ -194,7 +215,7 @@ export default function ChatLogs() {
         )}
       </View>
 
-      {/* ── LOADING ────────────────────────────────────────────────────── */}
+      {/* ── LOADING ── */}
       {loading && chatData.length === 0 ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={TEAL} />

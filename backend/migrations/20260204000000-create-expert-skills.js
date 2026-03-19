@@ -9,10 +9,13 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      skill: {
+
+      // ✅ FIXED: renamed from "skill" to "skill_name" to match queries
+      skill_name: {
         type: Sequelize.STRING,
         allowNull: false
       },
+
       expert_id: {
         type: Sequelize.INTEGER,
         references: {
@@ -22,11 +25,13 @@ module.exports = {
         onUpdate: "CASCADE",
         onDelete: "CASCADE"
       },
+
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE,
         defaultValue: Sequelize.literal("CURRENT_TIMESTAMP")
       },
+
       updatedAt: {
         allowNull: false,
         type: Sequelize.DATE,
@@ -39,3 +44,4 @@ module.exports = {
     await queryInterface.dropTable("ExpertSkills");
   }
 };
+

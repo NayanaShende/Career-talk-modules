@@ -13,7 +13,6 @@ import {
   FlatList,
   KeyboardAvoidingView,
   Platform,
-  StatusBar,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
@@ -21,10 +20,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { SafeAreaView } from "react-native-safe-area-context";
 
-const BASE_URL = "https://career-talk-modules-backend.onrender.com";
-
+// import { SOCKET_URL as BASE_URL } from "../../constants/config";
+const BASE_URL = "http://192.168.1.14:3000";
 // ── Design tokens ──────────────────────────────────────────────────────────
 const TEAL = "#867795";
 const TEAL_LIGHT = "#e9def5";
@@ -36,7 +34,303 @@ const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 const INPUT_BG = "#f8fafa";
 
-// ── Options (unchanged) ────────────────────────────────────────────────────
+// ── Helpers ────────────────────────────────────────────────────────────────
+const getImageUri = (image) => {
+  if (image) {
+    // ✅ Already a full Cloudinary or external URL — return as-is
+    if (image.startsWith("http://") || image.startsWith("https://"))
+      return image;
+    const cleanImage = image.replace(/^uploads\//, "");
+    return `${BASE_URL}/uploads/${cleanImage}`;
+  }
+  return "https://via.placeholder.com/150";
+};
+
+// ── Domain-specific skills ─────────────────────────────────────────────────
+const DOMAIN_SKILLS_MAP = {
+  "Career Counseling": [
+    "Career Coaching",
+    "Resume Writing",
+    "LinkedIn Optimization",
+    "Mock Interviews",
+    "Group Discussion",
+    "Aptitude Training",
+    "Soft Skills",
+    "Communication Skills",
+    "Body Language",
+    "Goal Setting",
+    "Motivation & Mindset",
+    "Personality Assessment",
+  ],
+  "Software Engineering": [
+    "React",
+    "React Native",
+    "Next.js",
+    "Vue.js",
+    "Angular",
+    "Node.js",
+    "Express.js",
+    "Django",
+    "FastAPI",
+    "Spring Boot",
+    "Flutter",
+    "Android (Kotlin)",
+    "iOS (Swift)",
+    "AWS",
+    "Azure",
+    "GCP",
+    "Docker",
+    "Kubernetes",
+    "PostgreSQL",
+    "MongoDB",
+    "Redis",
+    "GraphQL",
+    "System Design",
+    "DSA",
+    "Git & GitHub",
+    "Cybersecurity",
+    "Blockchain",
+    "Unity (Game Dev)",
+  ],
+  "Data Science & AI": [
+    "Python",
+    "R",
+    "SQL",
+    "Pandas",
+    "NumPy",
+    "Scikit-learn",
+    "TensorFlow",
+    "PyTorch",
+    "Keras",
+    "Power BI",
+    "Tableau",
+    "Excel (Advanced)",
+    "Spark",
+    "Hadoop",
+    "Feature Engineering",
+    "Model Deployment",
+    "MLflow",
+    "OpenAI API",
+    "LangChain",
+    "Prompt Engineering",
+    "Statistics & Probability",
+    "A/B Testing",
+  ],
+  "Finance & Investment": [
+    "Stock Analysis (Technical)",
+    "Stock Analysis (Fundamental)",
+    "Mutual Fund Planning",
+    "Portfolio Management",
+    "Tax Planning",
+    "GST Filing",
+    "Income Tax Returns",
+    "Financial Modeling (Excel)",
+    "Valuation",
+    "Crypto Trading",
+    "Forex Trading",
+    "Options & Futures",
+    "Insurance Planning",
+    "Tally",
+    "Zoho Books",
+    "CA / CFA / CFP Knowledge",
+  ],
+  "Marketing & Branding": [
+    "SEO",
+    "Google Ads",
+    "Meta Ads (Facebook/Instagram)",
+    "Content Writing",
+    "Copywriting",
+    "Email Marketing",
+    "Canva",
+    "Adobe Photoshop",
+    "Adobe Premiere Pro",
+    "Google Analytics",
+    "HubSpot",
+    "Mailchimp",
+    "YouTube Marketing",
+    "Influencer Outreach",
+    "Brand Strategy",
+    "Market Research",
+    "WhatsApp Marketing",
+    "Affiliate Marketing",
+  ],
+  "Health & Wellness": [
+    "Nutrition Planning",
+    "Diet Charting",
+    "Weight Management",
+    "Yoga",
+    "Pranayama",
+    "Meditation",
+    "Zumba",
+    "CrossFit",
+    "Ayurvedic Consultation",
+    "Physiotherapy Exercises",
+    "Mental Health Counseling",
+    "CBT Therapy",
+    "First Aid & CPR",
+    "Sports Nutrition",
+    "Homeopathy",
+    "Child Nutrition",
+    "Naturopathy",
+  ],
+  "Legal Advisory": [
+    "Contract Drafting",
+    "Legal Research",
+    "Case Filing",
+    "IP Registration",
+    "Trademark",
+    "Patent",
+    "GST & Tax Law",
+    "Labour Law",
+    "Consumer Law",
+    "Company Incorporation",
+    "MCA Filings",
+    "Cyber Law",
+    "Property Law",
+    "Family Law",
+    "Arbitration & Mediation",
+    "Legal Document Review",
+  ],
+  "Business Strategy": [
+    "Business Plan Writing",
+    "Market Research",
+    "Financial Projections",
+    "Pitch Deck Creation",
+    "SWOT & PESTLE Analysis",
+    "OKR Framework",
+    "Agile & Scrum",
+    "PMP Certification",
+    "Operations Optimization",
+    "Supply Chain",
+    "CRM Strategy",
+    "SAP / Oracle ERP",
+    "Product Roadmap",
+    "Go-to-Market Strategy",
+    "Fundraising Strategy",
+    "Startup Mentoring",
+  ],
+  "Education & Tutoring": [
+    "Mathematics (Class 8-12)",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "English Grammar",
+    "Essay Writing",
+    "JEE Preparation",
+    "NEET Preparation",
+    "UPSC Preparation",
+    "Vedic Maths",
+    "Abacus",
+    "Scratch (Kids Coding)",
+    "Python for Beginners",
+    "Accountancy",
+    "Economics",
+    "Marathi Literature",
+    "Hindi Literature",
+    "Music (Vocal/Instrumental)",
+    "Drawing & Painting",
+    "Cricket Coaching",
+    "Football Coaching",
+  ],
+  "Human Resources": [
+    "Recruitment & Sourcing",
+    "LinkedIn Hiring",
+    "ATS Tools (Naukri/LinkedIn)",
+    "HR Policies & Compliance",
+    "Payroll Management",
+    "HRMS Tools (Keka/Darwinbox/SAP)",
+    "Performance Appraisal",
+    "Employee Engagement",
+    "Training & Development",
+    "Labor Law",
+    "Diversity & Inclusion",
+    "HR Analytics",
+    "Leadership Training",
+    "Conflict Resolution",
+  ],
+  "Civil Services & Government": [
+    "General Studies (GS Paper 1-4)",
+    "CSAT",
+    "Essay Writing",
+    "Current Affairs",
+    "Indian Polity & Constitution",
+    "Indian Economy",
+    "History & Culture",
+    "Geography",
+    "Banking Awareness",
+    "Quantitative Aptitude",
+    "Reasoning Ability",
+    "English (Descriptive)",
+    "Marathi (Descriptive)",
+    "UPSC Interview Preparation",
+  ],
+  "Architecture & Design": [
+    "AutoCAD",
+    "Revit",
+    "SketchUp",
+    "Rhino 3D",
+    "Adobe Photoshop",
+    "Adobe Illustrator",
+    "Adobe InDesign",
+    "Figma",
+    "Adobe XD",
+    "3ds Max",
+    "Blender",
+    "V-Ray Rendering",
+    "Interior Space Planning",
+    "Landscape Design",
+    "UI/UX Research",
+    "Wireframing & Prototyping",
+    "Fashion Illustration",
+    "Textile Design",
+  ],
+  "Media & Journalism": [
+    "News Writing",
+    "Feature Writing",
+    "Investigative Journalism",
+    "Video Editing (Premiere Pro)",
+    "Video Editing (DaVinci)",
+    "Photography (DSLR)",
+    "YouTube Content Creation",
+    "Podcast Production",
+    "Script Writing",
+    "Adobe Audition",
+    "Final Cut Pro",
+    "Social Media Management",
+    "Fact Checking",
+    "Interviewing Techniques",
+  ],
+  "Agriculture & Farming": [
+    "Organic Farming Techniques",
+    "Soil Testing",
+    "Drip Irrigation",
+    "Hydroponics Setup",
+    "Crop Disease Management",
+    "Pesticide Management",
+    "Government Agri Schemes",
+    "Agri Export & Marketing",
+    "Dairy Management",
+    "Poultry Farming",
+    "Horticulture",
+    "Farm Accounting",
+    "Agri Drone Technology",
+  ],
+  "Hospitality & Tourism": [
+    "Front Office Operations",
+    "Housekeeping Management",
+    "Food & Beverage Service",
+    "Culinary Skills",
+    "Event Planning",
+    "Tour Package Design",
+    "Travel Agency Operations",
+    "Hotel Revenue Management",
+    "Customer Service",
+    "GDS - Amadeus/Galileo",
+    "Restaurant Management",
+    "Bartending & Mixology",
+  ],
+};
+
 const SKILL_OPTIONS = [
   "React",
   "React Native",
@@ -85,7 +379,294 @@ const DOMAIN_OPTIONS = [
   { label: "Business Strategy", value: "Business Strategy" },
   { label: "Education & Tutoring", value: "Education & Tutoring" },
   { label: "Human Resources", value: "Human Resources" },
+  {
+    label: "Civil Services & Government",
+    value: "Civil Services & Government",
+  },
+  { label: "Architecture & Design", value: "Architecture & Design" },
+  { label: "Media & Journalism", value: "Media & Journalism" },
+  { label: "Agriculture & Farming", value: "Agriculture & Farming" },
+  { label: "Hospitality & Tourism", value: "Hospitality & Tourism" },
 ];
+
+const SUBDOMAIN_MAP = {
+  "Career Counseling": [
+    {
+      label: "Resume & LinkedIn Building",
+      value: "Resume & LinkedIn Building",
+    },
+    { label: "Interview Preparation", value: "Interview Preparation" },
+    { label: "Career Switch Guidance", value: "Career Switch Guidance" },
+    { label: "Job Search Strategy", value: "Job Search Strategy" },
+    { label: "Salary Negotiation", value: "Salary Negotiation" },
+    {
+      label: "College Admission Counseling",
+      value: "College Admission Counseling",
+    },
+    { label: "Study Abroad Guidance", value: "Study Abroad Guidance" },
+    { label: "Scholarship Guidance", value: "Scholarship Guidance" },
+    { label: "Freshers Career Planning", value: "Freshers Career Planning" },
+    { label: "Personality Development", value: "Personality Development" },
+  ],
+  "Software Engineering": [
+    { label: "Frontend Development", value: "Frontend Development" },
+    { label: "Backend Development", value: "Backend Development" },
+    { label: "Full Stack Development", value: "Full Stack Development" },
+    { label: "Mobile App Development", value: "Mobile App Development" },
+    {
+      label: "System Design & Architecture",
+      value: "System Design & Architecture",
+    },
+    { label: "DevOps & CI/CD", value: "DevOps & CI/CD" },
+    { label: "Cloud Computing", value: "Cloud Computing" },
+    { label: "Cybersecurity", value: "Cybersecurity" },
+    { label: "Blockchain Development", value: "Blockchain Development" },
+    { label: "Game Development", value: "Game Development" },
+    { label: "Embedded Systems", value: "Embedded Systems" },
+    { label: "API & Microservices", value: "API & Microservices" },
+  ],
+  "Data Science & AI": [
+    { label: "Machine Learning", value: "Machine Learning" },
+    { label: "Deep Learning", value: "Deep Learning" },
+    {
+      label: "Natural Language Processing",
+      value: "Natural Language Processing",
+    },
+    { label: "Computer Vision", value: "Computer Vision" },
+    { label: "Data Analytics", value: "Data Analytics" },
+    { label: "Data Engineering", value: "Data Engineering" },
+    { label: "MLOps", value: "MLOps" },
+    { label: "Business Intelligence", value: "Business Intelligence" },
+    { label: "Generative AI & LLMs", value: "Generative AI & LLMs" },
+    { label: "AI Ethics & Governance", value: "AI Ethics & Governance" },
+    { label: "Quantitative Research", value: "Quantitative Research" },
+  ],
+  "Finance & Investment": [
+    { label: "Stock Market & Trading", value: "Stock Market & Trading" },
+    { label: "Mutual Funds & SIP", value: "Mutual Funds & SIP" },
+    { label: "Personal Finance Planning", value: "Personal Finance Planning" },
+    { label: "Cryptocurrency & Web3", value: "Cryptocurrency & Web3" },
+    { label: "Tax Planning & Filing", value: "Tax Planning & Filing" },
+    { label: "Investment Banking", value: "Investment Banking" },
+    { label: "Real Estate Investment", value: "Real Estate Investment" },
+    { label: "Insurance Planning", value: "Insurance Planning" },
+    { label: "Retirement Planning", value: "Retirement Planning" },
+    { label: "Corporate Finance", value: "Corporate Finance" },
+    { label: "Forex & Commodities", value: "Forex & Commodities" },
+    { label: "Financial Modeling", value: "Financial Modeling" },
+  ],
+  "Marketing & Branding": [
+    { label: "Digital Marketing", value: "Digital Marketing" },
+    { label: "Social Media Marketing", value: "Social Media Marketing" },
+    { label: "SEO & SEM", value: "SEO & SEM" },
+    { label: "Content Marketing", value: "Content Marketing" },
+    { label: "Brand Strategy", value: "Brand Strategy" },
+    { label: "Email Marketing", value: "Email Marketing" },
+    { label: "Influencer Marketing", value: "Influencer Marketing" },
+    { label: "Performance Marketing", value: "Performance Marketing" },
+    { label: "Video & YouTube Marketing", value: "Video & YouTube Marketing" },
+    { label: "E-commerce Marketing", value: "E-commerce Marketing" },
+    { label: "Public Relations", value: "Public Relations" },
+    {
+      label: "Market Research & Analytics",
+      value: "Market Research & Analytics",
+    },
+  ],
+  "Health & Wellness": [
+    { label: "Nutrition & Dietetics", value: "Nutrition & Dietetics" },
+    {
+      label: "Mental Health & Counseling",
+      value: "Mental Health & Counseling",
+    },
+    {
+      label: "Fitness & Personal Training",
+      value: "Fitness & Personal Training",
+    },
+    { label: "Yoga & Meditation", value: "Yoga & Meditation" },
+    { label: "Ayurveda", value: "Ayurveda" },
+    { label: "Physiotherapy", value: "Physiotherapy" },
+    { label: "Women's Health", value: "Women's Health" },
+    { label: "Child & Pediatric Health", value: "Child & Pediatric Health" },
+    {
+      label: "Chronic Disease Management",
+      value: "Chronic Disease Management",
+    },
+    { label: "Sports Medicine", value: "Sports Medicine" },
+    { label: "Homeopathy", value: "Homeopathy" },
+    { label: "Naturopathy", value: "Naturopathy" },
+  ],
+  "Legal Advisory": [
+    { label: "Corporate & Company Law", value: "Corporate & Company Law" },
+    { label: "Family & Matrimonial Law", value: "Family & Matrimonial Law" },
+    { label: "Criminal Law", value: "Criminal Law" },
+    { label: "Intellectual Property Law", value: "Intellectual Property Law" },
+    { label: "Startup & Business Legal", value: "Startup & Business Legal" },
+    {
+      label: "Property & Real Estate Law",
+      value: "Property & Real Estate Law",
+    },
+    { label: "Cyber Law", value: "Cyber Law" },
+    { label: "Labour & Employment Law", value: "Labour & Employment Law" },
+    { label: "Tax & GST Law", value: "Tax & GST Law" },
+    { label: "Constitutional Law", value: "Constitutional Law" },
+    { label: "Consumer Rights", value: "Consumer Rights" },
+  ],
+  "Business Strategy": [
+    { label: "Startup Consulting", value: "Startup Consulting" },
+    { label: "Operations Management", value: "Operations Management" },
+    {
+      label: "Product Strategy & Roadmap",
+      value: "Product Strategy & Roadmap",
+    },
+    { label: "Growth Hacking", value: "Growth Hacking" },
+    { label: "Business Development", value: "Business Development" },
+    { label: "Franchising & Licensing", value: "Franchising & Licensing" },
+    { label: "Supply Chain Management", value: "Supply Chain Management" },
+    { label: "Project Management", value: "Project Management" },
+    {
+      label: "Fundraising & Investor Pitch",
+      value: "Fundraising & Investor Pitch",
+    },
+    { label: "International Business", value: "International Business" },
+    { label: "E-commerce Strategy", value: "E-commerce Strategy" },
+  ],
+  "Education & Tutoring": [
+    { label: "Mathematics", value: "Mathematics" },
+    {
+      label: "Science (Physics/Chemistry/Biology)",
+      value: "Science (Physics/Chemistry/Biology)",
+    },
+    {
+      label: "English Language & Grammar",
+      value: "English Language & Grammar",
+    },
+    {
+      label: "Competitive Exams (JEE/NEET/UPSC)",
+      value: "Competitive Exams (JEE/NEET/UPSC)",
+    },
+    {
+      label: "Coding for Kids & Beginners",
+      value: "Coding for Kids & Beginners",
+    },
+    { label: "History & Social Studies", value: "History & Social Studies" },
+    { label: "Commerce & Accountancy", value: "Commerce & Accountancy" },
+    { label: "Foreign Language Teaching", value: "Foreign Language Teaching" },
+    { label: "Special Education", value: "Special Education" },
+    { label: "Music & Arts Education", value: "Music & Arts Education" },
+    { label: "Sports Coaching", value: "Sports Coaching" },
+  ],
+  "Human Resources": [
+    {
+      label: "Talent Acquisition & Recruitment",
+      value: "Talent Acquisition & Recruitment",
+    },
+    {
+      label: "HR Operations & Compliance",
+      value: "HR Operations & Compliance",
+    },
+    {
+      label: "Learning & Development (L&D)",
+      value: "Learning & Development (L&D)",
+    },
+    { label: "Performance Management", value: "Performance Management" },
+    {
+      label: "Employee Relations & Engagement",
+      value: "Employee Relations & Engagement",
+    },
+    { label: "Payroll & Compensation", value: "Payroll & Compensation" },
+    { label: "Diversity & Inclusion", value: "Diversity & Inclusion" },
+    { label: "HR Analytics", value: "HR Analytics" },
+    {
+      label: "Organizational Development",
+      value: "Organizational Development",
+    },
+    { label: "Leadership Coaching", value: "Leadership Coaching" },
+  ],
+  "Civil Services & Government": [
+    {
+      label: "UPSC Civil Services (IAS/IPS/IFS)",
+      value: "UPSC Civil Services (IAS/IPS/IFS)",
+    },
+    { label: "State PSC Exams", value: "State PSC Exams" },
+    { label: "Banking & Insurance Exams", value: "Banking & Insurance Exams" },
+    { label: "SSC & Railway Exams", value: "SSC & Railway Exams" },
+    {
+      label: "Defence Services (NDA/CDS/CAPF)",
+      value: "Defence Services (NDA/CDS/CAPF)",
+    },
+    {
+      label: "Government Policy & Governance",
+      value: "Government Policy & Governance",
+    },
+    { label: "Public Administration", value: "Public Administration" },
+  ],
+  "Architecture & Design": [
+    { label: "Residential Architecture", value: "Residential Architecture" },
+    { label: "Interior Design", value: "Interior Design" },
+    { label: "Urban & Landscape Design", value: "Urban & Landscape Design" },
+    { label: "UI/UX Design", value: "UI/UX Design" },
+    { label: "Graphic Design", value: "Graphic Design" },
+    {
+      label: "Product & Industrial Design",
+      value: "Product & Industrial Design",
+    },
+    { label: "Fashion Design", value: "Fashion Design" },
+    { label: "3D Modeling & Rendering", value: "3D Modeling & Rendering" },
+  ],
+  "Media & Journalism": [
+    {
+      label: "Print & Digital Journalism",
+      value: "Print & Digital Journalism",
+    },
+    { label: "Broadcast & TV Journalism", value: "Broadcast & TV Journalism" },
+    { label: "Photography & Videography", value: "Photography & Videography" },
+    { label: "Film Making & Direction", value: "Film Making & Direction" },
+    {
+      label: "Podcast & Audio Production",
+      value: "Podcast & Audio Production",
+    },
+    {
+      label: "Content Writing & Copywriting",
+      value: "Content Writing & Copywriting",
+    },
+    {
+      label: "Social Media Content Creation",
+      value: "Social Media Content Creation",
+    },
+  ],
+  "Agriculture & Farming": [
+    { label: "Organic Farming", value: "Organic Farming" },
+    {
+      label: "Hydroponics & Vertical Farming",
+      value: "Hydroponics & Vertical Farming",
+    },
+    { label: "Agri Business & Marketing", value: "Agri Business & Marketing" },
+    { label: "Animal Husbandry & Dairy", value: "Animal Husbandry & Dairy" },
+    {
+      label: "Horticulture & Floriculture",
+      value: "Horticulture & Floriculture",
+    },
+    { label: "Government Agri Schemes", value: "Government Agri Schemes" },
+    { label: "Farm Management", value: "Farm Management" },
+  ],
+  "Hospitality & Tourism": [
+    { label: "Hotel & Resort Management", value: "Hotel & Resort Management" },
+    { label: "Travel & Tourism Planning", value: "Travel & Tourism Planning" },
+    {
+      label: "Food & Beverage Management",
+      value: "Food & Beverage Management",
+    },
+    {
+      label: "Event Planning & Management",
+      value: "Event Planning & Management",
+    },
+    { label: "Culinary Arts & Cooking", value: "Culinary Arts & Cooking" },
+    {
+      label: "Airlines & Airport Operations",
+      value: "Airlines & Airport Operations",
+    },
+  ],
+};
 
 const QUALIFICATION_OPTIONS = [
   { label: "Graduate", value: "Graduate" },
@@ -109,14 +690,14 @@ const LOCATION_OPTIONS = [
   { label: "Pune", value: "Pune" },
   { label: "Nashik", value: "Nashik" },
   { label: "Nagpur", value: "Nagpur" },
+  { label: "Chhatrapati Sambhajinagar", value: "Chhatrapati Sambhajinagar" },
   { label: "Other", value: "Other" },
 ];
 
-// ─── Dropdown Picker ──────────────────────────────────────────────────────────
+// ── Dropdown ──────────────────────────────────────────────────────────────
 function DropdownPicker({ label, value, options, onChange }) {
   const [visible, setVisible] = useState(false);
   const selected = options.find((o) => o.value === value);
-
   return (
     <>
       <TouchableOpacity
@@ -178,21 +759,26 @@ function DropdownPicker({ label, value, options, onChange }) {
   );
 }
 
-// ─── Skills Picker ────────────────────────────────────────────────────────────
-function SkillsPicker({ selectedSkills, onChange }) {
+// ── Skills picker ─────────────────────────────────────────────────────────
+function SkillsPicker({ selectedSkills, onChange, domain }) {
   const [visible, setVisible] = useState(false);
   const [customSkill, setCustomSkill] = useState("");
+
+  const skillList =
+    domain && DOMAIN_SKILLS_MAP[domain]
+      ? DOMAIN_SKILLS_MAP[domain]
+      : SKILL_OPTIONS;
 
   const toggleSkill = (skill) => {
     if (selectedSkills.includes(skill)) {
       onChange(selectedSkills.filter((s) => s !== skill));
-    } else {
-      if (selectedSkills.length >= 5) {
-        Alert.alert("Max 5 skills", "You can select up to 5 skills");
-        return;
-      }
-      onChange([...selectedSkills, skill]);
+      return;
     }
+    if (selectedSkills.length >= 5) {
+      Alert.alert("Max 5 skills", "You can select up to 5 skills");
+      return;
+    }
+    onChange([...selectedSkills, skill]);
   };
 
   const addCustomSkill = () => {
@@ -251,6 +837,19 @@ function SkillsPicker({ selectedSkills, onChange }) {
         <View style={[modalStyles.sheet, { maxHeight: "70%" }]}>
           <View style={modalStyles.handle} />
           <Text style={modalStyles.title}>Select Skills (max 5)</Text>
+          {domain && DOMAIN_SKILLS_MAP[domain] && (
+            <Text
+              style={{
+                color: TEAL,
+                textAlign: "center",
+                marginBottom: 2,
+                fontSize: 12,
+                fontWeight: "600",
+              }}
+            >
+              Skills for: {domain}
+            </Text>
+          )}
           <Text style={modalStyles.subtitle}>
             {selectedSkills.length}/5 selected
           </Text>
@@ -270,7 +869,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
             </TouchableOpacity>
           </View>
           <FlatList
-            data={SKILL_OPTIONS}
+            data={skillList}
             keyExtractor={(item) => item}
             renderItem={({ item }) => {
               const isSelected = selectedSkills.includes(item);
@@ -309,7 +908,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
   );
 }
 
-// ─── Languages Picker ─────────────────────────────────────────────────────────
+// ── Languages picker ──────────────────────────────────────────────────────
 function LanguagesPicker({ selectedLanguages, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customLang, setCustomLang] = useState("");
@@ -356,7 +955,7 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
               <Text style={styles.chipText}>{lang}</Text>
               <Ionicons
                 name="close"
-                size={13}
+                size={14}
                 color="#fff"
                 style={{ marginLeft: 4 }}
               />
@@ -441,10 +1040,10 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   );
 }
 
-// ─── Reusable Field Label ─────────────────────────────────────────────────────
+// ── Reusable Field Label ──────────────────────────────────────────────────
 const FieldLabel = ({ text }) => <Text style={styles.fieldLabel}>{text}</Text>;
 
-// ─── Reusable Input Field ─────────────────────────────────────────────────────
+// ── Reusable Input Field ──────────────────────────────────────────────────
 function InputField({
   label,
   value,
@@ -471,7 +1070,7 @@ function InputField({
   );
 }
 
-// ─── Section Header ───────────────────────────────────────────────────────────
+// ── Section Header ────────────────────────────────────────────────────────
 const SectionHeader = ({ icon, title }) => (
   <View style={styles.sectionHeader}>
     <View style={styles.sectionIconWrap}>
@@ -481,7 +1080,7 @@ const SectionHeader = ({ icon, title }) => (
   </View>
 );
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────
 const EditProfile = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -495,6 +1094,7 @@ const EditProfile = () => {
     email: "",
     mobile: "",
     domain: "",
+    sub_domain: "",
     qualification: "",
     experience: "",
     dob: "",
@@ -516,7 +1116,13 @@ const EditProfile = () => {
   const updateForm = (field, value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  // ── Fetch Profile ────────────────────────────────────────────────────────
+  // Reset sub_domain + skills when domain changes
+  const handleDomainChange = (value) => {
+    setForm((prev) => ({ ...prev, domain: value, sub_domain: "" }));
+    setSelectedSkills([]);
+  };
+
+  // ── Fetch Profile ─────────────────────────────────────────────────────
   const fetchProfile = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -532,6 +1138,7 @@ const EditProfile = () => {
         email: user.email || "",
         mobile: user.mobile || "",
         domain: user.domain || "",
+        sub_domain: user.sub_domain || "",
         qualification: user.qualification || "",
         experience: user.experience != null ? String(user.experience) : "",
         dob: user.dob || "",
@@ -542,7 +1149,8 @@ const EditProfile = () => {
         years_of_experience: user.years_of_experience || "",
         linkedin: user.linkedin || "",
         image_file: null,
-        image_url: user.image ? `${BASE_URL}/uploads/${user.image}` : "",
+        // ✅ FIXED: use getImageUri helper so Cloudinary URLs are not double-prefixed
+        image_url: user.image ? getImageUri(user.image) : "",
         existing_cv: user.cvFile || user.cv || "",
       }));
 
@@ -560,6 +1168,7 @@ const EditProfile = () => {
               ...prev,
               full_name: ep.name || prev.full_name,
               domain: ep.domain || prev.domain,
+              sub_domain: ep.sub_domain || prev.sub_domain,
               experience:
                 ep.experience != null ? String(ep.experience) : prev.experience,
               bio: ep.bio || "",
@@ -570,9 +1179,8 @@ const EditProfile = () => {
                 ep.years_of_experience != null
                   ? String(ep.years_of_experience)
                   : prev.years_of_experience,
-              image_url: ep.image
-                ? `${BASE_URL}/uploads/${ep.image}`
-                : prev.image_url,
+              // ✅ FIXED: use getImageUri helper so Cloudinary URLs are not double-prefixed
+              image_url: ep.image ? getImageUri(ep.image) : prev.image_url,
               existing_cv: ep.cv || prev.existing_cv,
             }));
             if (ep.skills && ep.skills.length > 0) {
@@ -602,7 +1210,7 @@ const EditProfile = () => {
     fetchProfile();
   }, []);
 
-  // ── Pick Image ───────────────────────────────────────────────────────────
+  // ── Pick Image ────────────────────────────────────────────────────────
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -623,13 +1231,13 @@ const EditProfile = () => {
     }
   };
 
-  // ── Pick CV ──────────────────────────────────────────────────────────────
+  // ── Pick CV ───────────────────────────────────────────────────────────
   const pickCV = async () => {
     const result = await DocumentPicker.getDocumentAsync({});
     if (!result.canceled) updateForm("cv_file", result.assets[0]);
   };
 
-  // ── Save Profile ─────────────────────────────────────────────────────────
+  // ── Save Profile ──────────────────────────────────────────────────────
   const saveProfile = async () => {
     try {
       setSaving(true);
@@ -640,6 +1248,7 @@ const EditProfile = () => {
       formData.append("email", form.email);
       formData.append("mobile", form.mobile);
       formData.append("domain", form.domain);
+      formData.append("sub_domain", form.sub_domain || "");
       formData.append("qualification", form.qualification);
       formData.append("experience", form.experience);
       formData.append("dob", form.dob);
@@ -678,6 +1287,7 @@ const EditProfile = () => {
           type: ext === "pdf" ? "application/pdf" : `image/${ext}`,
         });
       }
+
       await axios.post(`${BASE_URL}/api/users/save-profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -689,6 +1299,7 @@ const EditProfile = () => {
         const expertFormData = new FormData();
         expertFormData.append("fullName", form.full_name);
         expertFormData.append("domain", form.domain);
+        expertFormData.append("sub_domain", form.sub_domain || "");
         expertFormData.append("bio", form.bio);
         expertFormData.append("location", form.location);
         expertFormData.append("certification", form.certification);
@@ -721,11 +1332,11 @@ const EditProfile = () => {
         });
       }
 
-      Alert.alert("Success", "Profile Updated Successfully", [
+      Alert.alert("✅ Success", "Profile Updated Successfully", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (err) {
-      console.log("Save error:", err.response?.data || err.message);
+      console.log("❌ Save error:", err.response?.data || err.message);
       Alert.alert(
         "Error",
         err.response?.data?.message || "Profile update failed. Try again.",
@@ -735,7 +1346,7 @@ const EditProfile = () => {
     }
   };
 
-  // ── Loading ──────────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.loadingScreen}>
@@ -745,282 +1356,219 @@ const EditProfile = () => {
     );
   }
 
+  // Compute sub-domain options based on current domain
+  const subDomainOptions = SUBDOMAIN_MAP[form.domain] || [];
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={{ flex: 1 }}
     >
-      <StatusBar backgroundColor={TEAL} barStyle="light-content" />
-
-      {/* ── TOP HEADER ── */}
-      <View style={styles.topHeader}>
-        <TouchableOpacity
-          style={styles.headerBack}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={22} color="#fff" />
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* ── Profile Image ── */}
+        <TouchableOpacity onPress={pickImage} style={styles.imageContainer}>
+          <Image
+            source={{
+              uri: form.image_url || "https://via.placeholder.com/150",
+            }}
+            style={styles.profileImage}
+          />
+          <View style={styles.cameraIcon}>
+            <Ionicons name="camera" size={18} color="#fff" />
+          </View>
+          <Text style={styles.changePhoto}>Change Photo</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={{ width: 38 }} />
-      </View>
 
-      <ScrollView
-        style={{ backgroundColor: PAGE_BG }}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* ── AVATAR SECTION ── */}
-        <View style={styles.avatarSection}>
-          <TouchableOpacity
-            onPress={pickImage}
-            style={styles.avatarWrap}
-            activeOpacity={0.85}
-          >
-            <Image
-              source={{
-                uri: form.image_url || "https://via.placeholder.com/150",
-              }}
-              style={styles.avatar}
-            />
-            <View style={styles.cameraOverlay}>
-              <Ionicons name="camera" size={18} color="#fff" />
-            </View>
-          </TouchableOpacity>
-          <Text style={styles.changePhotoText}>Tap to change photo</Text>
-        </View>
+        {/* ── Basic Info ── */}
+        <Text style={styles.sectionTitle}>Basic Information</Text>
+        <InputField
+          label="Full Name"
+          value={form.full_name}
+          field="full_name"
+          setForm={setForm}
+          form={form}
+        />
+        <Text style={styles.label}>Email</Text>
+        <TextInput
+          style={[styles.input, { color: "#999" }]}
+          value={form.email}
+          editable={false}
+        />
+        <InputField
+          label="Mobile"
+          value={form.mobile}
+          field="mobile"
+          setForm={setForm}
+          form={form}
+          keyboardType="phone-pad"
+        />
 
-        {/* ── BASIC INFO CARD ── */}
-        <View style={styles.card}>
-          <SectionHeader icon="person-outline" title="Basic Information" />
+        {/* ── Domain ── */}
+        <Text style={styles.label}>Domain</Text>
+        <DropdownPicker
+          label="Domain"
+          value={form.domain}
+          options={DOMAIN_OPTIONS}
+          onChange={handleDomainChange}
+        />
 
-          <View style={styles.fieldGroup}>
-            <FieldLabel text="Full Name" />
-            <TextInput
-              value={form.full_name}
-              onChangeText={(text) => setForm({ ...form, full_name: text })}
-              style={styles.input}
-              placeholderTextColor={TEXT_2}
-              placeholder="Enter your full name"
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <FieldLabel text="Email" />
-            <TextInput
-              value={form.email}
-              style={[styles.input, styles.inputDisabled]}
-              editable={false}
-              placeholderTextColor={TEXT_2}
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <FieldLabel text="Mobile" />
-            <TextInput
-              value={form.mobile}
-              onChangeText={(text) => setForm({ ...form, mobile: text })}
-              style={styles.input}
-              keyboardType="phone-pad"
-              placeholderTextColor={TEXT_2}
-              placeholder="Enter mobile number"
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <FieldLabel text="Domain" />
+        {/* Sub-Domain — only shows when domain is selected */}
+        {subDomainOptions.length > 0 && (
+          <>
+            <Text style={styles.label}>Sub-Domain</Text>
             <DropdownPicker
-              label="Domain"
-              value={form.domain}
-              options={DOMAIN_OPTIONS}
-              onChange={(v) => updateForm("domain", v)}
+              label="Sub-Domain"
+              value={form.sub_domain}
+              options={subDomainOptions}
+              onChange={(v) => updateForm("sub_domain", v)}
             />
-          </View>
+          </>
+        )}
 
-          <View style={styles.fieldGroup}>
-            <FieldLabel text="Qualification" />
-            <DropdownPicker
-              label="Qualification"
-              value={form.qualification}
-              options={QUALIFICATION_OPTIONS}
-              onChange={(v) => updateForm("qualification", v)}
-            />
-          </View>
+        {/* ── Qualification ── */}
+        <Text style={styles.label}>Qualification</Text>
+        <DropdownPicker
+          label="Qualification"
+          value={form.qualification}
+          options={QUALIFICATION_OPTIONS}
+          onChange={(v) => updateForm("qualification", v)}
+        />
 
-          <View style={styles.fieldGroup}>
-            <FieldLabel text="Experience" />
-            <DropdownPicker
-              label="Experience"
-              value={form.experience}
-              options={EXPERIENCE_OPTIONS}
-              onChange={(v) => updateForm("experience", v)}
-            />
-          </View>
+        {/* ── Experience ── */}
+        <Text style={styles.label}>Experience</Text>
+        <DropdownPicker
+          label="Experience"
+          value={form.experience}
+          options={EXPERIENCE_OPTIONS}
+          onChange={(v) => updateForm("experience", v)}
+        />
 
-          <View style={styles.fieldGroup}>
-            <FieldLabel text="Date of Birth" />
-            <TextInput
-              value={form.dob}
-              onChangeText={(text) => setForm({ ...form, dob: text })}
-              style={styles.input}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={TEXT_2}
-            />
-          </View>
+        <InputField
+          label="Date of Birth (YYYY-MM-DD)"
+          value={form.dob}
+          field="dob"
+          setForm={setForm}
+          form={form}
+          placeholder="e.g. 1995-06-15"
+        />
 
-          {/* CV Upload */}
-          <View style={styles.fieldGroup}>
-            <FieldLabel text="CV / Resume" />
-            <TouchableOpacity
-              style={styles.uploadBox}
-              onPress={pickCV}
-              activeOpacity={0.7}
-            >
-              <View style={styles.uploadIconWrap}>
-                <Ionicons
-                  name="document-attach-outline"
-                  size={20}
-                  color={TEAL}
-                />
-              </View>
-              <Text style={styles.uploadText} numberOfLines={1}>
-                {form.cv_file
-                  ? form.cv_file.name
-                  : form.existing_cv
-                    ? `Current: ${form.existing_cv}`
-                    : "Choose CV File (PDF/Image)"}
-              </Text>
-              <Ionicons name="chevron-forward" size={16} color={TEXT_2} />
-            </TouchableOpacity>
-          </View>
-        </View>
+        {/* ── CV ── */}
+        <Text style={styles.label}>CV / Resume</Text>
+        <TouchableOpacity style={styles.uploadBtn} onPress={pickCV}>
+          <Ionicons name="document-attach-outline" size={20} color={TEAL} />
+          <Text style={styles.uploadBtnText}>
+            {form.cv_file
+              ? form.cv_file.name
+              : form.existing_cv
+                ? // ✅ FIXED: show only filename/short label, not full Cloudinary URL
+                  "📄 CV Uploaded ✓"
+                : "Choose CV File"}
+          </Text>
+          {/* ✅ Show a change icon if CV already exists */}
+          {(form.cv_file || form.existing_cv) && (
+            <Ionicons name="pencil-outline" size={16} color={TEAL} />
+          )}
+        </TouchableOpacity>
 
-        {/* ── JOBSEEKER DETAILS ── */}
+        {/* ── Jobseeker Only ── */}
         {!isExpert && (
-          <View style={styles.card}>
-            <SectionHeader icon="briefcase-outline" title="Jobseeker Details" />
-
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Skills" />
-              <TextInput
-                value={form.skills}
-                onChangeText={(text) => setForm({ ...form, skills: text })}
-                style={styles.input}
-                placeholderTextColor={TEXT_2}
-                placeholder="e.g. React, Python"
-              />
-            </View>
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Preferred Job Role" />
-              <TextInput
-                value={form.preferred_job_role}
-                onChangeText={(text) =>
-                  setForm({ ...form, preferred_job_role: text })
-                }
-                style={styles.input}
-                placeholderTextColor={TEXT_2}
-                placeholder="e.g. Frontend Developer"
-              />
-            </View>
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Current Status" />
-              <TextInput
-                value={form.current_status}
-                onChangeText={(text) =>
-                  setForm({ ...form, current_status: text })
-                }
-                style={styles.input}
-                placeholderTextColor={TEXT_2}
-                placeholder="Student / Fresher / Working"
-              />
-            </View>
-          </View>
+          <>
+            <Text style={styles.sectionTitle}>Jobseeker Details</Text>
+            <InputField
+              label="Skills"
+              value={form.skills}
+              field="skills"
+              setForm={setForm}
+              form={form}
+            />
+            <InputField
+              label="Preferred Job Role"
+              value={form.preferred_job_role}
+              field="preferred_job_role"
+              setForm={setForm}
+              form={form}
+            />
+            <InputField
+              label="Current Status (Student / Fresher)"
+              value={form.current_status}
+              field="current_status"
+              setForm={setForm}
+              form={form}
+            />
+          </>
         )}
 
-        {/* ── EXPERT DETAILS ── */}
+        {/* ── Expert Only ── */}
         {isExpert && (
-          <View style={styles.card}>
-            <SectionHeader icon="star-outline" title="Expert Details" />
-
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Skills (max 5)" />
-              <SkillsPicker
-                selectedSkills={selectedSkills}
-                onChange={setSelectedSkills}
-              />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Languages Known" />
-              <LanguagesPicker
-                selectedLanguages={selectedLanguages}
-                onChange={setSelectedLanguages}
-              />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Location / City" />
-              <DropdownPicker
-                label="Location"
-                value={form.location}
-                options={LOCATION_OPTIONS}
-                onChange={(v) => updateForm("location", v)}
-              />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Certification" />
-              <TextInput
-                value={form.certification}
-                onChangeText={(text) =>
-                  setForm({ ...form, certification: text })
-                }
-                style={styles.input}
-                placeholderTextColor={TEXT_2}
-                placeholder="e.g. AWS, PMP, MBA"
-              />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Bio" />
-              <TextInput
-                value={form.bio}
-                onChangeText={(text) => updateForm("bio", text)}
-                style={[styles.input, styles.textArea]}
-                multiline
-                placeholderTextColor={TEXT_2}
-                placeholder="Write a short bio about yourself"
-                textAlignVertical="top"
-              />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Expertise" />
-              <TextInput
-                value={form.expertise}
-                onChangeText={(text) => setForm({ ...form, expertise: text })}
-                style={styles.input}
-                placeholderTextColor={TEXT_2}
-                placeholder="Your area of expertise"
-              />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <FieldLabel text="Years of Experience" />
-              <TextInput
-                value={form.years_of_experience}
-                onChangeText={(text) =>
-                  setForm({ ...form, years_of_experience: text })
-                }
-                style={styles.input}
-                keyboardType="numeric"
-                placeholderTextColor={TEXT_2}
-                placeholder="e.g. 5"
-              />
-            </View>
-          </View>
+          <>
+            <Text style={styles.sectionTitle}>Expert Details</Text>
+            <Text style={styles.label}>Skills (max 5)</Text>
+            {form.domain && DOMAIN_SKILLS_MAP[form.domain] && (
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: TEAL,
+                  marginTop: 4,
+                  marginBottom: 2,
+                  fontWeight: "600",
+                }}
+              >
+                💡 Showing skills for: {form.domain}
+              </Text>
+            )}
+            <SkillsPicker
+              selectedSkills={selectedSkills}
+              onChange={setSelectedSkills}
+              domain={form.domain}
+            />
+            <Text style={styles.label}>Languages Known</Text>
+            <LanguagesPicker
+              selectedLanguages={selectedLanguages}
+              onChange={setSelectedLanguages}
+            />
+            <Text style={styles.label}>Location / City</Text>
+            <DropdownPicker
+              label="Location"
+              value={form.location}
+              options={LOCATION_OPTIONS}
+              onChange={(v) => updateForm("location", v)}
+            />
+            <InputField
+              label="Certification"
+              value={form.certification}
+              field="certification"
+              setForm={setForm}
+              form={form}
+              placeholder="e.g. AWS, PMP, MBA"
+            />
+            <Text style={styles.label}>Bio</Text>
+            <TextInput
+              value={form.bio}
+              onChangeText={(text) => updateForm("bio", text)}
+              style={[styles.input, { height: 100, textAlignVertical: "top" }]}
+              multiline
+              placeholder="Write a short bio about yourself"
+              placeholderTextColor={TEXT_2}
+            />
+            <InputField
+              label="Expertise"
+              value={form.expertise}
+              field="expertise"
+              setForm={setForm}
+              form={form}
+            />
+            <InputField
+              label="Years of Experience"
+              value={form.years_of_experience}
+              field="years_of_experience"
+              setForm={setForm}
+              form={form}
+              keyboardType="numeric"
+            />
+          </>
         )}
 
-        {/* ── SAVE BUTTON ── */}
+        {/* ── Save Button ── */}
         <TouchableOpacity
           style={styles.saveBtn}
           onPress={saveProfile}
@@ -1047,8 +1595,9 @@ const EditProfile = () => {
 
 export default EditProfile;
 
-// ── STYLES ──────────────────────────────────────────────────────────────────
+// ── Styles ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
+  container: { padding: 16, paddingBottom: 50, backgroundColor: PAGE_BG },
   loadingScreen: {
     flex: 1,
     justifyContent: "center",
@@ -1056,67 +1605,19 @@ const styles = StyleSheet.create({
     backgroundColor: PAGE_BG,
     gap: 12,
   },
-  loadingText: {
-    color: TEAL,
-    fontSize: 14,
-    fontWeight: "600",
-  },
-
-  // ── Top header ──
-  topHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: TEAL,
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === "android" ? 44 : 16,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-  },
-  headerBack: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#fff",
-    letterSpacing: -0.2,
-  },
-
-  // ── Scroll ──
-  scrollContent: {
-    padding: 16,
-    paddingBottom: 50,
-  },
-
-  // ── Avatar ──
-  avatarSection: {
-    alignItems: "center",
-    marginBottom: 16,
-    paddingTop: 8,
-  },
-  avatarWrap: {
-    position: "relative",
-  },
-  avatar: {
+  loadingText: { color: TEAL, fontSize: 14, fontWeight: "600" },
+  imageContainer: { alignItems: "center", marginBottom: 20, paddingTop: 8 },
+  profileImage: {
     width: 100,
     height: 100,
     borderRadius: 50,
     borderWidth: 3,
     borderColor: TEAL,
   },
-  cameraOverlay: {
+  cameraIcon: {
     position: "absolute",
-    bottom: 0,
-    right: 0,
+    bottom: 24,
+    right: "35%",
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -1126,25 +1627,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#fff",
   },
-  changePhotoText: {
-    color: TEAL,
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 8,
-  },
-
-  // ── Card ──
-  card: {
-    backgroundColor: CARD_BG,
-    borderRadius: 18,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: BORDER,
-    elevation: 1,
-  },
-
-  // ── Section header ──
+  changePhoto: { color: TEAL, fontSize: 13, fontWeight: "600", marginTop: 8 },
   sectionHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -1167,18 +1650,23 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: TEAL,
     letterSpacing: -0.1,
+    marginTop: 16,
+    marginBottom: 8,
   },
-
-  // ── Field ──
-  fieldGroup: {
-    marginBottom: 14,
-  },
+  fieldGroup: { marginBottom: 14 },
   fieldLabel: {
     fontSize: 12,
     fontWeight: "700",
     color: TEXT_2,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+    marginBottom: 6,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: TEXT_2,
+    marginTop: 12,
     marginBottom: 6,
   },
   input: {
@@ -1192,15 +1680,7 @@ const styles = StyleSheet.create({
     color: TEXT_1,
     fontWeight: "500",
   },
-  inputDisabled: {
-    backgroundColor: "#f0f0f0",
-    color: TEXT_2,
-  },
-  textArea: {
-    height: 100,
-  },
-
-  // ── Dropdown ──
+  inputDisabled: { backgroundColor: "#f0f0f0", color: TEXT_2 },
   dropdownBox: {
     backgroundColor: INPUT_BG,
     borderWidth: 1,
@@ -1212,35 +1692,18 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
   },
-
-  // ── Upload box ──
-  uploadBox: {
+  uploadBtn: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: TEAL_LIGHT,
     borderWidth: 1,
-    borderColor: "#b8d8d2",
+    borderColor: BORDER,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 13,
     gap: 10,
   },
-  uploadIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  uploadText: {
-    flex: 1,
-    fontSize: 14,
-    color: TEAL,
-    fontWeight: "600",
-  },
-
-  // ── Skills/Language chips ──
+  uploadBtnText: { flex: 1, fontSize: 14, color: TEAL, fontWeight: "600" },
   chipsWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1252,10 +1715,7 @@ const styles = StyleSheet.create({
     padding: 12,
     minHeight: 48,
   },
-  chipsEmpty: {
-    color: TEXT_2,
-    fontSize: 13,
-  },
+  chipsEmpty: { color: TEXT_2, fontSize: 13 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
@@ -1264,11 +1724,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: 20,
   },
-  chipText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "700",
-  },
+  chipText: { color: "#fff", fontSize: 12, fontWeight: "700" },
   addChipBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1283,13 +1739,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: TEAL_LIGHT,
   },
-  addChipText: {
-    color: TEAL,
-    fontWeight: "700",
-    fontSize: 13,
-  },
-
-  // ── Save button ──
+  addChipText: { color: TEAL, fontWeight: "700", fontSize: 13 },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -1298,25 +1748,18 @@ const styles = StyleSheet.create({
     backgroundColor: TEAL,
     paddingVertical: 16,
     borderRadius: 16,
-    marginTop: 4,
+    marginTop: 20,
     elevation: 3,
     shadowColor: TEAL,
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
-  saveBtnText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 16,
-  },
+  saveBtnText: { color: "#fff", fontWeight: "800", fontSize: 16 },
 });
 
 // ── Modal styles ───────────────────────────────────────────────────────────
 const modalStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
   sheet: {
     backgroundColor: CARD_BG,
     borderTopLeftRadius: 24,
@@ -1356,24 +1799,10 @@ const modalStyles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
   },
-  itemSelected: {
-    backgroundColor: TEAL_LIGHT,
-    borderRadius: 10,
-  },
-  itemText: {
-    fontSize: 15,
-    color: TEXT_1,
-    fontWeight: "400",
-  },
-  itemTextSelected: {
-    color: TEAL,
-    fontWeight: "700",
-  },
-  customRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 12,
-  },
+  itemSelected: { backgroundColor: TEAL_LIGHT, borderRadius: 10 },
+  itemText: { fontSize: 15, color: TEXT_1, fontWeight: "400" },
+  itemTextSelected: { color: TEAL, fontWeight: "700" },
+  customRow: { flexDirection: "row", gap: 8, marginBottom: 12 },
   customInput: {
     flex: 1,
     backgroundColor: INPUT_BG,
@@ -1392,11 +1821,7 @@ const modalStyles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  customAddText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 14,
-  },
+  customAddText: { color: "#fff", fontWeight: "800", fontSize: 14 },
   doneBtn: {
     backgroundColor: TEAL,
     paddingVertical: 13,
@@ -1404,9 +1829,5 @@ const modalStyles = StyleSheet.create({
     alignItems: "center",
     marginTop: 12,
   },
-  doneBtnText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 15,
-  },
+  doneBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });

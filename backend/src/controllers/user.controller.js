@@ -18,6 +18,7 @@ const saveProfile = async (req, res) => {
       qualification,
       experience,
       domain,
+      sub_domain,
       role,
       bio,
       location,
@@ -55,6 +56,7 @@ const saveProfile = async (req, res) => {
     if (qualification) updateData.qualification = qualification;
     if (experience) updateData.experience = experience;
     if (domain) updateData.domain = domain;
+    if (sub_domain) updateData.sub_domain = sub_domain;
     if (role) updateData.role = role;
 
     if (imageUrl) updateData.image = imageUrl;
@@ -76,7 +78,8 @@ const saveProfile = async (req, res) => {
       const expertData = {
         name: fullName || req.user.fullName,
         experience: parseInt(experience) || 0,
-        domain: domain || null,
+                domain: domain || null,
+        sub_domain: sub_domain || null,
         bio: bio || null,
         location: location || null,
         language_spoken: languages || null,
