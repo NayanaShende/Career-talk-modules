@@ -2,27 +2,67 @@
 
 module.exports = {
   async up(queryInterface, Sequelize) {
-    // ✅ Add comment column
-    await queryInterface.addColumn("Reviews", "comment", {
-      type: Sequelize.TEXT,
-      allowNull: true,
-    });
-
-    // ✅ Add user_id column with FK to Users table
-    await queryInterface.addColumn("Reviews", "user_id", {
-      type: Sequelize.INTEGER,
-      allowNull: true,
-      references: {
-        model: "Users",
-        key: "id",
+    // ✅ Create Reviews table with all columns
+    await queryInterface.createTable("Reviews", {
+      id: {
+        allowNull: false,
+        autoIncrement: true,
+        primaryKey: true,
+        type: Sequelize.INTEGER,
       },
-      onUpdate: "CASCADE",
-      onDelete: "SET NULL",
+
+      // ✅ FIXED: renamed from expertId to expert_id to match Review model
+      expert_id: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          model: "Experts",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "CASCADE",
+      },
+
+      // ✅ FIXED: renamed from userId to user_id to match Review model
+      user_id: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: "Users",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
+
+      rating: {
+        type: Sequelize.FLOAT,
+        allowNull: false,
+        defaultValue: 0,
+      },
+
+      comment: {
+        type: Sequelize.TEXT,
+        allowNull: true,
+      },
+
+      createdAt: {
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+      },
+
+      updatedAt: {
+        allowNull: false,
+        type: Sequelize.DATE,
+        defaultValue: Sequelize.literal("CURRENT_TIMESTAMP"),
+      },
     });
   },
 
   async down(queryInterface) {
     await queryInterface.removeColumn("Reviews", "comment");
     await queryInterface.removeColumn("Reviews", "user_id");
+    await queryInterface.dropTable("Reviews");
   },
 };

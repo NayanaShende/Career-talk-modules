@@ -16,7 +16,8 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const BASE_URL = "https://career-talk-modules-backend.onrender.com";
+// import { SOCKET_URL as BASE_URL } from "../../../constants/config";
+const BASE_URL = "http://192.168.1.14:3000";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const TEAL = "#867795";
@@ -86,6 +87,11 @@ export default function Home() {
 
   const getImageUri = (image) => {
     if (image) {
+      // ✅ If already a full Cloudinary or external URL, return as-is
+      if (image.startsWith("http://") || image.startsWith("https://")) {
+        return image;
+      }
+      // ✅ Otherwise it's a local file, prepend base URL
       const cleanImage = image.replace(/^uploads\//, "");
       return `${BASE_URL}/uploads/${cleanImage}`;
     }

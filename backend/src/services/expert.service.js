@@ -1,6 +1,7 @@
 // src/services/expert.service.js
 
 const expertRepo = require("../repositories/expert.repository");
+const uploadToCloudinary = require("../utils/cloudinaryUpload");
 
 /* ===============================
    BASIC CRUD
@@ -78,6 +79,9 @@ const getExpertsBySkill = async (skill) => {
 // ✅ FIXED: map both "certification" AND "certifications" so either works
 // ✅ FIXED: language_spoken now also checks profileData.languages
 // ✅ FIXED: gender now saved to Experts table
+// ✅ FIXED: Upload image/cv to Cloudinary if buffer exists
+// ✅ FIXED: Falls back to existing URL if no new file uploaded
+// ✅ FIXED: Handles all cases: new upload, existing URL, null
 const createExpertProfile = async (
   userId,
   profileData,
@@ -85,33 +89,97 @@ const createExpertProfile = async (
   imageFile,
   certificateFile,
 ) => {
+
+  // ─── Upload image to Cloudinary if new file provided ───────────────────────
+  let imageUrl = null;
+  if (imageFile) {
+    if (imageFile.buffer) {
+      // ✅ New file uploaded via multer — upload to Cloudinary
+      try {
+        const result = await uploadToCloudinary(imageFile.buffer);
+        imageUrl = result.secure_url;
+        console.log("✅ Expert image uploaded to Cloudinary:", imageUrl);
+      } catch (err) {
+        console.error("❌ Expert image Cloudinary upload failed:", err.message);
+      }
+    } else if (imageFile.secure_url) {
+      // ✅ Already a Cloudinary result object
+      imageUrl = imageFile.secure_url;
+    } else if (imageFile.path && imageFile.path.startsWith("http")) {
+      // ✅ Already a URL (from some storage engines)
+      imageUrl = imageFile.path;
+    } else if (imageFile.filename && imageFile.filename.startsWith("http")) {
+      // ✅ filename is actually a URL
+      imageUrl = imageFile.filename;
+    }
+  }
+
+  // ─── Upload CV to Cloudinary if new file provided ──────────────────────────
+  let cvUrl = null;
+  if (cvFile) {
+    if (cvFile.buffer) {
+      try {
+        const result = await uploadToCloudinary(cvFile.buffer);
+        cvUrl = result.secure_url;
+        console.log("✅ Expert CV uploaded to Cloudinary:", cvUrl);
+      } catch (err) {
+        console.error("❌ Expert CV Cloudinary upload failed:", err.message);
+      }
+    } else if (cvFile.secure_url) {
+      cvUrl = cvFile.secure_url;
+    } else if (cvFile.path && cvFile.path.startsWith("http")) {
+      cvUrl = cvFile.path;
+    } else if (cvFile.filename && cvFile.filename.startsWith("http")) {
+      cvUrl = cvFile.filename;
+    }
+  }
+
+  // ─── Upload certificate to Cloudinary if new file provided ─────────────────
+  let certUrl = null;
+  if (certificateFile) {
+    if (certificateFile.buffer) {
+      try {
+        const result = await uploadToCloudinary(certificateFile.buffer);
+        certUrl = result.secure_url;
+        console.log("✅ Expert certificate uploaded to Cloudinary:", certUrl);
+      } catch (err) {
+        console.error("❌ Expert certificate Cloudinary upload failed:", err.message);
+      }
+    } else if (certificateFile.secure_url) {
+      certUrl = certificateFile.secure_url;
+    } else if (certificateFile.path && certificateFile.path.startsWith("http")) {
+      certUrl = certificateFile.path;
+    }
+  }
+
+  // ─── Build data object ──────────────────────────────────────────────────────
   const data = {
-    name: profileData.fullName || profileData.name || null,
-    email: profileData.email || null,
-    bio: profileData.bio || null,
-    experience: profileData.experience || null,
-    domain: profileData.domain || null,
-    certification:
-      profileData.certification || profileData.certifications || null,
-    location: profileData.location || null,
-    language_spoken:
-      profileData.language_spoken || profileData.languages || null,
-    qualification: profileData.qualification || null,
-    cv: cvFile ? cvFile.filename : null,
-    image: imageFile ? imageFile.filename : null,
-    certificate_file: certificateFile ? certificateFile.filename : null,
+    name:               profileData.fullName        || profileData.name        || null,
+    email:              profileData.email            || null,
+    bio:                profileData.bio              || null,
+    experience:         profileData.experience       || null,
+    domain:             profileData.domain           || null,
+    sub_domain:         profileData.sub_domain       || null,
+    certification:      profileData.certification    || profileData.certifications || null,
+    location:           profileData.location         || null,
+    language_spoken:    profileData.language_spoken  || profileData.languages    || null,
+    qualification:      profileData.qualification    || null,
     certificate_domain: profileData.certificateDomain || null,
-    is_online: true,
-    isVerified: true,
+    is_online:          true,
+    isVerified:         true,
     verificationStatus: "approved",
-    // ✅ FIXED: gender added — was missing, causing null in Experts table
-    gender: profileData.gender || null,
     userId,
   };
 
-  console.log("📝 createExpertProfile — data to save:", JSON.stringify(data));
-  console.log("👤 Gender being saved to Experts table:", data.gender); // ✅ debug log
+  // ✅ Only update image/cv/cert if a new one was uploaded
+  // ✅ If null, keep existing value in DB (don't overwrite with null)
+  if (imageUrl) data.image = imageUrl;
+  if (cvUrl) data.cv = cvUrl;
+  if (certUrl) data.certificate_file = certUrl;
 
+  console.log("📝 createExpertProfile — data to save:", JSON.stringify(data));
+
+  // ─── Save or update expert profile ─────────────────────────────────────────
   let profile = await expertRepo.findExpertProfileByUserId(userId);
   if (profile) {
     profile = await expertRepo.updateExpertProfile(profile, data);
@@ -119,20 +187,18 @@ const createExpertProfile = async (
     profile = await expertRepo.createExpertProfile(data);
   }
 
-  // ✅ Save skills — supports both array and comma-separated string
+  // ─── Save skills ────────────────────────────────────────────────────────────
+  // ✅ Supports both array and comma-separated string
   const skillsRaw = profileData.skills || "";
   const skillsArray = Array.isArray(skillsRaw)
     ? skillsRaw
-    : skillsRaw
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
+    : skillsRaw.split(",").map((s) => s.trim()).filter(Boolean);
 
   if (skillsArray.length > 0 && profile?.id) {
     await expertRepo.deleteSkillsByExpertId(profile.id);
-    const skillRows = skillsArray.map((skill) => ({
+    const skillRows = skillsArray.map((skill_name) => ({
       expert_id: profile.id,
-      skill_name: skill,
+      skill_name,
     }));
     await expertRepo.bulkCreateSkills(skillRows);
   }
@@ -149,13 +215,12 @@ const getExpertById = async (id) => {
 };
 
 /* ===============================
-   RATINGS ✅ FIXED
+   RATINGS
 ================================ */
 
 const submitRating = async (expertId, userId, rating, comment) => {
   const { Review, Expert } = require("../models");
 
-  // ✅ Check if this user already rated this expert
   const existing = await Review.findOne({
     where: { expert_id: expertId, userId },
   });
@@ -181,7 +246,6 @@ const submitRating = async (expertId, userId, rating, comment) => {
   };
 };
 
-// ✅ FIXED: Users table uses "fullName" not "name", and "image" from later migration
 const getRatings = async (expertId) => {
   const { Review, User } = require("../models");
 
@@ -192,8 +256,6 @@ const getRatings = async (expertId) => {
       {
         model: User,
         as: "user",
-        // ✅ FIXED: "fullName" instead of "name" — matches Users table migration
-        // ✅ FIXED: "image" is safe — added in later migration (20260302071602)
         attributes: ["id", "fullName", "image"],
       },
     ],
@@ -210,7 +272,6 @@ const getRatings = async (expertId) => {
     comment: r.comment,
     createdAt: r.createdAt,
     userId: r.user?.id || r.userId,
-    // ✅ FIXED: fullName not name
     userName: r.user?.fullName || "Anonymous",
     userImage: r.user?.image || null,
   }));

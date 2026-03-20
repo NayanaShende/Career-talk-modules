@@ -22,8 +22,295 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "https://career-talk-modules-backend.onrender.com";
+// import { SOCKET_URL as BASE_URL } from "../../constants/config";
+const BASE_URL = "http://192.168.1.14:3000";
 
+// ── Domain-specific skills ───────────────────────────────────────────────────
+const DOMAIN_SKILLS_MAP = {
+  "Career Counseling": [
+    "Career Coaching",
+    "Resume Writing",
+    "LinkedIn Optimization",
+    "Mock Interviews",
+    "Group Discussion",
+    "Aptitude Training",
+    "Soft Skills",
+    "Communication Skills",
+    "Body Language",
+    "Goal Setting",
+    "Motivation & Mindset",
+    "Personality Assessment",
+  ],
+  "Software Engineering": [
+    "React",
+    "React Native",
+    "Next.js",
+    "Vue.js",
+    "Angular",
+    "Node.js",
+    "Express.js",
+    "Django",
+    "FastAPI",
+    "Spring Boot",
+    "Flutter",
+    "Android (Kotlin)",
+    "iOS (Swift)",
+    "AWS",
+    "Azure",
+    "GCP",
+    "Docker",
+    "Kubernetes",
+    "PostgreSQL",
+    "MongoDB",
+    "Redis",
+    "GraphQL",
+    "System Design",
+    "DSA",
+    "Git & GitHub",
+    "Cybersecurity",
+    "Blockchain",
+    "Unity (Game Dev)",
+  ],
+  "Data Science & AI": [
+    "Python",
+    "R",
+    "SQL",
+    "Pandas",
+    "NumPy",
+    "Scikit-learn",
+    "TensorFlow",
+    "PyTorch",
+    "Keras",
+    "Power BI",
+    "Tableau",
+    "Excel (Advanced)",
+    "Spark",
+    "Hadoop",
+    "Feature Engineering",
+    "Model Deployment",
+    "MLflow",
+    "OpenAI API",
+    "LangChain",
+    "Prompt Engineering",
+    "Statistics & Probability",
+    "A/B Testing",
+  ],
+  "Finance & Investment": [
+    "Stock Analysis (Technical)",
+    "Stock Analysis (Fundamental)",
+    "Mutual Fund Planning",
+    "Portfolio Management",
+    "Tax Planning",
+    "GST Filing",
+    "Income Tax Returns",
+    "Financial Modeling (Excel)",
+    "Valuation",
+    "Crypto Trading",
+    "Forex Trading",
+    "Options & Futures",
+    "Insurance Planning",
+    "Tally",
+    "Zoho Books",
+    "CA / CFA / CFP Knowledge",
+  ],
+  "Marketing & Branding": [
+    "SEO",
+    "Google Ads",
+    "Meta Ads (Facebook/Instagram)",
+    "Content Writing",
+    "Copywriting",
+    "Email Marketing",
+    "Canva",
+    "Adobe Photoshop",
+    "Adobe Premiere Pro",
+    "Google Analytics",
+    "HubSpot",
+    "Mailchimp",
+    "YouTube Marketing",
+    "Influencer Outreach",
+    "Brand Strategy",
+    "Market Research",
+    "WhatsApp Marketing",
+    "Affiliate Marketing",
+  ],
+  "Health & Wellness": [
+    "Nutrition Planning",
+    "Diet Charting",
+    "Weight Management",
+    "Yoga",
+    "Pranayama",
+    "Meditation",
+    "Zumba",
+    "CrossFit",
+    "Ayurvedic Consultation",
+    "Physiotherapy Exercises",
+    "Mental Health Counseling",
+    "CBT Therapy",
+    "First Aid & CPR",
+    "Sports Nutrition",
+    "Homeopathy",
+    "Child Nutrition",
+    "Naturopathy",
+  ],
+  "Legal Advisory": [
+    "Contract Drafting",
+    "Legal Research",
+    "Case Filing",
+    "IP Registration",
+    "Trademark",
+    "Patent",
+    "GST & Tax Law",
+    "Labour Law",
+    "Consumer Law",
+    "Company Incorporation",
+    "MCA Filings",
+    "Cyber Law",
+    "Property Law",
+    "Family Law",
+    "Arbitration & Mediation",
+    "Legal Document Review",
+  ],
+  "Business Strategy": [
+    "Business Plan Writing",
+    "Market Research",
+    "Financial Projections",
+    "Pitch Deck Creation",
+    "SWOT & PESTLE Analysis",
+    "OKR Framework",
+    "Agile & Scrum",
+    "PMP Certification",
+    "Operations Optimization",
+    "Supply Chain",
+    "CRM Strategy",
+    "SAP / Oracle ERP",
+    "Product Roadmap",
+    "Go-to-Market Strategy",
+    "Fundraising Strategy",
+    "Startup Mentoring",
+  ],
+  "Education & Tutoring": [
+    "Mathematics (Class 8-12)",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "English Grammar",
+    "Essay Writing",
+    "JEE Preparation",
+    "NEET Preparation",
+    "UPSC Preparation",
+    "Vedic Maths",
+    "Abacus",
+    "Scratch (Kids Coding)",
+    "Python for Beginners",
+    "Accountancy",
+    "Economics",
+    "Marathi Literature",
+    "Hindi Literature",
+    "Music (Vocal/Instrumental)",
+    "Drawing & Painting",
+    "Cricket Coaching",
+    "Football Coaching",
+  ],
+  "Human Resources": [
+    "Recruitment & Sourcing",
+    "LinkedIn Hiring",
+    "ATS Tools (Naukri/LinkedIn)",
+    "HR Policies & Compliance",
+    "Payroll Management",
+    "HRMS Tools (Keka/Darwinbox/SAP)",
+    "Performance Appraisal",
+    "Employee Engagement",
+    "Training & Development",
+    "Labor Law",
+    "Diversity & Inclusion",
+    "HR Analytics",
+    "Leadership Training",
+    "Conflict Resolution",
+  ],
+  "Civil Services & Government": [
+    "General Studies (GS Paper 1-4)",
+    "CSAT",
+    "Essay Writing",
+    "Current Affairs",
+    "Indian Polity & Constitution",
+    "Indian Economy",
+    "History & Culture",
+    "Geography",
+    "Banking Awareness",
+    "Quantitative Aptitude",
+    "Reasoning Ability",
+    "English (Descriptive)",
+    "Marathi (Descriptive)",
+    "UPSC Interview Preparation",
+  ],
+  "Architecture & Design": [
+    "AutoCAD",
+    "Revit",
+    "SketchUp",
+    "Rhino 3D",
+    "Adobe Photoshop",
+    "Adobe Illustrator",
+    "Adobe InDesign",
+    "Figma",
+    "Adobe XD",
+    "3ds Max",
+    "Blender",
+    "V-Ray Rendering",
+    "Interior Space Planning",
+    "Landscape Design",
+    "UI/UX Research",
+    "Wireframing & Prototyping",
+    "Fashion Illustration",
+    "Textile Design",
+  ],
+  "Media & Journalism": [
+    "News Writing",
+    "Feature Writing",
+    "Investigative Journalism",
+    "Video Editing (Premiere Pro)",
+    "Video Editing (DaVinci)",
+    "Photography (DSLR)",
+    "YouTube Content Creation",
+    "Podcast Production",
+    "Script Writing",
+    "Adobe Audition",
+    "Final Cut Pro",
+    "Social Media Management",
+    "Fact Checking",
+    "Interviewing Techniques",
+  ],
+  "Agriculture & Farming": [
+    "Organic Farming Techniques",
+    "Soil Testing",
+    "Drip Irrigation",
+    "Hydroponics Setup",
+    "Crop Disease Management",
+    "Pesticide Management",
+    "Government Agri Schemes",
+    "Agri Export & Marketing",
+    "Dairy Management",
+    "Poultry Farming",
+    "Horticulture",
+    "Farm Accounting",
+    "Agri Drone Technology",
+  ],
+  "Hospitality & Tourism": [
+    "Front Office Operations",
+    "Housekeeping Management",
+    "Food & Beverage Service",
+    "Culinary Skills",
+    "Event Planning",
+    "Tour Package Design",
+    "Travel Agency Operations",
+    "Hotel Revenue Management",
+    "Customer Service",
+    "GDS - Amadeus/Galileo",
+    "Restaurant Management",
+    "Bartending & Mixology",
+  ],
+};
+
+// ── Fallback skills ──────────────────────────────────────────────────────────
 const SKILL_OPTIONS = [
   "React",
   "React Native",
@@ -44,6 +331,19 @@ const SKILL_OPTIONS = [
   "English Teacher",
   "Mathematics",
   "Science",
+  "SEO",
+  "Digital Marketing",
+  "Content Writing",
+  "Graphic Design",
+  "Stock Market",
+  "Tax Planning",
+  "Yoga",
+  "Counseling",
+  "Legal Research",
+  "Business Strategy",
+  "HR Recruitment",
+  "Photography",
+  "Video Editing",
   "Other",
 ];
 
@@ -58,6 +358,10 @@ const LANGUAGE_OPTIONS = [
   "Kannada",
   "Punjabi",
   "Urdu",
+  "Sanskrit",
+  "Odia",
+  "Assamese",
+  "Konkani",
   "Other",
 ];
 
@@ -72,8 +376,295 @@ const DOMAIN_OPTIONS = [
   { label: "Business Strategy", value: "Business Strategy" },
   { label: "Education & Tutoring", value: "Education & Tutoring" },
   { label: "Human Resources", value: "Human Resources" },
+  {
+    label: "Civil Services & Government",
+    value: "Civil Services & Government",
+  },
+  { label: "Architecture & Design", value: "Architecture & Design" },
+  { label: "Media & Journalism", value: "Media & Journalism" },
+  { label: "Agriculture & Farming", value: "Agriculture & Farming" },
+  { label: "Hospitality & Tourism", value: "Hospitality & Tourism" },
   { label: "Other", value: "Other" },
 ];
+
+const SUBDOMAIN_MAP = {
+  "Career Counseling": [
+    {
+      label: "Resume & LinkedIn Building",
+      value: "Resume & LinkedIn Building",
+    },
+    { label: "Interview Preparation", value: "Interview Preparation" },
+    { label: "Career Switch Guidance", value: "Career Switch Guidance" },
+    { label: "Job Search Strategy", value: "Job Search Strategy" },
+    { label: "Salary Negotiation", value: "Salary Negotiation" },
+    {
+      label: "College Admission Counseling",
+      value: "College Admission Counseling",
+    },
+    { label: "Study Abroad Guidance", value: "Study Abroad Guidance" },
+    { label: "Scholarship Guidance", value: "Scholarship Guidance" },
+    { label: "Freshers Career Planning", value: "Freshers Career Planning" },
+    { label: "Personality Development", value: "Personality Development" },
+  ],
+  "Software Engineering": [
+    { label: "Frontend Development", value: "Frontend Development" },
+    { label: "Backend Development", value: "Backend Development" },
+    { label: "Full Stack Development", value: "Full Stack Development" },
+    { label: "Mobile App Development", value: "Mobile App Development" },
+    {
+      label: "System Design & Architecture",
+      value: "System Design & Architecture",
+    },
+    { label: "DevOps & CI/CD", value: "DevOps & CI/CD" },
+    { label: "Cloud Computing", value: "Cloud Computing" },
+    { label: "Cybersecurity", value: "Cybersecurity" },
+    { label: "Blockchain Development", value: "Blockchain Development" },
+    { label: "Game Development", value: "Game Development" },
+    { label: "Embedded Systems", value: "Embedded Systems" },
+    { label: "API & Microservices", value: "API & Microservices" },
+  ],
+  "Data Science & AI": [
+    { label: "Machine Learning", value: "Machine Learning" },
+    { label: "Deep Learning", value: "Deep Learning" },
+    {
+      label: "Natural Language Processing",
+      value: "Natural Language Processing",
+    },
+    { label: "Computer Vision", value: "Computer Vision" },
+    { label: "Data Analytics", value: "Data Analytics" },
+    { label: "Data Engineering", value: "Data Engineering" },
+    { label: "MLOps", value: "MLOps" },
+    { label: "Business Intelligence", value: "Business Intelligence" },
+    { label: "Generative AI & LLMs", value: "Generative AI & LLMs" },
+    { label: "AI Ethics & Governance", value: "AI Ethics & Governance" },
+    { label: "Quantitative Research", value: "Quantitative Research" },
+  ],
+  "Finance & Investment": [
+    { label: "Stock Market & Trading", value: "Stock Market & Trading" },
+    { label: "Mutual Funds & SIP", value: "Mutual Funds & SIP" },
+    { label: "Personal Finance Planning", value: "Personal Finance Planning" },
+    { label: "Cryptocurrency & Web3", value: "Cryptocurrency & Web3" },
+    { label: "Tax Planning & Filing", value: "Tax Planning & Filing" },
+    { label: "Investment Banking", value: "Investment Banking" },
+    { label: "Real Estate Investment", value: "Real Estate Investment" },
+    { label: "Insurance Planning", value: "Insurance Planning" },
+    { label: "Retirement Planning", value: "Retirement Planning" },
+    { label: "Corporate Finance", value: "Corporate Finance" },
+    { label: "Forex & Commodities", value: "Forex & Commodities" },
+    { label: "Financial Modeling", value: "Financial Modeling" },
+  ],
+  "Marketing & Branding": [
+    { label: "Digital Marketing", value: "Digital Marketing" },
+    { label: "Social Media Marketing", value: "Social Media Marketing" },
+    { label: "SEO & SEM", value: "SEO & SEM" },
+    { label: "Content Marketing", value: "Content Marketing" },
+    { label: "Brand Strategy", value: "Brand Strategy" },
+    { label: "Email Marketing", value: "Email Marketing" },
+    { label: "Influencer Marketing", value: "Influencer Marketing" },
+    { label: "Performance Marketing", value: "Performance Marketing" },
+    { label: "Video & YouTube Marketing", value: "Video & YouTube Marketing" },
+    { label: "E-commerce Marketing", value: "E-commerce Marketing" },
+    { label: "Public Relations", value: "Public Relations" },
+    {
+      label: "Market Research & Analytics",
+      value: "Market Research & Analytics",
+    },
+  ],
+  "Health & Wellness": [
+    { label: "Nutrition & Dietetics", value: "Nutrition & Dietetics" },
+    {
+      label: "Mental Health & Counseling",
+      value: "Mental Health & Counseling",
+    },
+    {
+      label: "Fitness & Personal Training",
+      value: "Fitness & Personal Training",
+    },
+    { label: "Yoga & Meditation", value: "Yoga & Meditation" },
+    { label: "Ayurveda", value: "Ayurveda" },
+    { label: "Physiotherapy", value: "Physiotherapy" },
+    { label: "Women's Health", value: "Women's Health" },
+    { label: "Child & Pediatric Health", value: "Child & Pediatric Health" },
+    {
+      label: "Chronic Disease Management",
+      value: "Chronic Disease Management",
+    },
+    { label: "Sports Medicine", value: "Sports Medicine" },
+    { label: "Homeopathy", value: "Homeopathy" },
+    { label: "Naturopathy", value: "Naturopathy" },
+  ],
+  "Legal Advisory": [
+    { label: "Corporate & Company Law", value: "Corporate & Company Law" },
+    { label: "Family & Matrimonial Law", value: "Family & Matrimonial Law" },
+    { label: "Criminal Law", value: "Criminal Law" },
+    { label: "Intellectual Property Law", value: "Intellectual Property Law" },
+    { label: "Startup & Business Legal", value: "Startup & Business Legal" },
+    {
+      label: "Property & Real Estate Law",
+      value: "Property & Real Estate Law",
+    },
+    { label: "Cyber Law", value: "Cyber Law" },
+    { label: "Labour & Employment Law", value: "Labour & Employment Law" },
+    { label: "Tax & GST Law", value: "Tax & GST Law" },
+    { label: "Constitutional Law", value: "Constitutional Law" },
+    { label: "Consumer Rights", value: "Consumer Rights" },
+  ],
+  "Business Strategy": [
+    { label: "Startup Consulting", value: "Startup Consulting" },
+    { label: "Operations Management", value: "Operations Management" },
+    {
+      label: "Product Strategy & Roadmap",
+      value: "Product Strategy & Roadmap",
+    },
+    { label: "Growth Hacking", value: "Growth Hacking" },
+    { label: "Business Development", value: "Business Development" },
+    { label: "Franchising & Licensing", value: "Franchising & Licensing" },
+    { label: "Supply Chain Management", value: "Supply Chain Management" },
+    { label: "Project Management", value: "Project Management" },
+    {
+      label: "Fundraising & Investor Pitch",
+      value: "Fundraising & Investor Pitch",
+    },
+    { label: "International Business", value: "International Business" },
+    { label: "E-commerce Strategy", value: "E-commerce Strategy" },
+  ],
+  "Education & Tutoring": [
+    { label: "Mathematics", value: "Mathematics" },
+    {
+      label: "Science (Physics/Chemistry/Biology)",
+      value: "Science (Physics/Chemistry/Biology)",
+    },
+    {
+      label: "English Language & Grammar",
+      value: "English Language & Grammar",
+    },
+    {
+      label: "Competitive Exams (JEE/NEET/UPSC)",
+      value: "Competitive Exams (JEE/NEET/UPSC)",
+    },
+    {
+      label: "Coding for Kids & Beginners",
+      value: "Coding for Kids & Beginners",
+    },
+    { label: "History & Social Studies", value: "History & Social Studies" },
+    { label: "Commerce & Accountancy", value: "Commerce & Accountancy" },
+    { label: "Foreign Language Teaching", value: "Foreign Language Teaching" },
+    { label: "Special Education", value: "Special Education" },
+    { label: "Music & Arts Education", value: "Music & Arts Education" },
+    { label: "Sports Coaching", value: "Sports Coaching" },
+  ],
+  "Human Resources": [
+    {
+      label: "Talent Acquisition & Recruitment",
+      value: "Talent Acquisition & Recruitment",
+    },
+    {
+      label: "HR Operations & Compliance",
+      value: "HR Operations & Compliance",
+    },
+    {
+      label: "Learning & Development (L&D)",
+      value: "Learning & Development (L&D)",
+    },
+    { label: "Performance Management", value: "Performance Management" },
+    {
+      label: "Employee Relations & Engagement",
+      value: "Employee Relations & Engagement",
+    },
+    { label: "Payroll & Compensation", value: "Payroll & Compensation" },
+    { label: "Diversity & Inclusion", value: "Diversity & Inclusion" },
+    { label: "HR Analytics", value: "HR Analytics" },
+    {
+      label: "Organizational Development",
+      value: "Organizational Development",
+    },
+    { label: "Leadership Coaching", value: "Leadership Coaching" },
+  ],
+  "Civil Services & Government": [
+    {
+      label: "UPSC Civil Services (IAS/IPS/IFS)",
+      value: "UPSC Civil Services (IAS/IPS/IFS)",
+    },
+    { label: "State PSC Exams", value: "State PSC Exams" },
+    { label: "Banking & Insurance Exams", value: "Banking & Insurance Exams" },
+    { label: "SSC & Railway Exams", value: "SSC & Railway Exams" },
+    {
+      label: "Defence Services (NDA/CDS/CAPF)",
+      value: "Defence Services (NDA/CDS/CAPF)",
+    },
+    {
+      label: "Government Policy & Governance",
+      value: "Government Policy & Governance",
+    },
+    { label: "Public Administration", value: "Public Administration" },
+  ],
+  "Architecture & Design": [
+    { label: "Residential Architecture", value: "Residential Architecture" },
+    { label: "Interior Design", value: "Interior Design" },
+    { label: "Urban & Landscape Design", value: "Urban & Landscape Design" },
+    { label: "UI/UX Design", value: "UI/UX Design" },
+    { label: "Graphic Design", value: "Graphic Design" },
+    {
+      label: "Product & Industrial Design",
+      value: "Product & Industrial Design",
+    },
+    { label: "Fashion Design", value: "Fashion Design" },
+    { label: "3D Modeling & Rendering", value: "3D Modeling & Rendering" },
+  ],
+  "Media & Journalism": [
+    {
+      label: "Print & Digital Journalism",
+      value: "Print & Digital Journalism",
+    },
+    { label: "Broadcast & TV Journalism", value: "Broadcast & TV Journalism" },
+    { label: "Photography & Videography", value: "Photography & Videography" },
+    { label: "Film Making & Direction", value: "Film Making & Direction" },
+    {
+      label: "Podcast & Audio Production",
+      value: "Podcast & Audio Production",
+    },
+    {
+      label: "Content Writing & Copywriting",
+      value: "Content Writing & Copywriting",
+    },
+    {
+      label: "Social Media Content Creation",
+      value: "Social Media Content Creation",
+    },
+  ],
+  "Agriculture & Farming": [
+    { label: "Organic Farming", value: "Organic Farming" },
+    {
+      label: "Hydroponics & Vertical Farming",
+      value: "Hydroponics & Vertical Farming",
+    },
+    { label: "Agri Business & Marketing", value: "Agri Business & Marketing" },
+    { label: "Animal Husbandry & Dairy", value: "Animal Husbandry & Dairy" },
+    {
+      label: "Horticulture & Floriculture",
+      value: "Horticulture & Floriculture",
+    },
+    { label: "Government Agri Schemes", value: "Government Agri Schemes" },
+    { label: "Farm Management", value: "Farm Management" },
+  ],
+  "Hospitality & Tourism": [
+    { label: "Hotel & Resort Management", value: "Hotel & Resort Management" },
+    { label: "Travel & Tourism Planning", value: "Travel & Tourism Planning" },
+    {
+      label: "Food & Beverage Management",
+      value: "Food & Beverage Management",
+    },
+    {
+      label: "Event Planning & Management",
+      value: "Event Planning & Management",
+    },
+    { label: "Culinary Arts & Cooking", value: "Culinary Arts & Cooking" },
+    {
+      label: "Airlines & Airport Operations",
+      value: "Airlines & Airport Operations",
+    },
+  ],
+};
 
 const DOMAIN_CERTIFICATE_GUIDE = {
   "Career Counseling":
@@ -96,11 +687,21 @@ const DOMAIN_CERTIFICATE_GUIDE = {
     "Upload your B.Ed/M.Ed degree, TET/CTET scorecard, or school-affiliation proof (PDF or image).",
   "Human Resources":
     "Upload your SHRM-CP, PHR, MBA-HR, or XLRI/TISS HR programme certificate (PDF or image).",
+  "Civil Services & Government":
+    "Upload your relevant degree, scorecard, or government exam rank letter (PDF or image).",
+  "Architecture & Design":
+    "Upload your B.Arch/M.Arch degree, COA registration, or design certification (PDF or image).",
+  "Media & Journalism":
+    "Upload your Mass Communication/Journalism degree or press card/media credential (PDF or image).",
+  "Agriculture & Farming":
+    "Upload your B.Sc Agriculture degree, Krishi Vigyan Kendra certificate, or relevant diploma (PDF or image).",
+  "Hospitality & Tourism":
+    "Upload your Hotel Management degree, IATA certification, or relevant hospitality diploma (PDF or image).",
   Other:
     "Upload any official certificate, degree, or document that proves your expertise in your domain (PDF or image).",
 };
 
-// ─── Design Tokens ────────────────────────────────────────────────────────────
+// ── Design Tokens ────────────────────────────────────────────────────────────
 const GREEN = "#867795";
 const GREEN_DARK = "#867795";
 const GREEN_MID = "#867795";
@@ -118,7 +719,7 @@ const RED_L = "#FFF5F5";
 const GREEN_SUC = "#16A34A";
 const GREEN_SUC_L = "#F0FDF4";
 
-// ─── Section wrapper ──────────────────────────────────────────────────────────
+// ── Section wrapper ──────────────────────────────────────────────────────────
 function Section({ title, icon, children }) {
   return (
     <View style={s.section}>
@@ -133,7 +734,7 @@ function Section({ title, icon, children }) {
   );
 }
 
-// ─── Field label ──────────────────────────────────────────────────────────────
+// ── Field label ──────────────────────────────────────────────────────────────
 function Label({ text, required }) {
   return (
     <Text style={s.label}>
@@ -143,7 +744,7 @@ function Label({ text, required }) {
   );
 }
 
-// ─── Field error ──────────────────────────────────────────────────────────────
+// ── Field error ──────────────────────────────────────────────────────────────
 function FieldError({ message }) {
   if (!message) return null;
   return (
@@ -154,7 +755,7 @@ function FieldError({ message }) {
   );
 }
 
-// ─── Dropdown ─────────────────────────────────────────────────────────────────
+// ── Dropdown ─────────────────────────────────────────────────────────────────
 function DropdownPicker({ label, value, options, onChange, error }) {
   const [visible, setVisible] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -205,24 +806,36 @@ function DropdownPicker({ label, value, options, onChange, error }) {
   );
 }
 
-// ─── Skills picker ────────────────────────────────────────────────────────────
-function SkillsPicker({ selectedSkills, onChange }) {
+// ── Skills picker ─────────────────────────────────────────────────────────────
+function SkillsPicker({ selectedSkills, onChange, domain }) {
   const [visible, setVisible] = useState(false);
   const [customSkill, setCustomSkill] = useState("");
-  const toggle = (skill) => {
+
+  // Use domain-specific skills if available, else fallback
+  const skillList =
+    domain && DOMAIN_SKILLS_MAP[domain]
+      ? DOMAIN_SKILLS_MAP[domain]
+      : SKILL_OPTIONS;
+
+  const toggleSkill = (skill) => {
     if (selectedSkills.includes(skill)) {
       onChange(selectedSkills.filter((s) => s !== skill));
-      return;
+    } else {
+      if (selectedSkills.length >= 5) {
+        Alert.alert("Max 5 skills");
+        return;
+      }
+      onChange([...selectedSkills, skill]);
     }
-    if (selectedSkills.length >= 5) {
-      Alert.alert("Max 5 skills");
-      return;
-    }
-    onChange([...selectedSkills, skill]);
   };
+
   const addCustom = () => {
     const t = customSkill.trim();
-    if (!t || selectedSkills.includes(t)) return;
+    if (!t) return;
+    if (selectedSkills.includes(t)) {
+      Alert.alert("Already added");
+      return;
+    }
     if (selectedSkills.length >= 5) {
       Alert.alert("Max 5 skills");
       return;
@@ -230,6 +843,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
     onChange([...selectedSkills, t]);
     setCustomSkill("");
   };
+
   return (
     <>
       <View style={s.chipWrap}>
@@ -242,7 +856,7 @@ function SkillsPicker({ selectedSkills, onChange }) {
             <TouchableOpacity
               key={sk}
               style={s.chip}
-              onPress={() => toggle(sk)}
+              onPress={() => toggleSkill(sk)}
             >
               <Text style={s.chipText}>{sk}</Text>
               <Ionicons
@@ -269,6 +883,19 @@ function SkillsPicker({ selectedSkills, onChange }) {
         <View style={[s.mSheet, { maxHeight: "72%" }]}>
           <View style={s.mHandle} />
           <Text style={s.mTitle}>Select Skills</Text>
+          {domain && DOMAIN_SKILLS_MAP[domain] && (
+            <Text
+              style={{
+                color: GREEN,
+                textAlign: "center",
+                marginBottom: 2,
+                fontSize: 12,
+                fontWeight: "600",
+              }}
+            >
+              Skills for: {domain}
+            </Text>
+          )}
           <Text style={s.mMeta}>{selectedSkills.length}/5 selected</Text>
           <View style={s.customRow}>
             <TextInput
@@ -285,14 +912,14 @@ function SkillsPicker({ selectedSkills, onChange }) {
             </TouchableOpacity>
           </View>
           <FlatList
-            data={SKILL_OPTIONS}
+            data={skillList}
             keyExtractor={(item) => item}
             renderItem={({ item }) => {
               const sel = selectedSkills.includes(item);
               return (
                 <TouchableOpacity
                   style={[s.mRow, sel && s.mRowActive]}
-                  onPress={() => toggle(item)}
+                  onPress={() => toggleSkill(item)}
                 >
                   <Text style={[s.mRowText, sel && s.mRowTextActive]}>
                     {item}
@@ -313,24 +940,30 @@ function SkillsPicker({ selectedSkills, onChange }) {
   );
 }
 
-// ─── Languages picker ─────────────────────────────────────────────────────────
+// ── Languages picker ──────────────────────────────────────────────────────────
 function LanguagesPicker({ selectedLanguages, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customLang, setCustomLang] = useState("");
+
   const toggle = (lang) => {
     if (selectedLanguages.includes(lang)) {
       onChange(selectedLanguages.filter((l) => l !== lang));
-      return;
+    } else {
+      if (selectedLanguages.length >= 5) {
+        Alert.alert("Max 5 languages");
+        return;
+      }
+      onChange([...selectedLanguages, lang]);
     }
-    if (selectedLanguages.length >= 5) {
-      Alert.alert("Max 5 languages");
-      return;
-    }
-    onChange([...selectedLanguages, lang]);
   };
+
   const addCustom = () => {
     const t = customLang.trim();
-    if (!t || selectedLanguages.includes(t)) return;
+    if (!t) return;
+    if (selectedLanguages.includes(t)) {
+      Alert.alert("Already added");
+      return;
+    }
     if (selectedLanguages.length >= 5) {
       Alert.alert("Max 5 languages");
       return;
@@ -338,6 +971,7 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
     onChange([...selectedLanguages, t]);
     setCustomLang("");
   };
+
   return (
     <>
       <View style={s.chipWrap}>
@@ -422,7 +1056,7 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   );
 }
 
-// ─── Certificate upload ───────────────────────────────────────────────────────
+// ── Certificate upload ────────────────────────────────────────────────────────
 function CertificateUpload({ domain, certFile, onPick, error }) {
   const guide = domain ? DOMAIN_CERTIFICATE_GUIDE[domain] : null;
   return (
@@ -436,7 +1070,9 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
             style={{ marginTop: 2 }}
           />
           <View style={{ flex: 1 }}>
-            <Text style={s.certInfoTitle}>Required for "{domain}"</Text>
+            <Text style={s.certInfoTitle}>
+              Required for &quot;{domain}&quot;
+            </Text>
             <Text style={s.certInfoText}>{guide}</Text>
           </View>
         </View>
@@ -453,8 +1089,9 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
             color="#F59E0B"
             style={{ marginTop: 2 }}
           />
-          <Text style={{ fontSize: 13, color: "#92400E", flex: 1 }}>
-            Select your domain first to see which certificate is required.
+          <Text style={[s.certInfoText, { color: "#92400E", flex: 1 }]}>
+            Please select your domain first — the required certificate type will
+            appear here.
           </Text>
         </View>
       )}
@@ -512,12 +1149,102 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
   );
 }
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// ── Success Modal ─────────────────────────────────────────────────────────────
+function SuccessModal({ visible, isExpert, onKeepEditing, onProceed }) {
+  // Confetti dots data
+  const confettiDots = [
+    { top: 18, left: 38, color: "#a78bfa", size: 7, rotate: "20deg" },
+    { top: 10, left: 62, color: "#34d399", size: 5, rotate: "45deg" },
+    { top: 28, left: 20, color: "#fbbf24", size: 6, rotate: "-15deg" },
+    { top: 14, left: 80, color: "#f472b6", size: 5, rotate: "60deg" },
+    { top: 36, left: 88, color: "#60a5fa", size: 7, rotate: "-30deg" },
+    { top: 8, left: 48, color: "#34d399", size: 4, rotate: "10deg" },
+    { top: 22, left: 72, color: "#fbbf24", size: 6, rotate: "50deg" },
+    { top: 40, left: 12, color: "#f472b6", size: 5, rotate: "-45deg" },
+    { top: 6, left: 30, color: "#60a5fa", size: 4, rotate: "35deg" },
+    { top: 32, left: 55, color: "#a78bfa", size: 5, rotate: "-20deg" },
+    { top: 18, left: 92, color: "#34d399", size: 6, rotate: "55deg" },
+    { top: 44, left: 44, color: "#fbbf24", size: 4, rotate: "-10deg" },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={sm.overlay}>
+        <View style={sm.card}>
+          {/* Confetti area */}
+          <View style={sm.confettiArea} pointerEvents="none">
+            {confettiDots.map((dot, i) => (
+              <View
+                key={i}
+                style={[
+                  sm.confettiDot,
+                  {
+                    top: `${dot.top}%`,
+                    left: `${dot.left}%`,
+                    backgroundColor: dot.color,
+                    width: dot.size,
+                    height: dot.size,
+                    borderRadius: dot.size / 2,
+                    transform: [{ rotate: dot.rotate }],
+                  },
+                ]}
+              />
+            ))}
+          </View>
+
+          {/* Badge icon */}
+          <View style={sm.badgeOuter}>
+            <View style={sm.badgeMiddle}>
+              <View style={sm.badgeInner}>
+                <Ionicons name="checkmark" size={36} color={WHITE} />
+              </View>
+            </View>
+          </View>
+
+          {/* Text */}
+          <Text style={sm.title}>
+            {isExpert ? "Profile Verified & Saved!" : "Profile Saved!"}
+          </Text>
+          <Text style={sm.subtitle}>
+            {isExpert
+              ? "Your certificate has been uploaded and your expert profile is now verified!"
+              :  "Now your are the part of the Career talk. You've successfully completed your professional details."}
+          </Text>
+
+          {/* Buttons */}
+          <View style={sm.btnRow}>
+            <TouchableOpacity
+              style={sm.keepBtn}
+              onPress={onKeepEditing}
+              activeOpacity={0.8}
+            >
+              <Text style={sm.keepBtnText}>Keep Editing</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={sm.proceedBtn}
+              onPress={onProceed}
+              activeOpacity={0.8}
+            >
+              <Text style={sm.proceedBtnText}>
+                {isExpert ? "Go to Dashboard →" : "Go to Dashboard →"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ── Main Screen ───────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const [role, setRole] = useState("Jobseeker");
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
+  // ── NEW: success modal state ──
+  const [successVisible, setSuccessVisible] = useState(false);
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
@@ -530,12 +1257,16 @@ export default function ProfileScreen() {
     cv: null,
     image: null,
     certFile: null,
+    languages: "",
+    customLanguages: "",
     location: "",
     customLocation: "",
     bio: "",
     domain: "",
     customDomain: "",
+    sub_domain: "",
   });
+
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
 
@@ -550,7 +1281,7 @@ export default function ProfileScreen() {
     if (cleaned.trim().length < 2)
       setErrors((p) => ({
         ...p,
-        fullName: "Name must have at least 2 letters",
+        fullName: "Name must have at least 2 letters (letters only)",
       }));
     else setErrors((p) => ({ ...p, fullName: "" }));
   };
@@ -559,7 +1290,10 @@ export default function ProfileScreen() {
     const lower = value.toLowerCase();
     setField("email", lower);
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(lower))
-      setErrors((p) => ({ ...p, email: "Enter a valid email address" }));
+      setErrors((p) => ({
+        ...p,
+        email: "Enter a valid email (no capital letters allowed)",
+      }));
     else setErrors((p) => ({ ...p, email: "" }));
   };
 
@@ -592,7 +1326,7 @@ export default function ProfileScreen() {
         setErrors((p) => ({ ...p, certFile: "" }));
       }
     } catch {
-      Alert.alert("Error", "Could not open file picker.");
+      Alert.alert("Error", "Could not open file picker. Please try again.");
     }
   };
 
@@ -609,47 +1343,63 @@ export default function ProfileScreen() {
     if (!result.canceled) setField("image", result.assets[0]);
   };
 
+  // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
+
     if (!formData.fullName.trim() || formData.fullName.trim().length < 2)
-      e.fullName = "Full name is required (min 2 chars)";
+      e.fullName = "Full name is required (letters only, min 2 chars)";
+    else if (/[^a-zA-Z\s]/.test(formData.fullName))
+      e.fullName = "Name must contain letters only";
+
     if (!formData.email) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       e.email = "Enter a valid email address";
+
     if (!formData.gender) e.gender = "Gender is required";
     if (!formData.dob) e.dob = "Birth date is required";
+
     if (!formData.qualification) e.qualification = "Qualification is required";
     else if (
       formData.qualification === "Other" &&
       !formData.customQualification.trim()
     )
-      e.customQualification = "Please specify";
+      e.customQualification = "Please specify your qualification";
+
     if (!formData.experience) e.experience = "Experience is required";
     else if (
       formData.experience === "Other" &&
       !formData.customExperience.trim()
     )
-      e.customExperience = "Please specify";
+      e.customExperience = "Please specify your experience";
+
     if (!formData.cv) e.cv = "Please upload your CV";
+
     if (role === "Expert") {
       if (!formData.domain) e.domain = "Domain is required for Experts";
       else if (formData.domain === "Other" && !formData.customDomain.trim())
-        e.customDomain = "Please specify";
+        e.customDomain = "Please specify your domain";
+
       if (selectedSkills.length === 0)
         e.skills = "Please select at least 1 skill";
+
       if (!formData.certFile)
-        e.certFile = "Certificate is required to verify your expertise";
+        e.certFile =
+          "Please upload your certificate — this is required to verify your domain expertise";
+
       if (formData.location === "Other" && !formData.customLocation.trim())
-        e.customLocation = "Please enter your city";
+        e.customLocation = "Please specify your city";
     }
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
 
+  // ── Submit ───────────────────────────────────────────────────────────────────
   const submitProfile = async () => {
     if (!validate()) {
       Alert.alert(
-        "Incomplete Form",
+        "Validation Error",
         "Please fix the highlighted fields before submitting.",
       );
       return;
@@ -657,19 +1407,24 @@ export default function ProfileScreen() {
     try {
       const token = await AsyncStorage.getItem("token");
       if (!token) return Alert.alert("Login Required");
+
       await axios.post(
         `${BASE_URL}/api/auth/set-role`,
         { role: role.toLowerCase() },
         { headers: { Authorization: `Bearer ${token}` } },
       );
+
       const form = new FormData();
       form.append("role", role.toLowerCase());
       form.append("gender", formData.gender?.toLowerCase());
+
       const resolvedDomain =
         formData.domain === "Other" ? formData.customDomain : formData.domain;
+
       const resolvedData = {
         ...formData,
         domain: resolvedDomain || null,
+        sub_domain: formData.sub_domain || null,
         location:
           formData.location === "Other"
             ? formData.customLocation
@@ -686,9 +1441,10 @@ export default function ProfileScreen() {
           selectedLanguages.length > 0
             ? selectedLanguages.join(", ")
             : formData.languages,
-        isVerified: role === "Expert",
+        isVerified: role === "Expert" ? true : false,
         verificationStatus: role === "Expert" ? "approved" : "none",
       };
+
       const skipFields = [
         "cv",
         "image",
@@ -700,17 +1456,21 @@ export default function ProfileScreen() {
         "customDomain",
         "gender",
       ];
+
       Object.keys(resolvedData).forEach((key) => {
         if (
           !skipFields.includes(key) &&
           resolvedData[key] !== "" &&
           resolvedData[key] !== null &&
           resolvedData[key] !== undefined
-        )
+        ) {
           form.append(key, resolvedData[key]);
+        }
       });
+
       if (selectedSkills.length > 0)
         form.append("skills", selectedSkills.join(", "));
+
       if (formData.cv) {
         const cleanUri = formData.cv.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -720,6 +1480,7 @@ export default function ProfileScreen() {
           type: ext === "pdf" ? "application/pdf" : `image/${ext}`,
         });
       }
+
       if (formData.image) {
         const cleanUri = formData.image.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -729,6 +1490,7 @@ export default function ProfileScreen() {
           type: `image/${ext}`,
         });
       }
+
       if (role === "Expert" && formData.certFile) {
         const cleanUri = formData.certFile.uri.split("?")[0];
         const ext = cleanUri.split(".").pop().toLowerCase();
@@ -745,12 +1507,14 @@ export default function ProfileScreen() {
         });
         form.append("certificateDomain", resolvedDomain);
       }
+
       await axios.post(`${BASE_URL}/api/users/save-profile`, form, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
+
       const userStr = await AsyncStorage.getItem("user");
       const existingUser = userStr ? JSON.parse(userStr) : {};
       await AsyncStorage.setItem(
@@ -762,23 +1526,14 @@ export default function ProfileScreen() {
           isVerified: role === "Expert",
         }),
       );
-      Alert.alert(
-        role === "Expert" ? "✅ Expert Profile Created!" : "✅ Profile Saved!",
-        role === "Expert"
-          ? "Your certificate has been uploaded and your expert profile is now active!"
-          : "Your profile has been saved. Welcome to CareerTalk!",
-        [
-          {
-            text: "Continue",
-            onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
-          },
-        ],
-      );
+
+      // ── Show custom success modal instead of Alert ──
+      setSuccessVisible(true);
     } catch (e) {
+      console.log("Submit error:", e.response?.data || e.message);
       Alert.alert(
         "Error",
-        e.response?.data?.message ||
-          "Could not save profile. Please try again.",
+        e.response?.data?.message || "Could not save profile",
       );
     }
   };
@@ -788,6 +1543,8 @@ export default function ProfileScreen() {
     formData.domain === "Other"
       ? formData.customDomain || "Other"
       : formData.domain;
+
+  const subDomainOptions = SUBDOMAIN_MAP[formData.domain] || [];
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: BG }}>
@@ -954,6 +1711,8 @@ export default function ProfileScreen() {
                 setField("domain", v);
                 setField("certFile", null);
                 setField("customDomain", "");
+                setField("sub_domain", "");
+                setSelectedSkills([]);
               }}
               options={DOMAIN_OPTIONS}
               error={errors.domain}
@@ -976,6 +1735,19 @@ export default function ProfileScreen() {
               </>
             )}
 
+            {/* Sub-Domain — only shows when domain is selected */}
+            {subDomainOptions.length > 0 && (
+              <>
+                <Label text="Sub-Domain" />
+                <DropdownPicker
+                  label="Select Sub-Domain"
+                  value={formData.sub_domain}
+                  options={subDomainOptions}
+                  onChange={(v) => setField("sub_domain", v)}
+                />
+              </>
+            )}
+
             <Label text="Qualification" required />
             <DropdownPicker
               label="Select Qualification"
@@ -985,7 +1757,7 @@ export default function ProfileScreen() {
                 { label: "Graduate", value: "Graduate" },
                 { label: "Post Graduate", value: "PG" },
                 { label: "Diploma", value: "Diploma" },
-                { label: "Marathi Medium", value: "Marathi Medium" },
+                { label: "PHD Holder", value: "PHD Holder" },
                 { label: "Other", value: "Other" },
               ]}
               error={errors.qualification}
@@ -1082,9 +1854,22 @@ export default function ProfileScreen() {
             <>
               <Section title="Expert Skills" icon="⚡">
                 <Label text="Skills" required />
+                {formData.domain && DOMAIN_SKILLS_MAP[formData.domain] && (
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: GREEN,
+                      marginBottom: 4,
+                      fontWeight: "600",
+                    }}
+                  >
+                    💡 Showing skills for: {formData.domain}
+                  </Text>
+                )}
                 <SkillsPicker
                   selectedSkills={selectedSkills}
                   onChange={setSelectedSkills}
+                  domain={formData.domain}
                 />
                 <FieldError message={errors.skills} />
                 <Label text="Languages Known" />
@@ -1118,7 +1903,10 @@ export default function ProfileScreen() {
                     { label: "Pune", value: "Pune" },
                     { label: "Nashik", value: "Nashik" },
                     { label: "Nagpur", value: "Nagpur" },
-                    { label: "Aurangabad", value: "Aurangabad" },
+                    {
+                      label: "Chhatrapati SambhajiNagar",
+                      value: "Chhatrapati SambhajiNagar",
+                    },
                     { label: "Other", value: "Other" },
                   ]}
                 />
@@ -1168,11 +1956,22 @@ export default function ProfileScreen() {
           <View style={{ height: 36 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── SUCCESS MODAL ── */}
+      <SuccessModal
+        visible={successVisible}
+        isExpert={isExpert}
+        onKeepEditing={() => setSuccessVisible(false)}
+        onProceed={() => {
+          setSuccessVisible(false);
+          router.replace("/(tabs)/dashboard/dashboard");
+        }}
+      />
     </SafeAreaView>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   scroll: { paddingBottom: 40 },
 
@@ -1600,5 +2399,114 @@ const s = StyleSheet.create({
     backgroundColor: WHITE,
     justifyContent: "center",
     alignItems: "center",
+  },
+});
+
+// ── Success Modal Styles ───────────────────────────────────────────────────────
+const sm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 24,
+    padding: 28,
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden",
+    position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  confettiArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 130,
+  },
+  confettiDot: {
+    position: "absolute",
+  },
+  // Badge — three layered circles like the screenshot
+  badgeOuter: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(134,119,149,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+    marginTop: 8,
+  },
+  badgeMiddle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(134,119,149,0.18)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: GREEN_SUC,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1a1a2e",
+    textAlign: "center",
+    marginBottom: 10,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 28,
+    paddingHorizontal: 8,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  keepBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: GREEN_LIGHT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  keepBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: GREEN,
+  },
+  proceedBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#2d2440",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  proceedBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: WHITE,
   },
 });

@@ -1,12 +1,14 @@
 import { Stack } from "expo-router";
-
+import { NotificationProvider } from "../context/NotificationContext";
 
 export default function RootLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false, // ✅ removes header globally
-      }}
-    />
+    <NotificationProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+    </NotificationProvider>
   );
 }

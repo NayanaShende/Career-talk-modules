@@ -3,7 +3,7 @@ const { Expert } = require("./models");
 
 let io;
 const socketToExpert = {};
-const userSockets = {};
+const userSockets = {}; // uid → Set of socket IDs (support multiple tabs/devices)
 
 // ✅ Prevent duplicate messages
 const recentMessages = {};
@@ -22,17 +22,23 @@ function initSocket(server) {
     socket.on("joinRoom", ({ userId }) => {
       const uid = userId.toString();
 
-      if (userSockets[uid] && userSockets[uid] !== socket.id) {
-        const oldSocket = io.sockets.sockets.get(userSockets[uid]);
-        if (oldSocket) {
-          oldSocket.disconnect(true);
-          console.log(`⚠️ Disconnected old socket for user ${uid}`);
+      // ✅ FIX: Instead of disconnecting old socket (which causes reconnect loop),
+      // just make sure this socket joins the room. We track a SET of socket IDs
+      // per user so multiple sockets (reconnects) all receive messages.
+      if (!userSockets[uid]) {
+        userSockets[uid] = new Set();
+      }
+
+      // Clean up any stale socket IDs that are no longer connected
+      for (const oldSid of userSockets[uid]) {
+        if (!io.sockets.sockets.get(oldSid)) {
+          userSockets[uid].delete(oldSid);
         }
       }
 
-      userSockets[uid] = socket.id;
+      userSockets[uid].add(socket.id);
       socket.join(uid);
-      console.log(`User ${userId} joined room`);
+      console.log(`User ${userId} joined room (socket: ${socket.id}, total sockets: ${userSockets[uid].size})`);
     });
 
     socket.on("sendMessage", (data) => {
@@ -160,9 +166,14 @@ function initSocket(server) {
     });
 
     socket.on("disconnect", async () => {
-      for (const [uid, sid] of Object.entries(userSockets)) {
-        if (sid === socket.id) {
-          delete userSockets[uid];
+      // ✅ FIX: Remove only this specific socket ID from the user's set
+      for (const [uid, socketSet] of Object.entries(userSockets)) {
+        if (socketSet.has(socket.id)) {
+          socketSet.delete(socket.id);
+          // Clean up empty sets
+          if (socketSet.size === 0) {
+            delete userSockets[uid];
+          }
           break;
         }
       }
@@ -171,11 +182,27 @@ function initSocket(server) {
 
       if (expertId) {
         try {
-          await Expert.update({ is_online: false }, { where: { id: expertId } });
+          // ✅ FIX: Only mark expert offline if they have NO remaining sockets
+          const expertUid = Object.keys(userSockets).find((uid) => {
+            // Check if any remaining socket belongs to this expert
+            return false; // handled below
+          });
 
-          io.emit("expert:status", { expertId, is_online: false });
+          // Check if expert still has other active sockets
+          const expertStillConnected = Object.values(userSockets).some(
+            (socketSet) => socketSet.size > 0
+          );
 
-          console.log(`🔴 Expert ${expertId} disconnected → OFFLINE`);
+          // Only go offline if this was the last socket for this expert user
+          const expertUserSockets = Object.entries(userSockets).find(
+            ([uid, socketSet]) => socketSet.size > 0 && socketToExpert[Array.from(socketSet)[0]] === expertId
+          );
+
+          if (!expertUserSockets) {
+            await Expert.update({ is_online: false }, { where: { id: expertId } });
+            io.emit("expert:status", { expertId, is_online: false });
+            console.log(`🔴 Expert ${expertId} disconnected → OFFLINE`);
+          }
         } catch (err) {
           console.error("disconnect error:", err.message);
         }

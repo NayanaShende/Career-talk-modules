@@ -11,6 +11,7 @@ const saveProfile = async (req, res) => {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
+    // ✅ FIX 4: Added preferred_job_role and current_status to destructuring
     const {
       fullName,
       email,
@@ -18,6 +19,7 @@ const saveProfile = async (req, res) => {
       qualification,
       experience,
       domain,
+      sub_domain,
       role,
       bio,
       location,
@@ -25,6 +27,8 @@ const saveProfile = async (req, res) => {
       certificate,
       certifiedCity,
       skills,
+      preferred_job_role,
+      current_status,
     } = req.body;
 
     const cvFile = req.files?.cv?.[0];
@@ -55,6 +59,7 @@ const saveProfile = async (req, res) => {
     if (qualification) updateData.qualification = qualification;
     if (experience) updateData.experience = experience;
     if (domain) updateData.domain = domain;
+    if (sub_domain) updateData.sub_domain = sub_domain;
     if (role) updateData.role = role;
 
     if (imageUrl) updateData.image = imageUrl;
@@ -77,6 +82,7 @@ const saveProfile = async (req, res) => {
         name: fullName || req.user.fullName,
         experience: parseInt(experience) || 0,
         domain: domain || null,
+        sub_domain: sub_domain || null,
         bio: bio || null,
         location: location || null,
         language_spoken: languages || null,
@@ -129,10 +135,14 @@ const saveProfile = async (req, res) => {
        JOBSEEKER
     =============================== */
 
+    // ✅ FIX 3: Now saves skills, preferred_job_role and current_status for jobseeker
     if (currentRole === "jobseeker") {
       await req.user.update({
         qualification,
         experience,
+        skills: skills || null,
+        preferred_job_role: preferred_job_role || null,
+        current_status: current_status || null,
         cvFile: cvUrl || req.user.cvFile,
       });
     }
@@ -212,6 +222,7 @@ const updateProfile = async (req, res) => {
       .json({ success: false, message: err.message || "Server error" });
   }
 };
+
 /* =========================================
    GET PROFILE (logged in user)
 ========================================= */
