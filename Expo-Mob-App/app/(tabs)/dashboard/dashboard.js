@@ -317,7 +317,6 @@ function ExpertDashboard({
             </View>
           ))
         )} */}
-
       </ScrollView>
 
       <WalletModal

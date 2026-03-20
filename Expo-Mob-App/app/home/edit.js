@@ -33,11 +33,13 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 const INPUT_BG = "#f8fafa";
+const GREEN_SUC = "#16A34A";
+const GREEN_SUC_L = "#F0FDF4";
+const WHITE = "#FFFFFF";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const getImageUri = (image) => {
   if (image) {
-    // ✅ Already a full Cloudinary or external URL — return as-is
     if (image.startsWith("http://") || image.startsWith("https://"))
       return image;
     const cleanImage = image.replace(/^uploads\//, "");
@@ -352,6 +354,302 @@ const SKILL_OPTIONS = [
   "Mathematics",
   "Science",
   "Other",
+];
+
+// ── Subdomain → skill auto-suggestions ────────────────────────────────────
+const SUBDOMAIN_SKILLS_MAP = {
+  "Frontend Development": [
+    "React",
+    "Vue.js",
+    "Angular",
+    "Next.js",
+    "HTML/CSS",
+    "TypeScript",
+  ],
+  "Backend Development": [
+    "Node.js",
+    "Express.js",
+    "Django",
+    "FastAPI",
+    "Spring Boot",
+    "PostgreSQL",
+  ],
+  "Full Stack Development": [
+    "React",
+    "Node.js",
+    "Next.js",
+    "MongoDB",
+    "PostgreSQL",
+    "Docker",
+  ],
+  "Mobile App Development": [
+    "React Native",
+    "Flutter",
+    "Android (Kotlin)",
+    "iOS (Swift)",
+    "Expo",
+  ],
+  "System Design & Architecture": [
+    "System Design",
+    "Microservices",
+    "Docker",
+    "Kubernetes",
+    "Redis",
+  ],
+  "DevOps & CI/CD": [
+    "Docker",
+    "Kubernetes",
+    "AWS",
+    "Azure",
+    "GCP",
+    "Git & GitHub",
+  ],
+  "Cloud Computing": [
+    "AWS",
+    "Azure",
+    "GCP",
+    "Docker",
+    "Kubernetes",
+    "Terraform",
+  ],
+  Cybersecurity: [
+    "Cybersecurity",
+    "Ethical Hacking",
+    "Network Security",
+    "Pen Testing",
+  ],
+  "Blockchain Development": [
+    "Blockchain",
+    "Solidity",
+    "Web3.js",
+    "Ethereum",
+    "Smart Contracts",
+  ],
+  "Game Development": [
+    "Unity (Game Dev)",
+    "C#",
+    "Unreal Engine",
+    "C++",
+    "Blender",
+  ],
+  "API & Microservices": [
+    "Node.js",
+    "FastAPI",
+    "GraphQL",
+    "REST API",
+    "Microservices",
+    "Docker",
+  ],
+  "Machine Learning": [
+    "Python",
+    "Scikit-learn",
+    "TensorFlow",
+    "Feature Engineering",
+    "Statistics & Probability",
+  ],
+  "Deep Learning": ["TensorFlow", "PyTorch", "Keras", "Python", "NumPy"],
+  "Natural Language Processing": [
+    "Python",
+    "LangChain",
+    "OpenAI API",
+    "Prompt Engineering",
+    "NLP",
+  ],
+  "Computer Vision": ["Python", "OpenCV", "TensorFlow", "PyTorch", "YOLO"],
+  "Data Analytics": [
+    "Python",
+    "SQL",
+    "Power BI",
+    "Tableau",
+    "Excel (Advanced)",
+  ],
+  "Data Engineering": ["Python", "Spark", "Hadoop", "SQL", "Airflow"],
+  "Generative AI & LLMs": [
+    "OpenAI API",
+    "LangChain",
+    "Prompt Engineering",
+    "Python",
+    "Hugging Face",
+  ],
+  "Business Intelligence": [
+    "Power BI",
+    "Tableau",
+    "SQL",
+    "Excel (Advanced)",
+    "Data Visualization",
+  ],
+  "Stock Market & Trading": [
+    "Stock Analysis (Technical)",
+    "Stock Analysis (Fundamental)",
+    "Options & Futures",
+    "Crypto Trading",
+  ],
+  "Tax Planning & Filing": [
+    "Tax Planning",
+    "GST Filing",
+    "Income Tax Returns",
+    "Tally",
+    "Zoho Books",
+  ],
+  "Financial Modeling": [
+    "Financial Modeling (Excel)",
+    "Valuation",
+    "Excel (Advanced)",
+    "CA / CFA / CFP Knowledge",
+  ],
+  "Digital Marketing": [
+    "SEO",
+    "Google Ads",
+    "Meta Ads (Facebook/Instagram)",
+    "Google Analytics",
+    "HubSpot",
+  ],
+  "SEO & SEM": [
+    "SEO",
+    "Google Ads",
+    "Google Analytics",
+    "Content Writing",
+    "Keyword Research",
+  ],
+  "Social Media Marketing": [
+    "Meta Ads (Facebook/Instagram)",
+    "Canva",
+    "Content Writing",
+    "YouTube Marketing",
+    "Influencer Outreach",
+  ],
+  "Content Marketing": [
+    "Content Writing",
+    "Copywriting",
+    "SEO",
+    "Email Marketing",
+    "Canva",
+  ],
+  "Resume & LinkedIn Building": [
+    "Resume Writing",
+    "LinkedIn Optimization",
+    "Personal Branding",
+    "Cover Letter",
+  ],
+  "Interview Preparation": [
+    "Mock Interviews",
+    "Communication Skills",
+    "Body Language",
+    "Group Discussion",
+  ],
+  "Personality Development": [
+    "Soft Skills",
+    "Communication Skills",
+    "Body Language",
+    "Motivation & Mindset",
+  ],
+  Mathematics: [
+    "Mathematics (Class 8-12)",
+    "Vedic Maths",
+    "Abacus",
+    "Statistics & Probability",
+  ],
+  "Competitive Exams (JEE/NEET/UPSC)": [
+    "JEE Preparation",
+    "NEET Preparation",
+    "UPSC Preparation",
+    "Current Affairs",
+  ],
+  "Coding for Kids & Beginners": [
+    "Scratch (Kids Coding)",
+    "Python for Beginners",
+    "HTML/CSS",
+    "Abacus",
+  ],
+  "Nutrition & Dietetics": [
+    "Nutrition Planning",
+    "Diet Charting",
+    "Weight Management",
+    "Sports Nutrition",
+    "Child Nutrition",
+  ],
+  "Fitness & Personal Training": [
+    "CrossFit",
+    "Zumba",
+    "Weight Management",
+    "Sports Nutrition",
+  ],
+  "Yoga & Meditation": [
+    "Yoga",
+    "Pranayama",
+    "Meditation",
+    "Ayurvedic Consultation",
+  ],
+  "Talent Acquisition & Recruitment": [
+    "Recruitment & Sourcing",
+    "LinkedIn Hiring",
+    "ATS Tools (Naukri/LinkedIn)",
+    "HR Analytics",
+  ],
+  "HR Operations & Compliance": [
+    "HR Policies & Compliance",
+    "Payroll Management",
+    "HRMS Tools (Keka/Darwinbox/SAP)",
+    "Labor Law",
+  ],
+  "UI/UX Design": [
+    "Figma",
+    "Adobe XD",
+    "Wireframing & Prototyping",
+    "UI/UX Research",
+    "Adobe Illustrator",
+  ],
+  "Graphic Design": [
+    "Adobe Photoshop",
+    "Adobe Illustrator",
+    "Canva",
+    "Adobe InDesign",
+  ],
+  "Corporate & Company Law": [
+    "Contract Drafting",
+    "Company Incorporation",
+    "MCA Filings",
+    "Legal Research",
+  ],
+  "Tax & GST Law": [
+    "GST & Tax Law",
+    "GST Filing",
+    "Tax Planning",
+    "Legal Research",
+  ],
+};
+
+const PREFERRED_JOB_OPTIONS = [
+  { label: "Software Developer", value: "Software Developer" },
+  { label: "Frontend Developer", value: "Frontend Developer" },
+  { label: "Backend Developer", value: "Backend Developer" },
+  { label: "Full Stack Developer", value: "Full Stack Developer" },
+  { label: "Mobile App Developer", value: "Mobile App Developer" },
+  { label: "Data Analyst", value: "Data Analyst" },
+  { label: "Data Scientist", value: "Data Scientist" },
+  { label: "Machine Learning Engineer", value: "Machine Learning Engineer" },
+  { label: "DevOps Engineer", value: "DevOps Engineer" },
+  { label: "UI/UX Designer", value: "UI/UX Designer" },
+  { label: "Product Manager", value: "Product Manager" },
+  { label: "Business Analyst", value: "Business Analyst" },
+  { label: "Digital Marketer", value: "Digital Marketer" },
+  { label: "Content Writer", value: "Content Writer" },
+  { label: "HR Executive", value: "HR Executive" },
+  { label: "Finance Analyst", value: "Finance Analyst" },
+  { label: "Sales Executive", value: "Sales Executive" },
+  { label: "Graphic Designer", value: "Graphic Designer" },
+  { label: "Teacher / Trainer", value: "Teacher / Trainer" },
+  { label: "Legal Associate", value: "Legal Associate" },
+  { label: "Other", value: "Other" },
+];
+
+const CURRENT_STATUS_OPTIONS = [
+  { label: "Student", value: "Student" },
+  { label: "Fresher", value: "Fresher" },
+  { label: "Working Professional", value: "Working Professional" },
+  { label: "Looking for Job", value: "Looking for Job" },
+  { label: "Freelancer", value: "Freelancer" },
+  { label: "Entrepreneur", value: "Entrepreneur" },
 ];
 
 const LANGUAGE_OPTIONS = [
@@ -672,7 +970,7 @@ const QUALIFICATION_OPTIONS = [
   { label: "Graduate", value: "Graduate" },
   { label: "Post Graduate", value: "PG" },
   { label: "Diploma", value: "Diploma" },
-  { label: "Marathi Medium", value: "Marathi Medium" },
+  { label: "PHD Holder", value: "PHD Holder" },
   { label: "Other", value: "Other" },
 ];
 
@@ -716,7 +1014,6 @@ function DropdownPicker({ label, value, options, onChange }) {
         </Text>
         <Ionicons name="chevron-down" size={18} color={TEXT_2} />
       </TouchableOpacity>
-
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
           style={modalStyles.overlay}
@@ -760,14 +1057,23 @@ function DropdownPicker({ label, value, options, onChange }) {
 }
 
 // ── Skills picker ─────────────────────────────────────────────────────────
-function SkillsPicker({ selectedSkills, onChange, domain }) {
+function SkillsPicker({ selectedSkills, onChange, domain, subDomain }) {
   const [visible, setVisible] = useState(false);
   const [customSkill, setCustomSkill] = useState("");
 
   const skillList =
-    domain && DOMAIN_SKILLS_MAP[domain]
-      ? DOMAIN_SKILLS_MAP[domain]
-      : SKILL_OPTIONS;
+    subDomain && SUBDOMAIN_SKILLS_MAP[subDomain]
+      ? SUBDOMAIN_SKILLS_MAP[subDomain]
+      : domain && DOMAIN_SKILLS_MAP[domain]
+        ? DOMAIN_SKILLS_MAP[domain]
+        : SKILL_OPTIONS;
+
+  const suggestedLabel =
+    subDomain && SUBDOMAIN_SKILLS_MAP[subDomain]
+      ? `Skills for: ${subDomain}`
+      : domain && DOMAIN_SKILLS_MAP[domain]
+        ? `Skills for: ${domain}`
+        : null;
 
   const toggleSkill = (skill) => {
     if (selectedSkills.includes(skill)) {
@@ -798,37 +1104,38 @@ function SkillsPicker({ selectedSkills, onChange, domain }) {
 
   return (
     <>
-      <View style={styles.chipsWrap}>
-        {selectedSkills.length === 0 ? (
-          <Text style={styles.chipsEmpty}>No skills selected</Text>
-        ) : (
-          selectedSkills.map((skill) => (
-            <TouchableOpacity
-              key={skill}
-              style={styles.chip}
-              onPress={() => toggleSkill(skill)}
-            >
-              <Text style={styles.chipText}>{skill}</Text>
-              <Ionicons
-                name="close"
-                size={13}
-                color="#fff"
-                style={{ marginLeft: 4 }}
-              />
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
       <TouchableOpacity
-        style={styles.addChipBtn}
+        style={styles.dropdownBox}
         onPress={() => setVisible(true)}
+        activeOpacity={0.7}
       >
-        <Ionicons name="add-circle-outline" size={17} color={TEAL} />
-        <Text style={styles.addChipText}>
-          {selectedSkills.length === 0 ? "Add Skills" : "Edit Skills"} (max 5)
-        </Text>
+        <View style={{ flex: 1 }}>
+          {selectedSkills.length === 0 ? (
+            <Text style={{ color: TEXT_2, fontSize: 15, fontWeight: "400" }}>
+              Select Skills (max 5)
+            </Text>
+          ) : (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {selectedSkills.map((skill) => (
+                <TouchableOpacity
+                  key={skill}
+                  style={styles.chip}
+                  onPress={() => toggleSkill(skill)}
+                >
+                  <Text style={styles.chipText}>{skill}</Text>
+                  <Ionicons
+                    name="close"
+                    size={12}
+                    color="#fff"
+                    style={{ marginLeft: 3 }}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+        <Ionicons name="chevron-down" size={18} color={TEXT_2} />
       </TouchableOpacity>
-
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
           style={modalStyles.overlay}
@@ -837,7 +1144,7 @@ function SkillsPicker({ selectedSkills, onChange, domain }) {
         <View style={[modalStyles.sheet, { maxHeight: "70%" }]}>
           <View style={modalStyles.handle} />
           <Text style={modalStyles.title}>Select Skills (max 5)</Text>
-          {domain && DOMAIN_SKILLS_MAP[domain] && (
+          {suggestedLabel && (
             <Text
               style={{
                 color: TEAL,
@@ -847,7 +1154,7 @@ function SkillsPicker({ selectedSkills, onChange, domain }) {
                 fontWeight: "600",
               }}
             >
-              Skills for: {domain}
+              💡 {suggestedLabel}
             </Text>
           )}
           <Text style={modalStyles.subtitle}>
@@ -916,13 +1223,13 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   const toggleLanguage = (lang) => {
     if (selectedLanguages.includes(lang)) {
       onChange(selectedLanguages.filter((l) => l !== lang));
-    } else {
-      if (selectedLanguages.length >= 5) {
-        Alert.alert("Max 5 languages");
-        return;
-      }
-      onChange([...selectedLanguages, lang]);
+      return;
     }
+    if (selectedLanguages.length >= 5) {
+      Alert.alert("Max 5 languages");
+      return;
+    }
+    onChange([...selectedLanguages, lang]);
   };
 
   const addCustomLanguage = () => {
@@ -942,38 +1249,38 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
 
   return (
     <>
-      <View style={styles.chipsWrap}>
-        {selectedLanguages.length === 0 ? (
-          <Text style={styles.chipsEmpty}>No languages selected</Text>
-        ) : (
-          selectedLanguages.map((lang) => (
-            <TouchableOpacity
-              key={lang}
-              style={styles.chip}
-              onPress={() => toggleLanguage(lang)}
-            >
-              <Text style={styles.chipText}>{lang}</Text>
-              <Ionicons
-                name="close"
-                size={14}
-                color="#fff"
-                style={{ marginLeft: 4 }}
-              />
-            </TouchableOpacity>
-          ))
-        )}
-      </View>
       <TouchableOpacity
-        style={styles.addChipBtn}
+        style={styles.dropdownBox}
         onPress={() => setVisible(true)}
+        activeOpacity={0.7}
       >
-        <Ionicons name="add-circle-outline" size={17} color={TEAL} />
-        <Text style={styles.addChipText}>
-          {selectedLanguages.length === 0 ? "Add Languages" : "Edit Languages"}{" "}
-          (max 5)
-        </Text>
+        <View style={{ flex: 1 }}>
+          {selectedLanguages.length === 0 ? (
+            <Text style={{ color: TEXT_2, fontSize: 15, fontWeight: "400" }}>
+              Select Languages (max 5)
+            </Text>
+          ) : (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {selectedLanguages.map((lang) => (
+                <TouchableOpacity
+                  key={lang}
+                  style={styles.chip}
+                  onPress={() => toggleLanguage(lang)}
+                >
+                  <Text style={styles.chipText}>{lang}</Text>
+                  <Ionicons
+                    name="close"
+                    size={12}
+                    color="#fff"
+                    style={{ marginLeft: 3 }}
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+        <Ionicons name="chevron-down" size={18} color={TEXT_2} />
       </TouchableOpacity>
-
       <Modal visible={visible} transparent animationType="slide">
         <TouchableOpacity
           style={modalStyles.overlay}
@@ -1040,10 +1347,8 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   );
 }
 
-// ── Reusable Field Label ──────────────────────────────────────────────────
 const FieldLabel = ({ text }) => <Text style={styles.fieldLabel}>{text}</Text>;
 
-// ── Reusable Input Field ──────────────────────────────────────────────────
 function InputField({
   label,
   value,
@@ -1070,7 +1375,6 @@ function InputField({
   );
 }
 
-// ── Section Header ────────────────────────────────────────────────────────
 const SectionHeader = ({ icon, title }) => (
   <View style={styles.sectionHeader}>
     <View style={styles.sectionIconWrap}>
@@ -1080,6 +1384,107 @@ const SectionHeader = ({ icon, title }) => (
   </View>
 );
 
+// ── Status Modal (success + error) ───────────────────────────────────────
+// NOTE: confetti uses fixed pixel coords — RN does NOT support "%" for top/left on absolute elements
+function StatusModal({ visible, type, message, onClose }) {
+  const isSuccess = type === "success";
+
+  // Confetti dots — only shown on success
+  const dots = [
+    [28, 26, "#f472b6", 9],
+    [75, 14, "#fbbf24", 8],
+    [138, 8, "#a78bfa", 7],
+    [188, 20, "#34d399", 8],
+    [242, 10, "#60a5fa", 7],
+    [282, 28, "#34d399", 9],
+    [52, 50, "#60a5fa", 7],
+    [105, 40, "#fbbf24", 6],
+    [158, 46, "#f472b6", 7],
+    [212, 38, "#a78bfa", 8],
+    [262, 52, "#fbbf24", 6],
+    [308, 18, "#f472b6", 7],
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={sm.overlay}>
+        <View style={[sm.card, !isSuccess && { paddingTop: 36 }]}>
+          {/* ── Confetti — only on success ── */}
+          {isSuccess && (
+            <View style={sm.confettiWrap} pointerEvents="none">
+              {dots.map(([left, top, color, size], i) => (
+                <View
+                  key={i}
+                  style={{
+                    position: "absolute",
+                    left,
+                    top,
+                    width: size,
+                    height: size,
+                    borderRadius: size / 2,
+                    backgroundColor: color,
+                  }}
+                />
+              ))}
+            </View>
+          )}
+
+          {/* ── Badge ── */}
+          <View style={[sm.ring, !isSuccess && { backgroundColor: "#fde8e8" }]}>
+            <View
+              style={[sm.circle, !isSuccess && { backgroundColor: "#DC2626" }]}
+            >
+              <Ionicons
+                name={isSuccess ? "checkmark" : "close"}
+                size={40}
+                color={WHITE}
+              />
+            </View>
+          </View>
+
+          {/* ── Text ── */}
+          <Text style={sm.title}>
+            {isSuccess ? "Profile Saved " : "Update Failed!"}
+          </Text>
+          <Text style={sm.subtitle}>
+            {isSuccess
+              ? "You've successfully completed your\nprofessional details."
+              : message || "Something went wrong. Please try again."}
+          </Text>
+
+          {/* ── Buttons ── */}
+          {isSuccess ? (
+            <View style={sm.btnRow}>
+              <TouchableOpacity
+                style={sm.keepBtn}
+                onPress={onClose}
+                activeOpacity={0.8}
+              >
+                <Text style={sm.keepTxt}>Keep Editing</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={sm.proceedBtn}
+                onPress={onClose}
+                activeOpacity={0.8}
+              >
+                <Text style={sm.proceedTxt}>OK </Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={sm.retryBtn}
+              onPress={onClose}
+              activeOpacity={0.8}
+            >
+              <Text style={sm.retryTxt}>Try Again</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────
 const EditProfile = () => {
   const router = useRouter();
@@ -1088,6 +1493,12 @@ const EditProfile = () => {
   const [isExpert, setIsExpert] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
+  // ── Status modal state (success + error) ──
+  const [statusModal, setStatusModal] = useState({
+    visible: false,
+    type: "success",
+    message: "",
+  });
 
   const [form, setForm] = useState({
     full_name: "",
@@ -1116,13 +1527,11 @@ const EditProfile = () => {
   const updateForm = (field, value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  // Reset sub_domain + skills when domain changes
   const handleDomainChange = (value) => {
     setForm((prev) => ({ ...prev, domain: value, sub_domain: "" }));
     setSelectedSkills([]);
   };
 
-  // ── Fetch Profile ─────────────────────────────────────────────────────
   const fetchProfile = async () => {
     try {
       const token = await AsyncStorage.getItem("token");
@@ -1149,18 +1558,23 @@ const EditProfile = () => {
         years_of_experience: user.years_of_experience || "",
         linkedin: user.linkedin || "",
         image_file: null,
-        // ✅ FIXED: use getImageUri helper so Cloudinary URLs are not double-prefixed
         image_url: user.image ? getImageUri(user.image) : "",
         existing_cv: user.cvFile || user.cv || "",
       }));
+
+      if (!expertRole && user.skills) {
+        const skillArr = user.skills
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        if (skillArr.length > 0) setSelectedSkills(skillArr);
+      }
 
       if (expertRole) {
         try {
           const expertRes = await axios.get(
             `${BASE_URL}/api/experts/profile/me`,
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            },
+            { headers: { Authorization: `Bearer ${token}` } },
           );
           const ep = expertRes.data.data;
           if (ep) {
@@ -1179,21 +1593,18 @@ const EditProfile = () => {
                 ep.years_of_experience != null
                   ? String(ep.years_of_experience)
                   : prev.years_of_experience,
-              // ✅ FIXED: use getImageUri helper so Cloudinary URLs are not double-prefixed
               image_url: ep.image ? getImageUri(ep.image) : prev.image_url,
               existing_cv: ep.cv || prev.existing_cv,
             }));
-            if (ep.skills && ep.skills.length > 0) {
+            if (ep.skills && ep.skills.length > 0)
               setSelectedSkills(ep.skills.map((s) => s.skill_name));
-            }
-            if (ep.language_spoken) {
+            if (ep.language_spoken)
               setSelectedLanguages(
                 ep.language_spoken
                   .split(",")
                   .map((l) => l.trim())
                   .filter(Boolean),
               );
-            }
           }
         } catch (err) {
           console.log("Expert profile fetch error:", err.message);
@@ -1210,7 +1621,6 @@ const EditProfile = () => {
     fetchProfile();
   }, []);
 
-  // ── Pick Image ────────────────────────────────────────────────────────
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -1222,22 +1632,19 @@ const EditProfile = () => {
       allowsEditing: true,
       aspect: [1, 1],
     });
-    if (!result.canceled) {
+    if (!result.canceled)
       setForm((prev) => ({
         ...prev,
         image_file: result.assets[0].uri,
         image_url: result.assets[0].uri,
       }));
-    }
   };
 
-  // ── Pick CV ───────────────────────────────────────────────────────────
   const pickCV = async () => {
     const result = await DocumentPicker.getDocumentAsync({});
     if (!result.canceled) updateForm("cv_file", result.assets[0]);
   };
 
-  // ── Save Profile ──────────────────────────────────────────────────────
   const saveProfile = async () => {
     try {
       setSaving(true);
@@ -1268,16 +1675,17 @@ const EditProfile = () => {
         if (selectedSkills.length > 0)
           formData.append("skills", selectedSkills.join(", "));
       } else {
-        formData.append("skills", form.skills);
+        formData.append(
+          "skills",
+          selectedSkills.length > 0 ? selectedSkills.join(", ") : "",
+        );
       }
-
-      if (form.image_file) {
+      if (form.image_file)
         formData.append("image", {
           uri: form.image_file,
           name: "profile.jpg",
           type: "image/jpeg",
         });
-      }
       if (form.cv_file) {
         const cleanUri = form.cv_file.uri.split("?")[0];
         const ext = cleanUri.split(".").pop();
@@ -1287,14 +1695,12 @@ const EditProfile = () => {
           type: ext === "pdf" ? "application/pdf" : `image/${ext}`,
         });
       }
-
       await axios.post(`${BASE_URL}/api/users/save-profile`, formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
       });
-
       if (isExpert) {
         const expertFormData = new FormData();
         expertFormData.append("fullName", form.full_name);
@@ -1317,13 +1723,12 @@ const EditProfile = () => {
           "skills",
           selectedSkills.length > 0 ? selectedSkills.join(", ") : "",
         );
-        if (form.image_file) {
+        if (form.image_file)
           expertFormData.append("image", {
             uri: form.image_file,
             name: "profile.jpg",
             type: "image/jpeg",
           });
-        }
         await axios.put(`${BASE_URL}/api/experts/profile/me`, expertFormData, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -1331,22 +1736,22 @@ const EditProfile = () => {
           },
         });
       }
-
-      Alert.alert("✅ Success", "Profile Updated Successfully", [
-        { text: "OK", onPress: () => router.back() },
-      ]);
+      // ── Show success modal ──
+      setStatusModal({ visible: true, type: "success", message: "" });
     } catch (err) {
       console.log("❌ Save error:", err.response?.data || err.message);
-      Alert.alert(
-        "Error",
-        err.response?.data?.message || "Profile update failed. Try again.",
-      );
+      setStatusModal({
+        visible: true,
+        type: "error",
+        message:
+          err.response?.data?.message ||
+          "Profile update failed. Please try again.",
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  // ── Loading ───────────────────────────────────────────────────────────
   if (loading) {
     return (
       <View style={styles.loadingScreen}>
@@ -1356,7 +1761,6 @@ const EditProfile = () => {
     );
   }
 
-  // Compute sub-domain options based on current domain
   const subDomainOptions = SUBDOMAIN_MAP[form.domain] || [];
 
   return (
@@ -1379,7 +1783,6 @@ const EditProfile = () => {
           <Text style={styles.changePhoto}>Change Photo</Text>
         </TouchableOpacity>
 
-        {/* ── Basic Info ── */}
         <Text style={styles.sectionTitle}>Basic Information</Text>
         <InputField
           label="Full Name"
@@ -1403,7 +1806,6 @@ const EditProfile = () => {
           keyboardType="phone-pad"
         />
 
-        {/* ── Domain ── */}
         <Text style={styles.label}>Domain</Text>
         <DropdownPicker
           label="Domain"
@@ -1412,7 +1814,6 @@ const EditProfile = () => {
           onChange={handleDomainChange}
         />
 
-        {/* Sub-Domain — only shows when domain is selected */}
         {subDomainOptions.length > 0 && (
           <>
             <Text style={styles.label}>Sub-Domain</Text>
@@ -1425,7 +1826,6 @@ const EditProfile = () => {
           </>
         )}
 
-        {/* ── Qualification ── */}
         <Text style={styles.label}>Qualification</Text>
         <DropdownPicker
           label="Qualification"
@@ -1434,7 +1834,6 @@ const EditProfile = () => {
           onChange={(v) => updateForm("qualification", v)}
         />
 
-        {/* ── Experience ── */}
         <Text style={styles.label}>Experience</Text>
         <DropdownPicker
           label="Experience"
@@ -1452,7 +1851,6 @@ const EditProfile = () => {
           placeholder="e.g. 1995-06-15"
         />
 
-        {/* ── CV ── */}
         <Text style={styles.label}>CV / Resume</Text>
         <TouchableOpacity style={styles.uploadBtn} onPress={pickCV}>
           <Ionicons name="document-attach-outline" size={20} color={TEAL} />
@@ -1460,66 +1858,50 @@ const EditProfile = () => {
             {form.cv_file
               ? form.cv_file.name
               : form.existing_cv
-                ? // ✅ FIXED: show only filename/short label, not full Cloudinary URL
-                  "📄 CV Uploaded ✓"
+                ? "📄 CV Uploaded ✓"
                 : "Choose CV File"}
           </Text>
-          {/* ✅ Show a change icon if CV already exists */}
           {(form.cv_file || form.existing_cv) && (
             <Ionicons name="pencil-outline" size={16} color={TEAL} />
           )}
         </TouchableOpacity>
 
-        {/* ── Jobseeker Only ── */}
         {!isExpert && (
           <>
             <Text style={styles.sectionTitle}>Jobseeker Details</Text>
-            <InputField
-              label="Skills"
-              value={form.skills}
-              field="skills"
-              setForm={setForm}
-              form={form}
-            />
-            <InputField
-              label="Preferred Job Role"
-              value={form.preferred_job_role}
-              field="preferred_job_role"
-              setForm={setForm}
-              form={form}
-            />
-            <InputField
-              label="Current Status (Student / Fresher)"
-              value={form.current_status}
-              field="current_status"
-              setForm={setForm}
-              form={form}
-            />
-          </>
-        )}
-
-        {/* ── Expert Only ── */}
-        {isExpert && (
-          <>
-            <Text style={styles.sectionTitle}>Expert Details</Text>
             <Text style={styles.label}>Skills (max 5)</Text>
-            {form.domain && DOMAIN_SKILLS_MAP[form.domain] && (
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: TEAL,
-                  marginTop: 4,
-                  marginBottom: 2,
-                  fontWeight: "600",
-                }}
-              >
-                💡 Showing skills for: {form.domain}
-              </Text>
-            )}
             <SkillsPicker
               selectedSkills={selectedSkills}
               onChange={setSelectedSkills}
               domain={form.domain}
+              subDomain={form.sub_domain}
+            />
+            <Text style={styles.label}>Preferred Job Role</Text>
+            <DropdownPicker
+              label="Preferred Job Role"
+              value={form.preferred_job_role}
+              options={PREFERRED_JOB_OPTIONS}
+              onChange={(v) => updateForm("preferred_job_role", v)}
+            />
+            <Text style={styles.label}>Current Status</Text>
+            <DropdownPicker
+              label="Current Status"
+              value={form.current_status}
+              options={CURRENT_STATUS_OPTIONS}
+              onChange={(v) => updateForm("current_status", v)}
+            />
+          </>
+        )}
+
+        {isExpert && (
+          <>
+            <Text style={styles.sectionTitle}>Expert Details</Text>
+            <Text style={styles.label}>Skills (max 5)</Text>
+            <SkillsPicker
+              selectedSkills={selectedSkills}
+              onChange={setSelectedSkills}
+              domain={form.domain}
+              subDomain={form.sub_domain}
             />
             <Text style={styles.label}>Languages Known</Text>
             <LanguagesPicker
@@ -1550,25 +1932,9 @@ const EditProfile = () => {
               placeholder="Write a short bio about yourself"
               placeholderTextColor={TEXT_2}
             />
-            <InputField
-              label="Expertise"
-              value={form.expertise}
-              field="expertise"
-              setForm={setForm}
-              form={form}
-            />
-            <InputField
-              label="Years of Experience"
-              value={form.years_of_experience}
-              field="years_of_experience"
-              setForm={setForm}
-              form={form}
-              keyboardType="numeric"
-            />
           </>
         )}
 
-        {/* ── Save Button ── */}
         <TouchableOpacity
           style={styles.saveBtn}
           onPress={saveProfile}
@@ -1589,6 +1955,21 @@ const EditProfile = () => {
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      {/* ── STATUS MODAL (success + error) ── */}
+      <StatusModal
+        visible={statusModal.visible}
+        type={statusModal.type}
+        message={statusModal.message}
+        onClose={() => {
+          if (statusModal.type === "success") {
+            setStatusModal({ visible: false, type: "success", message: "" });
+            router.back();
+          } else {
+            setStatusModal({ visible: false, type: "error", message: "" });
+          }
+        }}
+      />
     </KeyboardAvoidingView>
   );
 };
@@ -1830,4 +2211,116 @@ const modalStyles = StyleSheet.create({
     marginTop: 12,
   },
   doneBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
+});
+
+// ── Success Modal Styles ───────────────────────────────────────────────────
+const sm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 72, // room for confetti area above badge
+    paddingBottom: 28,
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden", // clips confetti dots that extend to card edges
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    elevation: 16,
+  },
+  // Confetti sits at absolute top of card
+  confettiWrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  // Outer light grey ring
+  ring: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#e8e8e8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 22,
+  },
+  // Inner green filled circle
+  circle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: GREEN_SUC,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: TEXT_1,
+    textAlign: "center",
+    marginBottom: 10,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: TEXT_2,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  keepBtn: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 16,
+    backgroundColor: "#f0eaf8",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  keepTxt: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: TEAL,
+  },
+  proceedBtn: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 16,
+    backgroundColor: "#2d2440",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  proceedTxt: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: WHITE,
+  },
+  retryBtn: {
+    width: "100%",
+    paddingVertical: 15,
+    borderRadius: 16,
+    backgroundColor: "#DC2626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryTxt: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: WHITE,
+  },
 });

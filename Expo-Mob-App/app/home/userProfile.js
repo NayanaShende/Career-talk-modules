@@ -1149,12 +1149,101 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
   );
 }
 
+// ── Success Modal ─────────────────────────────────────────────────────────────
+function SuccessModal({ visible, isExpert, onKeepEditing, onProceed }) {
+  // Confetti dots data
+  const confettiDots = [
+    { top: 18, left: 38, color: "#a78bfa", size: 7, rotate: "20deg" },
+    { top: 10, left: 62, color: "#34d399", size: 5, rotate: "45deg" },
+    { top: 28, left: 20, color: "#fbbf24", size: 6, rotate: "-15deg" },
+    { top: 14, left: 80, color: "#f472b6", size: 5, rotate: "60deg" },
+    { top: 36, left: 88, color: "#60a5fa", size: 7, rotate: "-30deg" },
+    { top: 8, left: 48, color: "#34d399", size: 4, rotate: "10deg" },
+    { top: 22, left: 72, color: "#fbbf24", size: 6, rotate: "50deg" },
+    { top: 40, left: 12, color: "#f472b6", size: 5, rotate: "-45deg" },
+    { top: 6, left: 30, color: "#60a5fa", size: 4, rotate: "35deg" },
+    { top: 32, left: 55, color: "#a78bfa", size: 5, rotate: "-20deg" },
+    { top: 18, left: 92, color: "#34d399", size: 6, rotate: "55deg" },
+    { top: 44, left: 44, color: "#fbbf24", size: 4, rotate: "-10deg" },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={sm.overlay}>
+        <View style={sm.card}>
+          {/* Confetti area */}
+          <View style={sm.confettiArea} pointerEvents="none">
+            {confettiDots.map((dot, i) => (
+              <View
+                key={i}
+                style={[
+                  sm.confettiDot,
+                  {
+                    top: `${dot.top}%`,
+                    left: `${dot.left}%`,
+                    backgroundColor: dot.color,
+                    width: dot.size,
+                    height: dot.size,
+                    borderRadius: dot.size / 2,
+                    transform: [{ rotate: dot.rotate }],
+                  },
+                ]}
+              />
+            ))}
+          </View>
+
+          {/* Badge icon */}
+          <View style={sm.badgeOuter}>
+            <View style={sm.badgeMiddle}>
+              <View style={sm.badgeInner}>
+                <Ionicons name="checkmark" size={36} color={WHITE} />
+              </View>
+            </View>
+          </View>
+
+          {/* Text */}
+          <Text style={sm.title}>
+            {isExpert ? "Profile Verified & Saved!" : "Profile Saved!"}
+          </Text>
+          <Text style={sm.subtitle}>
+            {isExpert
+              ? "Your certificate has been uploaded and your expert profile is now verified!"
+              :  "Now your are the part of the Career talk. You've successfully completed your professional details."}
+          </Text>
+
+          {/* Buttons */}
+          <View style={sm.btnRow}>
+            <TouchableOpacity
+              style={sm.keepBtn}
+              onPress={onKeepEditing}
+              activeOpacity={0.8}
+            >
+              <Text style={sm.keepBtnText}>Keep Editing</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={sm.proceedBtn}
+              onPress={onProceed}
+              activeOpacity={0.8}
+            >
+              <Text style={sm.proceedBtnText}>
+                {isExpert ? "Go to Dashboard →" : "Go to Dashboard →"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function ProfileScreen() {
   const [role, setRole] = useState("Jobseeker");
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
+  // ── NEW: success modal state ──
+  const [successVisible, setSuccessVisible] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -1438,18 +1527,8 @@ export default function ProfileScreen() {
         }),
       );
 
-      Alert.alert(
-        role === "Expert" ? "✅ Profile Verified & Saved" : "✅ Profile Saved",
-        role === "Expert"
-          ? "Your certificate has been uploaded and your expert profile is now verified!"
-          : "Your profile has been saved successfully!",
-        [
-          {
-            text: "OK",
-            onPress: () => router.replace("/(tabs)/dashboard/dashboard"),
-          },
-        ],
-      );
+      // ── Show custom success modal instead of Alert ──
+      setSuccessVisible(true);
     } catch (e) {
       console.log("Submit error:", e.response?.data || e.message);
       Alert.alert(
@@ -1678,7 +1757,7 @@ export default function ProfileScreen() {
                 { label: "Graduate", value: "Graduate" },
                 { label: "Post Graduate", value: "PG" },
                 { label: "Diploma", value: "Diploma" },
-                { label: "Marathi Medium", value: "Marathi Medium" },
+                { label: "PHD Holder", value: "PHD Holder" },
                 { label: "Other", value: "Other" },
               ]}
               error={errors.qualification}
@@ -1877,6 +1956,17 @@ export default function ProfileScreen() {
           <View style={{ height: 36 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* ── SUCCESS MODAL ── */}
+      <SuccessModal
+        visible={successVisible}
+        isExpert={isExpert}
+        onKeepEditing={() => setSuccessVisible(false)}
+        onProceed={() => {
+          setSuccessVisible(false);
+          router.replace("/(tabs)/dashboard/dashboard");
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -2309,5 +2399,114 @@ const s = StyleSheet.create({
     backgroundColor: WHITE,
     justifyContent: "center",
     alignItems: "center",
+  },
+});
+
+// ── Success Modal Styles ───────────────────────────────────────────────────────
+const sm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 24,
+    padding: 28,
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden",
+    position: "relative",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  confettiArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 130,
+  },
+  confettiDot: {
+    position: "absolute",
+  },
+  // Badge — three layered circles like the screenshot
+  badgeOuter: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(134,119,149,0.12)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+    marginTop: 8,
+  },
+  badgeMiddle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(134,119,149,0.18)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: GREEN_SUC,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1a1a2e",
+    textAlign: "center",
+    marginBottom: 10,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 28,
+    paddingHorizontal: 8,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  keepBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: GREEN_LIGHT,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  keepBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: GREEN,
+  },
+  proceedBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#2d2440",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  proceedBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: WHITE,
   },
 });
