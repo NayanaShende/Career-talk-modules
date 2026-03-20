@@ -20,6 +20,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import axiosInstance from "../../services/api";
 import { router } from "expo-router";
+import RazorpayCheckout from "react-native-razorpay"; // ── Razorpay SDK ──
 
 const { height } = Dimensions.get("window");
 
@@ -153,7 +154,8 @@ export default function WalletModal({ visible, onClose }) {
     }
   };
 
-  // ── Add money / Razorpay ───────────────────────────────────────────────────
+  // ── Add money / Razorpay SDK ───────────────────────────────────────────────
+  // UPDATED: Opens Razorpay native payment page directly
   const handleAddMoney = async () => {
     const amt = parseInt(amount);
     if (!amt || amt < 1) {
@@ -166,45 +168,65 @@ export default function WalletModal({ visible, onClose }) {
     }
     try {
       setLoading(true);
+
+      // Step 1 — Create order from backend
       const orderRes = await axiosInstance.post("/payment/create-order", {
         amount: amt,
       });
       const order = orderRes?.data?.order;
       if (!order?.id) throw new Error("Order creation failed");
 
-      Alert.alert(
-        "Payment",
-        `Order created for ₹${amt}.\nOrder ID: ${order.id}\n\nIn production, integrate react-native-razorpay SDK here.`,
-        [
-          {
-            text: "Simulate Success (Test)",
-            onPress: () => simulatePaymentSuccess(order.id, amt),
-          },
-          { text: "Cancel", style: "cancel" },
-        ],
-      );
-    } catch (e) {
-      console.log("handleAddMoney error:", e);
-      Alert.alert(
-        "Error",
-        e?.response?.data?.message || "Payment failed. Try again.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+      // Step 2 — Open Razorpay native payment page directly
+      const options = {
+        description:  "Career-Talk Wallet Topup",
+        image:        "https://your-logo-url.com/logo.png", // ← Replace with your logo URL
+        currency:     "INR",
+        key:          "rzp_test_SNSlvTnPShezAs,z3aPwpL2EaWDeAIl625eic9U",          // ← Replace with your Razorpay Key ID
+        amount:       amt * 100,                            // Razorpay expects paise
+        name:         "Career-Talk",
+        order_id:     order.id,
+        prefill: {
+          email:   userData?.email   || "",
+          contact: userData?.phone   || userData?.mobile || "",
+          name:    getUserDisplayName(),
+        },
+        theme: { color: "#867795" },
+      };
 
-  const simulatePaymentSuccess = async (orderId, amt) => {
-    try {
-      setLoading(true);
-      await axiosInstance.post("/wallet/topup", { userId, amount: amt });
-      await fetchBalance(userId);
-      await fetchHistory(userId);
-      setAmount("");
-      setActiveTab("history");
-      Alert.alert("Success", `₹${amt} added to your wallet!`);
+      // This opens the Razorpay payment page directly ✅
+      const paymentData = await RazorpayCheckout.open(options);
+
+      // Step 3 — Verify payment signature on backend
+      const verifyRes = await axiosInstance.post("/payment/verify", {
+        razorpay_payment_id: paymentData.razorpay_payment_id,
+        razorpay_order_id:   paymentData.razorpay_order_id,
+        razorpay_signature:  paymentData.razorpay_signature,
+        userId,
+        amount: amt,
+      });
+
+      if (verifyRes?.data?.success) {
+        // Step 4 — Credit wallet after successful verification
+        await axiosInstance.post("/wallet/topup", { userId, amount: amt });
+        await fetchBalance(userId);
+        await fetchHistory(userId);
+        setAmount("");
+        setActiveTab("history");
+        Alert.alert("✅ Success", `₹${amt} added to your wallet!`);
+      } else {
+        Alert.alert("Payment Failed", "Verification failed. Contact support.");
+      }
     } catch (e) {
-      Alert.alert("Error", "Topup failed");
+      // Code 0 means user cancelled/closed Razorpay screen
+      if (e?.code === 0) {
+        Alert.alert("Cancelled", "Payment was cancelled.");
+      } else {
+        console.log("handleAddMoney error:", e);
+        Alert.alert(
+          "Error",
+          e?.response?.data?.message || "Payment failed. Try again.",
+        );
+      }
     } finally {
       setLoading(false);
     }
