@@ -240,17 +240,20 @@ export default function LoginOtpScreen() {
   };
 
   const resendOtp = async () => {
+    setLoading(true);
     try {
       await API.post("/auth/send-otp", {
         mobile: `+${selectedCountry.callingCode}${mobile}`,
       });
-      setTimer(60);
-      setIsTimerActive(true);
       setOtp(["", "", "", "", "", ""]);
       setError("");
+      setTimer(60);
+      setIsTimerActive(true);
+      otpRefs.current[0]?.focus(); // auto-focus first OTP box
     } catch {
       setError("Failed to resend OTP.");
     }
+    setLoading(false);
   };
 
   const verifyOtp = async () => {

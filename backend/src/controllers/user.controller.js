@@ -184,16 +184,32 @@ const updateProfile = async (req, res) => {
 
     const updateData = { ...req.body };
 
-    if (cvFile) updateData.cvFile = cvFile.filename;
-    if (imageFile) updateData.image = imageFile.filename;
+    // ✅ Upload to Cloudinary instead of saving filename
+    if (imageFile) {
+      const result = await uploadToCloudinary(imageFile.buffer);
+      updateData.image = result.secure_url;
+      console.log("✅ Image uploaded:", result.secure_url);
+    }
+
+    if (cvFile) {
+      const result = await uploadToCloudinary(cvFile.buffer);
+      updateData.cvFile = result.secure_url;
+      console.log("✅ CV uploaded:", result.secure_url);
+    }
 
     await req.user.update(updateData);
     await req.user.reload();
 
-    return res.json({ success: true, message: "Profile updated successfully", user: req.user });
+    return res.json({
+      success: true,
+      message: "Profile updated successfully",
+      user: req.user,
+    });
   } catch (err) {
     console.error("❌ UPDATE PROFILE ERROR:", err);
-    return res.status(500).json({ success: false, message: err.message || "Server error" });
+    return res
+      .status(500)
+      .json({ success: false, message: err.message || "Server error" });
   }
 };
 /* =========================================

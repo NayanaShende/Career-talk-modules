@@ -1,6 +1,5 @@
-node_modules
 .git
-.expo
-android
-ios
+.gitignore
+node_modules
 *.log
+*.DS_Store
