@@ -13,6 +13,7 @@ import {
   StatusBar,
   Dimensions,
   Alert,
+  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -37,6 +38,7 @@ const CHAT_BG = "#f0f4f3";
 const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
+const WHITE = "#FFFFFF";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const sortMessages = (msgs) =>
@@ -103,6 +105,132 @@ const getImageUri = (image, name) => {
   )}&background=0B2D72&color=fff`;
 };
 
+// ── Insufficient Balance Modal ─────────────────────────────────────────────
+function InsufficientBalanceModal({ visible, balance, onAddMoney, onCancel }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={cm.overlay}>
+        <View style={cm.card}>
+          {/* Icon */}
+          <View style={cm.iconWrap}>
+            <Ionicons name="wallet-outline" size={34} color="#867795" />
+          </View>
+
+          {/* Title */}
+          <Text style={cm.title}>Insufficient Balance</Text>
+
+          {/* Info box */}
+          <View style={cm.infoBox}>
+            <View style={cm.infoRow}>
+              <Text style={cm.infoLabel}>Required</Text>
+              <Text style={[cm.infoValue, { color: "#ef4444" }]}>
+                ₹50 minimum
+              </Text>
+            </View>
+            <View style={[cm.infoRow, { borderBottomWidth: 0 }]}>
+              <Text style={cm.infoLabel}>Your Balance</Text>
+              <Text style={[cm.infoValue, { color: "#ef4444" }]}>
+                ₹{parseFloat(balance || 0).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={cm.subtitle}>
+            Add money to your wallet to start chatting with experts.
+          </Text>
+
+          {/* Buttons */}
+          <View style={cm.btnRow}>
+            <TouchableOpacity
+              style={cm.cancelBtn}
+              onPress={onCancel}
+              activeOpacity={0.8}
+            >
+              <Text style={cm.cancelTxt}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={cm.addBtn}
+              onPress={onAddMoney}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add-circle-outline" size={17} color={WHITE} />
+              <Text style={cm.addTxt}>Add Money</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ── End Chat Modal ─────────────────────────────────────────────────────────
+function EndChatModal({
+  visible,
+  minutesUsed,
+  onEndChat,
+  onStay,
+  title,
+  stayLabel,
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={cm.overlay}>
+        <View style={cm.card}>
+          {/* Icon */}
+          <View
+            style={[
+              cm.iconWrap,
+              { backgroundColor: "#fef2f2", borderColor: "#fecaca" },
+            ]}
+          >
+            <Ionicons name="time-outline" size={34} color="#ef4444" />
+          </View>
+
+          {/* Title */}
+          <Text style={cm.title}>{title || "End Chat?"}</Text>
+
+          {/* Stats box */}
+          <View style={cm.infoBox}>
+            <View style={cm.infoRow}>
+              <Text style={cm.infoLabel}>Duration</Text>
+              <Text style={cm.infoValue}>{minutesUsed} min</Text>
+            </View>
+            <View style={[cm.infoRow, { borderBottomWidth: 0 }]}>
+              <Text style={cm.infoLabel}>Charged</Text>
+              <Text style={[cm.infoValue, { color: "#ef4444" }]}>
+                ₹{minutesUsed * 10}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={cm.subtitle}>
+            Remaining hold amount will be released back to your wallet.
+          </Text>
+
+          {/* Buttons */}
+          <View style={cm.btnRow}>
+            <TouchableOpacity
+              style={cm.stayBtn}
+              onPress={onStay}
+              activeOpacity={0.8}
+            >
+              <Text style={cm.stayTxt}>{stayLabel || "Stay"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={cm.endBtn}
+              onPress={onEndChat}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="log-out-outline" size={17} color={WHITE} />
+              <Text style={cm.endTxt}>End Chat</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ── Main Component ─────────────────────────────────────────────────────────
 export default function ChatScreen() {
   const {
@@ -115,7 +243,6 @@ export default function ChatScreen() {
 
   const RECEIVER_ID = Number(expertId);
 
-  // Get global socket from NotificationContext
   const { clearUnread, socket: globalSocketRef } = useNotification();
 
   const rawName = paramExpertName || name;
@@ -129,7 +256,7 @@ export default function ChatScreen() {
   const expertAvatarUrl = getImageUri(rawImage, expertName);
 
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [userRole, setUserRole] = useState("user"); // ✅ fixed: was missing
+  const [userRole, setUserRole] = useState("user");
   const [messages, setMessages] = useState([]);
   const [textMessage, setTextMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -140,12 +267,22 @@ export default function ChatScreen() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [expertDbId, setExpertDbId] = useState(null);
 
+  // ── NEW: custom modal states ──
+  const [insufficientModal, setInsufficientModal] = useState({
+    visible: false,
+    balance: 0,
+  });
+  const [endChatModal, setEndChatModal] = useState({
+    visible: false,
+    isBackPress: false,
+  });
+
   const flatListRef = useRef(null);
   const socketRef = useRef(null);
   const preauthDone = useRef(false);
   const tickIntervalRef = useRef(null);
   const minutesRef = useRef(0);
-  const isSendingRef = useRef(false); // prevent double-send on fast taps
+  const isSendingRef = useRef(false);
 
   // ── Load user from storage ───────────────────────────────────────────────
   useEffect(() => {
@@ -204,17 +341,11 @@ export default function ChatScreen() {
     } catch (e) {
       const err = e?.response?.data;
       if (err?.error === "insufficient_balance") {
-        Alert.alert(
-          "Insufficient Balance",
-          err.message ||
-            `You need at least ₹50 to start chat.\nYour balance: ₹${
-              err.balance?.toFixed(2) || 0
-            }`,
-          [
-            { text: "Add Money", onPress: () => router.push("/(tabs)/wallet") },
-            { text: "Cancel", style: "cancel", onPress: () => router.back() },
-          ],
-        );
+        // ── Show custom insufficient balance modal ──
+        setInsufficientModal({
+          visible: true,
+          balance: err.balance || 0,
+        });
       } else {
         console.log("chatStart error:", e.message);
       }
@@ -275,11 +406,8 @@ export default function ChatScreen() {
         );
 
         if (autoEnded) {
-          Alert.alert(
-            "Chat Ended — Balance Empty",
-            `Duration: ${duration} min\nTotal charged: ₹${totalCharged}\n₹${released} released back to wallet.`,
-            [{ text: "OK", onPress: () => router.back() }],
-          );
+          // Auto-ended due to empty balance — just go back
+          router.back();
         }
       }
     } catch (e) {
@@ -306,7 +434,7 @@ export default function ChatScreen() {
   // ── Send message ─────────────────────────────────────────────────────────
   const handleSend = async () => {
     if (!textMessage.trim() || !RECEIVER_ID || !currentUserId) return;
-    if (isSendingRef.current) return; // prevent double-send
+    if (isSendingRef.current) return;
     isSendingRef.current = true;
 
     const messageToSend = textMessage;
@@ -343,7 +471,6 @@ export default function ChatScreen() {
     if (!currentUserId || !RECEIVER_ID) return;
     loadChats();
 
-    // Only start billing for users — experts earn, they don't pay
     if (userRole !== "expert") {
       startChatBilling(currentUserId);
     }
@@ -405,7 +532,6 @@ export default function ChatScreen() {
 
     return (
       <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
-        {/* Expert avatar on the left */}
         {!isUser && (
           <Image source={{ uri: expertAvatarUrl }} style={styles.msgAvatar} />
         )}
@@ -441,7 +567,6 @@ export default function ChatScreen() {
           </View>
         </View>
 
-        {/* Spacer so expert bubbles don't stretch full width */}
         {!isUser && <View style={{ width: 52 }} />}
       </View>
     );
@@ -456,10 +581,8 @@ export default function ChatScreen() {
     );
   }
 
-  // ── Navigate to expert profile ───────────────────────────────────────────
   const handleHeaderPress = () => {
     if (userRole !== "expert") {
-      // ✅ Fixed: use the correct route path matching your file structure
       router.push(`/(tabs)/expert/${RECEIVER_ID}`);
     }
   };
@@ -479,25 +602,9 @@ export default function ChatScreen() {
           <Text style={styles.billingBalance}>₹{walletBalance.toFixed(2)}</Text>
           <TouchableOpacity
             style={styles.endChatBtn}
-            onPress={() => {
-              Alert.alert(
-                "End Chat?",
-                `Duration: ${minutesUsed} min\nCharged: ₹${
-                  minutesUsed * 10
-                }\nRemaining hold will be released.`,
-                [
-                  {
-                    text: "End Chat",
-                    style: "destructive",
-                    onPress: () => {
-                      endChatBilling(currentUserId, expertDbId);
-                      router.back();
-                    },
-                  },
-                  { text: "Continue", style: "cancel" },
-                ],
-              );
-            }}
+            onPress={() =>
+              setEndChatModal({ visible: true, isBackPress: false })
+            }
           >
             <Text style={styles.endChatTxt}>End</Text>
           </TouchableOpacity>
@@ -510,21 +617,7 @@ export default function ChatScreen() {
           style={styles.backBtn}
           onPress={() => {
             if (chatActive) {
-              Alert.alert(
-                "End Chat?",
-                `Duration: ${minutesUsed} min\nCharged: ₹${minutesUsed * 10}`,
-                [
-                  {
-                    text: "End & Leave",
-                    style: "destructive",
-                    onPress: () => {
-                      endChatBilling(currentUserId, expertDbId);
-                      router.back();
-                    },
-                  },
-                  { text: "Stay", style: "cancel" },
-                ],
-              );
+              setEndChatModal({ visible: true, isBackPress: true });
             } else {
               router.back();
             }
@@ -533,13 +626,11 @@ export default function ChatScreen() {
           <Ionicons name="chevron-back" size={22} color={TEXT_1} />
         </TouchableOpacity>
 
-        {/* ✅ FIXED: Clicking name/avatar navigates to expert profile */}
         <TouchableOpacity
           style={styles.headerAvatarPressable}
           onPress={handleHeaderPress}
           activeOpacity={userRole !== "expert" ? 0.7 : 1}
         >
-          {/* Avatar + online dot */}
           <View style={styles.headerAvatarWrap}>
             <Image
               source={{ uri: expertAvatarUrl }}
@@ -553,7 +644,6 @@ export default function ChatScreen() {
             />
           </View>
 
-          {/* Name + status */}
           <View style={styles.headerInfo}>
             <Text style={styles.headerName} numberOfLines={1}>
               {expertName}
@@ -574,14 +664,12 @@ export default function ChatScreen() {
                 {isOnline ? "Active now" : "Offline"}
               </Text>
             </View>
-            {/* ✅ Small hint to show it's tappable (only for users) */}
             {userRole !== "expert" && (
               <Text style={styles.viewProfileHint}>Tap to view profile</Text>
             )}
           </View>
         </TouchableOpacity>
 
-        {/* Action icons */}
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.iconBtn}>
             <Ionicons name="videocam-outline" size={20} color={TEXT_1} />
@@ -632,12 +720,10 @@ export default function ChatScreen() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.inputBar}>
-          {/* Attachment */}
           <TouchableOpacity style={styles.attachBtn}>
             <Ionicons name="add" size={22} color={TEAL} />
           </TouchableOpacity>
 
-          {/* Text input */}
           <View style={styles.inputWrap}>
             <TextInput
               placeholder="Type a message..."
@@ -654,7 +740,6 @@ export default function ChatScreen() {
             )}
           </View>
 
-          {/* Send */}
           <TouchableOpacity
             style={[
               styles.sendBtn,
@@ -672,35 +757,50 @@ export default function ChatScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
+
+      {/* ── INSUFFICIENT BALANCE MODAL ── */}
+      <InsufficientBalanceModal
+        visible={insufficientModal.visible}
+        balance={insufficientModal.balance}
+        onAddMoney={() => {
+          setInsufficientModal({ visible: false, balance: 0 });
+          router.push("/(tabs)/wallet");
+        }}
+        onCancel={() => {
+          setInsufficientModal({ visible: false, balance: 0 });
+          router.back();
+        }}
+      />
+
+      {/* ── END CHAT MODAL ── */}
+      <EndChatModal
+        visible={endChatModal.visible}
+        minutesUsed={minutesUsed}
+        title={endChatModal.isBackPress ? "End Chat?" : "End Chat?"}
+        stayLabel={endChatModal.isBackPress ? "Stay" : "Continue"}
+        onEndChat={() => {
+          setEndChatModal({ visible: false, isBackPress: false });
+          endChatBilling(currentUserId, expertDbId);
+          router.back();
+        }}
+        onStay={() => setEndChatModal({ visible: false, isBackPress: false })}
+      />
     </SafeAreaView>
   );
 }
 
 // ── STYLES ─────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: CHAT_BG,
-  },
+  container: { flex: 1, backgroundColor: CHAT_BG },
   loadingScreen: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: CHAT_BG,
   },
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-    color: TEXT_2,
-    fontWeight: "500",
-  },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  loadingText: { fontSize: 14, color: TEXT_2, fontWeight: "500" },
 
-  // ── Billing bar ──
   billingBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -721,7 +821,6 @@ const styles = StyleSheet.create({
   },
   endChatTxt: { color: "#fff", fontWeight: "700", fontSize: 13 },
 
-  // ── Header ──
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -751,9 +850,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
   },
-  headerAvatarWrap: {
-    position: "relative",
-  },
+  headerAvatarWrap: { position: "relative" },
   headerAvatar: {
     width: 44,
     height: 44,
@@ -771,9 +868,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: "#ffffff",
   },
-  headerInfo: {
-    flex: 1,
-  },
+  headerInfo: { flex: 1 },
   headerName: {
     fontSize: 16,
     fontWeight: "800",
@@ -786,16 +881,8 @@ const styles = StyleSheet.create({
     gap: 5,
     marginTop: 2,
   },
-  statusDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  headerStatus: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  // ✅ NEW: subtle hint text below status
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  headerStatus: { fontSize: 12, fontWeight: "600" },
   viewProfileHint: {
     fontSize: 10,
     color: TEAL_TEXT,
@@ -803,10 +890,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
     opacity: 0.7,
   },
-  headerActions: {
-    flexDirection: "row",
-    gap: 6,
-  },
+  headerActions: { flexDirection: "row", gap: 6 },
   iconBtn: {
     width: 36,
     height: 36,
@@ -816,47 +900,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  // ── Chat background ──
-  chatBg: {
-    flex: 1,
-    backgroundColor: CHAT_BG,
-  },
+  chatBg: { flex: 1, backgroundColor: CHAT_BG },
   listContent: {
     paddingHorizontal: 14,
     paddingVertical: 14,
     paddingBottom: 10,
   },
 
-  // ── Date separator ──
   dateSepWrap: {
     flexDirection: "row",
     alignItems: "center",
     marginVertical: 16,
     gap: 8,
   },
-  dateSepLine: {
-    flex: 1,
-    height: 0.5,
-    backgroundColor: "#d1d5db",
-  },
+  dateSepLine: { flex: 1, height: 0.5, backgroundColor: "#d1d5db" },
   dateSepPill: {
     backgroundColor: "#e5e7eb",
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 20,
   },
-  dateSepText: {
-    fontSize: 12,
-    color: TEXT_2,
-    fontWeight: "600",
-  },
+  dateSepText: { fontSize: 12, color: TEXT_2, fontWeight: "600" },
 
-  // ── Message row ──
-  row: {
-    flexDirection: "row",
-    marginBottom: 8,
-    alignItems: "flex-end",
-  },
+  row: { flexDirection: "row", marginBottom: 8, alignItems: "flex-end" },
   rowRight: { justifyContent: "flex-end" },
   rowLeft: { justifyContent: "flex-start" },
   msgAvatar: {
@@ -875,7 +941,6 @@ const styles = StyleSheet.create({
     borderColor: TEAL_LIGHT,
   },
 
-  // ── Bubble ──
   bubble: {
     maxWidth: width * 0.68,
     paddingHorizontal: 14,
@@ -899,16 +964,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
   },
-  msgText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  msgTextMe: {
-    color: "#ffffff",
-  },
-  msgTextThem: {
-    color: TEXT_1,
-  },
+  msgText: { fontSize: 15, lineHeight: 22 },
+  msgTextMe: { color: "#ffffff" },
+  msgTextThem: { color: TEXT_1 },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -920,12 +978,7 @@ const styles = StyleSheet.create({
   timeMine: { color: "rgba(255,255,255,0.6)" },
   timeTheirs: { color: TEXT_2 },
 
-  // ── Empty chat ──
-  emptyChat: {
-    alignItems: "center",
-    paddingTop: 80,
-    gap: 10,
-  },
+  emptyChat: { alignItems: "center", paddingTop: 80, gap: 10 },
   emptyChatIcon: {
     width: 72,
     height: 72,
@@ -935,18 +988,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  emptyChatTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: TEXT_1,
-  },
-  emptyChatSub: {
-    fontSize: 14,
-    color: TEXT_2,
-    textAlign: "center",
-  },
+  emptyChatTitle: { fontSize: 17, fontWeight: "800", color: TEXT_1 },
+  emptyChatSub: { fontSize: 14, color: TEXT_2, textAlign: "center" },
 
-  // ── Input bar ──
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -983,10 +1027,7 @@ const styles = StyleSheet.create({
     fontWeight: "400",
     maxHeight: 100,
   },
-  micBtn: {
-    marginLeft: 6,
-    marginBottom: 1,
-  },
+  micBtn: { marginLeft: 6, marginBottom: 1 },
   sendBtn: {
     width: 40,
     height: 40,
@@ -996,8 +1037,137 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 1,
   },
-  sendBtnDisabled: {
-    backgroundColor: TEAL,
-    opacity: 0.5,
+  sendBtnDisabled: { backgroundColor: TEAL, opacity: 0.5 },
+});
+
+// ── Custom Modal Styles ────────────────────────────────────────────────────
+const cm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
   },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 28,
+    width: "100%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 14,
+  },
+  // Amber circle for wallet, red for end chat
+  iconWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: "#f1f6f9",
+    borderWidth: 1.5,
+    borderColor: "#867795",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  title: {
+    fontSize: 21,
+    fontWeight: "800",
+    color: TEXT_1,
+    marginBottom: 16,
+    letterSpacing: -0.3,
+  },
+  infoBox: {
+    width: "100%",
+    backgroundColor: "#f8f9ff",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 13,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e8eeff",
+  },
+  infoLabel: {
+    fontSize: 13,
+    color: TEXT_2,
+    fontWeight: "600",
+  },
+  infoValue: {
+    fontSize: 15,
+    color: TEXT_1,
+    fontWeight: "800",
+  },
+  subtitle: {
+    fontSize: 13,
+    color: TEXT_2,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+    paddingHorizontal: 4,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  // Cancel / Stay buttons
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#f5f6f8",
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelTxt: { fontSize: 15, fontWeight: "700", color: TEXT_2 },
+
+  stayBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#f5f6f8",
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  stayTxt: { fontSize: 15, fontWeight: "700", color: TEXT_2 },
+
+  // Add Money button (amber/orange)
+  addBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#867795",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addTxt: { fontSize: 15, fontWeight: "800", color: WHITE },
+
+  // End Chat button (red)
+  endBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#ef4444",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  endTxt: { fontSize: 15, fontWeight: "800", color: WHITE },
 });

@@ -67,11 +67,25 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: true,
       },
 
-sub_domain: {
+      sub_domain: {
         type: DataTypes.STRING(100),
         allowNull: true,
       },
-      
+
+      skills: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
+
+      preferred_job_role: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+
+      current_status: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       gender: {
         type: DataTypes.STRING(10),
         allowNull: true,
@@ -86,6 +100,7 @@ sub_domain: {
         allowNull: true,
       },
     },
+
     {
       timestamps: true,
     },
