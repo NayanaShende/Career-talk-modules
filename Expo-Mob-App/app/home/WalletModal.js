@@ -20,7 +20,13 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import axiosInstance from "../../services/api";
 import { router } from "expo-router";
-import RazorpayCheckout from "react-native-razorpay"; // ── Razorpay SDK ──
+// ── Razorpay SDK — safe import for Expo Go compatibility ──
+let RazorpayCheckout = null;
+try {
+  RazorpayCheckout = require("react-native-razorpay").default;
+} catch (e) {
+  console.log("Razorpay not available in Expo Go");
+}
 
 const { height } = Dimensions.get("window");
 
@@ -181,7 +187,7 @@ export default function WalletModal({ visible, onClose }) {
         description:  "Career-Talk Wallet Topup",
         image:        "https://your-logo-url.com/logo.png", // ← Replace with your logo URL
         currency:     "INR",
-        key:          "rzp_test_SNSlvTnPShezAs,z3aPwpL2EaWDeAIl625eic9U",          // ← Replace with your Razorpay Key ID
+        key:          "rzp_test_XXXXXXXXXXXXXXXX",          // ← Replace with your Razorpay Key ID
         amount:       amt * 100,                            // Razorpay expects paise
         name:         "Career-Talk",
         order_id:     order.id,

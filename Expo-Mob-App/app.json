@@ -49,8 +49,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "0af9364a-e41b-43ee-80a7-5787a721abef"
+        "projectId": "4925059a-1a97-4510-9e03-df0d31310b61"
       }
-    }
+    },
+    "owner": "sakshibakhade"
   }
 }
