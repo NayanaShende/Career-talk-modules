@@ -41,8 +41,16 @@ app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 // ✅ Single database connection check
 sequelize
   .authenticate()
+<<<<<<< HEAD
   .then(() => console.log("✅ Database connection successful"))
   .catch((err) => console.log("❌ Database connection error:", err));
+=======
+  .then(() => {
+    console.log("✅ Database connection successful");
+    // ✅ Sync models with DB — alter: true adds any missing columns automatically
+    return sequelize.sync();
+  })
+>>>>>>> 2cdf809b6f21dbc553adaa21529fb6e71e8c9563
 
 /* ---------------- API ROUTES ---------------- */
 app.use("/api", (req, res, next) => {

@@ -19,6 +19,10 @@ import axios from "axios";
 import { useNotification } from "../../context/NotificationContext";
 import { SOCKET_URL as BASE_URL } from "../../constants/config";
 
+<<<<<<< HEAD
+=======
+const BASE_URL = "http://192.168.1.16:3000";
+>>>>>>> 2cdf809b6f21dbc553adaa21529fb6e71e8c9563
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
