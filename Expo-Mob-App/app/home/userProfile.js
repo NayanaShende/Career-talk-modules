@@ -22,8 +22,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-// import { SOCKET_URL as BASE_URL } from "../../constants/config";
-const BASE_URL = "http://192.168.1.14:3000";
+const BASE_URL = "http://192.168.1.16:3000";
 
 // ── Domain-specific skills ───────────────────────────────────────────────────
 const DOMAIN_SKILLS_MAP = {
@@ -310,7 +309,6 @@ const DOMAIN_SKILLS_MAP = {
   ],
 };
 
-// ── Fallback skills ──────────────────────────────────────────────────────────
 const SKILL_OPTIONS = [
   "React",
   "React Native",
@@ -734,7 +732,6 @@ function Section({ title, icon, children }) {
   );
 }
 
-// ── Field label ──────────────────────────────────────────────────────────────
 function Label({ text, required }) {
   return (
     <Text style={s.label}>
@@ -744,7 +741,6 @@ function Label({ text, required }) {
   );
 }
 
-// ── Field error ──────────────────────────────────────────────────────────────
 function FieldError({ message }) {
   if (!message) return null;
   return (
@@ -755,7 +751,6 @@ function FieldError({ message }) {
   );
 }
 
-// ── Dropdown ─────────────────────────────────────────────────────────────────
 function DropdownPicker({ label, value, options, onChange, error }) {
   const [visible, setVisible] = useState(false);
   const selected = options.find((o) => o.value === value);
@@ -806,12 +801,9 @@ function DropdownPicker({ label, value, options, onChange, error }) {
   );
 }
 
-// ── Skills picker ─────────────────────────────────────────────────────────────
 function SkillsPicker({ selectedSkills, onChange, domain }) {
   const [visible, setVisible] = useState(false);
   const [customSkill, setCustomSkill] = useState("");
-
-  // Use domain-specific skills if available, else fallback
   const skillList =
     domain && DOMAIN_SKILLS_MAP[domain]
       ? DOMAIN_SKILLS_MAP[domain]
@@ -820,13 +812,13 @@ function SkillsPicker({ selectedSkills, onChange, domain }) {
   const toggleSkill = (skill) => {
     if (selectedSkills.includes(skill)) {
       onChange(selectedSkills.filter((s) => s !== skill));
-    } else {
-      if (selectedSkills.length >= 5) {
-        Alert.alert("Max 5 skills");
-        return;
-      }
-      onChange([...selectedSkills, skill]);
+      return;
     }
+    if (selectedSkills.length >= 5) {
+      Alert.alert("Max 5 skills");
+      return;
+    }
+    onChange([...selectedSkills, skill]);
   };
 
   const addCustom = () => {
@@ -940,7 +932,6 @@ function SkillsPicker({ selectedSkills, onChange, domain }) {
   );
 }
 
-// ── Languages picker ──────────────────────────────────────────────────────────
 function LanguagesPicker({ selectedLanguages, onChange }) {
   const [visible, setVisible] = useState(false);
   const [customLang, setCustomLang] = useState("");
@@ -948,13 +939,13 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   const toggle = (lang) => {
     if (selectedLanguages.includes(lang)) {
       onChange(selectedLanguages.filter((l) => l !== lang));
-    } else {
-      if (selectedLanguages.length >= 5) {
-        Alert.alert("Max 5 languages");
-        return;
-      }
-      onChange([...selectedLanguages, lang]);
+      return;
     }
+    if (selectedLanguages.length >= 5) {
+      Alert.alert("Max 5 languages");
+      return;
+    }
+    onChange([...selectedLanguages, lang]);
   };
 
   const addCustom = () => {
@@ -1056,7 +1047,6 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   );
 }
 
-// ── Certificate upload ────────────────────────────────────────────────────────
 function CertificateUpload({ domain, certFile, onPick, error }) {
   const guide = domain ? DOMAIN_CERTIFICATE_GUIDE[domain] : null;
   return (
@@ -1149,9 +1139,79 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
   );
 }
 
+// ── Validation Error Modal ─────────────────────────────────────────────────────
+// Styled to match the success modal design: dots, badge, buttons
+function ValidationErrorModal({ visible, onClose }) {
+  // Fixed pixel positions — RN does NOT support % for absolute top/left
+  const dots = [
+    [18, 24, "#f472b6", 8],
+    [60, 12, "#fbbf24", 7],
+    [118, 8, "#a78bfa", 6],
+    [172, 20, "#ef4444", 8],
+    [228, 9, "#f97316", 6],
+    [274, 26, "#fbbf24", 7],
+    [44, 46, "#ef4444", 6],
+    [96, 38, "#f472b6", 5],
+    [150, 44, "#a78bfa", 7],
+    [204, 34, "#f97316", 6],
+    [254, 50, "#fbbf24", 5],
+    [298, 16, "#ef4444", 7],
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={ve.overlay}>
+        <View style={ve.card}>
+          {/* Scattered dots at top — fixed pixel coords */}
+          <View style={ve.dotsArea} pointerEvents="none">
+            {dots.map(([left, top, color, size], i) => (
+              <View
+                key={i}
+                style={{
+                  position: "absolute",
+                  left,
+                  top,
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  backgroundColor: color,
+                }}
+              />
+            ))}
+          </View>
+
+          {/* Red badge — outer ring + inner circle */}
+          <View style={ve.badgeOuter}>
+            <View style={ve.badgeMiddle}>
+              <View style={ve.badgeInner}>
+                <Ionicons name="close" size={34} color={WHITE} />
+              </View>
+            </View>
+          </View>
+
+          <Text style={ve.title}>Something Want Wrong !</Text>
+          <Text style={ve.subtitle}>
+            Please fix the highlighted{"\n"}fields before submitting.
+          </Text>
+
+          {/* Buttons */}
+          <View style={ve.btnRow}>
+            <TouchableOpacity
+              style={ve.fixBtn}
+              onPress={onClose}
+              activeOpacity={0.8}
+            >
+              <Text style={ve.fixBtnText}>Fix Fields</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ── Success Modal ─────────────────────────────────────────────────────────────
 function SuccessModal({ visible, isExpert, onKeepEditing, onProceed }) {
-  // Confetti dots data
   const confettiDots = [
     { top: 18, left: 38, color: "#a78bfa", size: 7, rotate: "20deg" },
     { top: 10, left: 62, color: "#34d399", size: 5, rotate: "45deg" },
@@ -1171,7 +1231,6 @@ function SuccessModal({ visible, isExpert, onKeepEditing, onProceed }) {
     <Modal visible={visible} transparent animationType="fade">
       <View style={sm.overlay}>
         <View style={sm.card}>
-          {/* Confetti area */}
           <View style={sm.confettiArea} pointerEvents="none">
             {confettiDots.map((dot, i) => (
               <View
@@ -1191,8 +1250,6 @@ function SuccessModal({ visible, isExpert, onKeepEditing, onProceed }) {
               />
             ))}
           </View>
-
-          {/* Badge icon */}
           <View style={sm.badgeOuter}>
             <View style={sm.badgeMiddle}>
               <View style={sm.badgeInner}>
@@ -1200,18 +1257,14 @@ function SuccessModal({ visible, isExpert, onKeepEditing, onProceed }) {
               </View>
             </View>
           </View>
-
-          {/* Text */}
           <Text style={sm.title}>
             {isExpert ? "Profile Verified & Saved!" : "Profile Saved!"}
           </Text>
           <Text style={sm.subtitle}>
             {isExpert
               ? "Your certificate has been uploaded and your expert profile is now verified!"
-              :  "Now your are the part of the Career talk. You've successfully completed your professional details."}
+              : "Now your are the part of the Career talk. You've successfully completed your professional details."}
           </Text>
-
-          {/* Buttons */}
           <View style={sm.btnRow}>
             <TouchableOpacity
               style={sm.keepBtn}
@@ -1226,7 +1279,7 @@ function SuccessModal({ visible, isExpert, onKeepEditing, onProceed }) {
               activeOpacity={0.8}
             >
               <Text style={sm.proceedBtnText}>
-                {isExpert ? "Go to Dashboard →" : "Go to Dashboard →"}
+                {isExpert ? "Done " : "Done"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -1242,8 +1295,10 @@ export default function ProfileScreen() {
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
-  // ── NEW: success modal state ──
+  // ── success modal state ──
   const [successVisible, setSuccessVisible] = useState(false);
+  // ── NEW: validation error modal state ──
+  const [validationErrorVisible, setValidationErrorVisible] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -1346,51 +1401,40 @@ export default function ProfileScreen() {
   // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
-
     if (!formData.fullName.trim() || formData.fullName.trim().length < 2)
       e.fullName = "Full name is required (letters only, min 2 chars)";
     else if (/[^a-zA-Z\s]/.test(formData.fullName))
       e.fullName = "Name must contain letters only";
-
     if (!formData.email) e.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email))
       e.email = "Enter a valid email address";
-
     if (!formData.gender) e.gender = "Gender is required";
     if (!formData.dob) e.dob = "Birth date is required";
-
     if (!formData.qualification) e.qualification = "Qualification is required";
     else if (
       formData.qualification === "Other" &&
       !formData.customQualification.trim()
     )
       e.customQualification = "Please specify your qualification";
-
     if (!formData.experience) e.experience = "Experience is required";
     else if (
       formData.experience === "Other" &&
       !formData.customExperience.trim()
     )
       e.customExperience = "Please specify your experience";
-
     if (!formData.cv) e.cv = "Please upload your CV";
-
     if (role === "Expert") {
       if (!formData.domain) e.domain = "Domain is required for Experts";
       else if (formData.domain === "Other" && !formData.customDomain.trim())
         e.customDomain = "Please specify your domain";
-
       if (selectedSkills.length === 0)
         e.skills = "Please select at least 1 skill";
-
       if (!formData.certFile)
         e.certFile =
           "Please upload your certificate — this is required to verify your domain expertise";
-
       if (formData.location === "Other" && !formData.customLocation.trim())
         e.customLocation = "Please specify your city";
     }
-
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -1398,10 +1442,8 @@ export default function ProfileScreen() {
   // ── Submit ───────────────────────────────────────────────────────────────────
   const submitProfile = async () => {
     if (!validate()) {
-      Alert.alert(
-        "Validation Error",
-        "Please fix the highlighted fields before submitting.",
-      );
+      // ── Show custom validation error modal instead of Alert.alert ──
+      setValidationErrorVisible(true);
       return;
     }
     try {
@@ -1420,7 +1462,6 @@ export default function ProfileScreen() {
 
       const resolvedDomain =
         formData.domain === "Other" ? formData.customDomain : formData.domain;
-
       const resolvedData = {
         ...formData,
         domain: resolvedDomain || null,
@@ -1456,7 +1497,6 @@ export default function ProfileScreen() {
         "customDomain",
         "gender",
       ];
-
       Object.keys(resolvedData).forEach((key) => {
         if (
           !skipFields.includes(key) &&
@@ -1543,7 +1583,6 @@ export default function ProfileScreen() {
     formData.domain === "Other"
       ? formData.customDomain || "Other"
       : formData.domain;
-
   const subDomainOptions = SUBDOMAIN_MAP[formData.domain] || [];
 
   return (
@@ -1608,7 +1647,6 @@ export default function ProfileScreen() {
 
           {/* ── BASIC INFO ── */}
           <Section title="Basic Information" icon="👤">
-            {/* Profile image */}
             <TouchableOpacity style={s.avatarWrap} onPress={pickImage}>
               {formData.image ? (
                 <Image source={{ uri: formData.image.uri }} style={s.avatar} />
@@ -1735,7 +1773,6 @@ export default function ProfileScreen() {
               </>
             )}
 
-            {/* Sub-Domain — only shows when domain is selected */}
             {subDomainOptions.length > 0 && (
               <>
                 <Label text="Sub-Domain" />
@@ -1957,6 +1994,12 @@ export default function ProfileScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
+      {/* ── VALIDATION ERROR MODAL ── */}
+      <ValidationErrorModal
+        visible={validationErrorVisible}
+        onClose={() => setValidationErrorVisible(false)}
+      />
+
       {/* ── SUCCESS MODAL ── */}
       <SuccessModal
         visible={successVisible}
@@ -1974,8 +2017,6 @@ export default function ProfileScreen() {
 // ── Styles ────────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   scroll: { paddingBottom: 40 },
-
-  // Header
   topBar: {
     backgroundColor: GREEN,
     paddingHorizontal: 20,
@@ -2024,8 +2065,6 @@ const s = StyleSheet.create({
     letterSpacing: -0.3,
   },
   pageSub: { fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 3 },
-
-  // Role card
   roleCard: {
     backgroundColor: WHITE,
     marginHorizontal: 16,
@@ -2072,8 +2111,6 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-
-  // Section
   section: {
     backgroundColor: WHITE,
     marginHorizontal: 16,
@@ -2102,8 +2139,6 @@ const s = StyleSheet.create({
   },
   sectionIcon: { fontSize: 16 },
   sectionTitle: { fontSize: 15, fontWeight: "800", color: INK },
-
-  // Avatar
   avatarWrap: { alignSelf: "center", marginBottom: 16, position: "relative" },
   avatar: {
     width: 90,
@@ -2138,8 +2173,6 @@ const s = StyleSheet.create({
     borderWidth: 2,
     borderColor: WHITE,
   },
-
-  // Inputs
   label: {
     fontSize: 13,
     fontWeight: "700",
@@ -2160,8 +2193,6 @@ const s = StyleSheet.create({
   inputErr: { borderColor: RED, backgroundColor: RED_L },
   dashedInput: { marginTop: 8, borderStyle: "dashed" },
   row: { flexDirection: "row", alignItems: "center" },
-
-  // Gender
   genderRow: {
     flexDirection: "row",
     gap: 8,
@@ -2194,12 +2225,8 @@ const s = StyleSheet.create({
   radioDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: GREEN },
   genderText: { fontSize: 13, color: MUTED, fontWeight: "600" },
   genderTextActive: { color: GREEN, fontWeight: "700" },
-
-  // Error
   errRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 5 },
   errText: { fontSize: 12, color: RED, fontWeight: "500" },
-
-  // Upload
   uploadBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -2220,8 +2247,6 @@ const s = StyleSheet.create({
     alignItems: "center",
   },
   uploadText: { flex: 1, fontSize: 14, fontWeight: "600", color: INK },
-
-  // Chips
   chipWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -2255,8 +2280,6 @@ const s = StyleSheet.create({
     borderStyle: "dashed",
   },
   dashedBtnText: { fontSize: 13, fontWeight: "700", color: GREEN },
-
-  // Certificate
   certInfoBox: {
     flexDirection: "row",
     gap: 10,
@@ -2304,8 +2327,6 @@ const s = StyleSheet.create({
   },
   certLabel: { fontSize: 14, fontWeight: "700", color: GREEN },
   certFileName: { fontSize: 13, fontWeight: "700", color: GREEN_SUC },
-
-  // Modal
   mOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.35)" },
   mSheet: {
     backgroundColor: WHITE,
@@ -2368,8 +2389,6 @@ const s = StyleSheet.create({
     marginTop: 10,
   },
   doneBtnText: { color: WHITE, fontSize: 15, fontWeight: "800" },
-
-  // Submit
   submitBtn: {
     marginHorizontal: 16,
     marginTop: 20,
@@ -2399,6 +2418,99 @@ const s = StyleSheet.create({
     backgroundColor: WHITE,
     justifyContent: "center",
     alignItems: "center",
+  },
+});
+
+// ── Validation Error Modal Styles ─────────────────────────────────────────────
+const ve = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 28,
+    paddingHorizontal: 28,
+    paddingTop: 72,
+    paddingBottom: 28,
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  // Dot scatter sits at very top of card
+  dotsArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  // Outer pale-red ring
+  badgeOuter: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "rgba(220,38,38,0.10)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  // Mid ring
+  badgeMiddle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: "rgba(220,38,38,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  // Inner solid red circle with X icon
+  badgeInner: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: RED,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1a1a2e",
+    textAlign: "center",
+    marginBottom: 10,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#6b7280",
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  btnRow: {
+    width: "100%",
+  },
+  fixBtn: {
+    width: "100%",
+    paddingVertical: 15,
+    borderRadius: 16,
+    backgroundColor: "#867795",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fixBtnText: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: WHITE,
   },
 });
 
@@ -2432,10 +2544,7 @@ const sm = StyleSheet.create({
     right: 0,
     height: 130,
   },
-  confettiDot: {
-    position: "absolute",
-  },
-  // Badge — three layered circles like the screenshot
+  confettiDot: { position: "absolute" },
   badgeOuter: {
     width: 90,
     height: 90,
@@ -2478,11 +2587,7 @@ const sm = StyleSheet.create({
     marginBottom: 28,
     paddingHorizontal: 8,
   },
-  btnRow: {
-    flexDirection: "row",
-    gap: 12,
-    width: "100%",
-  },
+  btnRow: { flexDirection: "row", gap: 12, width: "100%" },
   keepBtn: {
     flex: 1,
     paddingVertical: 14,
@@ -2491,22 +2596,14 @@ const sm = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  keepBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: GREEN,
-  },
+  keepBtnText: { fontSize: 14, fontWeight: "700", color: GREEN },
   proceedBtn: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: "#2d2440",
+    backgroundColor: "#867795",
     alignItems: "center",
     justifyContent: "center",
   },
-  proceedBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: WHITE,
-  },
+  proceedBtnText: { fontSize: 14, fontWeight: "700", color: WHITE },
 });
