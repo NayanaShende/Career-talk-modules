@@ -3,7 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "scripts": {
-    "start": "expo start",
+    "start": "expo start --go",
     "reset-project": "node ./scripts/reset-project.js",
     "android": "expo run:android",
     "ios": "expo run:ios",
@@ -21,7 +21,6 @@
     "axios": "^1.13.5",
     "expo": "~54.0.33",
     "expo-constants": "~18.0.13",
-    "expo-dev-client": "~6.0.20",
     "expo-device": "~8.0.10",
     "expo-document-picker": "~14.0.8",
     "expo-font": "~14.0.11",

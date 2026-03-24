@@ -23,12 +23,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-<<<<<<< HEAD
-// import { SOCKET_URL as BASE_URL } from "../../constants/config";
-const BASE_URL = "http://172.20.10.3:3000";
-=======
-const BASE_URL = "http://192.168.1.16:3000";
->>>>>>> 2cdf809b6f21dbc553adaa21529fb6e71e8c9563
+const BASE_URL = "http:// 172.20.10.3:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
