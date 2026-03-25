@@ -17,7 +17,7 @@ import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
-const BASE_URL = "http:// 172.20.10.3:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const GREEN = "#867795";
@@ -791,3 +791,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
 });
+

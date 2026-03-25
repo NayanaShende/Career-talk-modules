@@ -42,7 +42,7 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 
-const BASE_URL = "http:// 172.20.10.3:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
 
 export default function WalletModal({ visible, onClose }) {
@@ -172,6 +172,17 @@ export default function WalletModal({ visible, onClose }) {
       Alert.alert("Limit Exceeded", "Maximum topup amount is ₹50,000");
       return;
     }
+
+    // ✅ FIXED: Razorpay is not available in Expo Go — show friendly message
+    if (!RazorpayCheckout) {
+      Alert.alert(
+        "Not Available",
+        "Payments are not supported in Expo Go.\nPlease use a development build or production app.",
+        [{ text: "OK" }],
+      );
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -184,17 +195,17 @@ export default function WalletModal({ visible, onClose }) {
 
       // Step 2 — Open Razorpay native payment page directly
       const options = {
-        description:  "Career-Talk Wallet Topup",
-        image:        "https://your-logo-url.com/logo.png", // ← Replace with your logo URL
-        currency:     "INR",
-        key:          "rzp_test_XXXXXXXXXXXXXXXX",          // ← Replace with your Razorpay Key ID
-        amount:       amt * 100,                            // Razorpay expects paise
-        name:         "Career-Talk",
-        order_id:     order.id,
+        description: "Career-Talk Wallet Topup",
+        image: "https://your-logo-url.com/logo.png", // ← Replace with your logo URL
+        currency: "INR",
+        key: "rzp_test_XXXXXXXXXXXXXXXX", // ← Replace with your Razorpay Key ID
+        amount: amt * 100, // Razorpay expects paise
+        name: "Career-Talk",
+        order_id: order.id,
         prefill: {
-          email:   userData?.email   || "",
-          contact: userData?.phone   || userData?.mobile || "",
-          name:    getUserDisplayName(),
+          email: userData?.email || "",
+          contact: userData?.phone || userData?.mobile || "",
+          name: getUserDisplayName(),
         },
         theme: { color: "#867795" },
       };
@@ -205,8 +216,8 @@ export default function WalletModal({ visible, onClose }) {
       // Step 3 — Verify payment signature on backend
       const verifyRes = await axiosInstance.post("/payment/verify", {
         razorpay_payment_id: paymentData.razorpay_payment_id,
-        razorpay_order_id:   paymentData.razorpay_order_id,
-        razorpay_signature:  paymentData.razorpay_signature,
+        razorpay_order_id: paymentData.razorpay_order_id,
+        razorpay_signature: paymentData.razorpay_signature,
         userId,
         amount: amt,
       });
@@ -412,11 +423,20 @@ export default function WalletModal({ visible, onClose }) {
 
             {/* Amount */}
             <View style={styles.detailAmountWrap}>
-              <View style={[styles.detailIconCircle, { backgroundColor: color + "20" }]}>
+              <View
+                style={[
+                  styles.detailIconCircle,
+                  { backgroundColor: color + "20" },
+                ]}>
                 <Ionicons name={icon} size={32} color={color} />
               </View>
-              <Text style={[styles.detailAmount, { color: isCredit ? "#10b981" : "#ef4444" }]}>
-                {isCredit ? "+" : "-"}₹{parseFloat(selectedTx.amount).toFixed(2)}
+              <Text
+                style={[
+                  styles.detailAmount,
+                  { color: isCredit ? "#10b981" : "#ef4444" },
+                ]}>
+                {isCredit ? "+" : "-"}₹
+                {parseFloat(selectedTx.amount).toFixed(2)}
               </Text>
               <Text style={styles.detailType}>
                 {getTransactionLabel(selectedTx.type)}
@@ -435,7 +455,10 @@ export default function WalletModal({ visible, onClose }) {
               <View style={styles.detailRow}>
                 <Text style={styles.detailRowLabel}>Type</Text>
                 <View
-                  style={[styles.detailBadge, { backgroundColor: color + "20" }]}>
+                  style={[
+                    styles.detailBadge,
+                    { backgroundColor: color + "20" },
+                  ]}>
                   <Text style={[styles.detailBadgeText, { color: color }]}>
                     {selectedTx.type.toUpperCase()}
                   </Text>
@@ -562,7 +585,10 @@ export default function WalletModal({ visible, onClose }) {
           />
           <Text style={styles.payingRowText}>
             Adding to{" "}
-     <Text style={styles.payingRowName}>{`${getUserDisplayName()}'s`}</Text>{" "}
+            <Text
+              style={
+                styles.payingRowName
+              }>{`${getUserDisplayName()}'s`}</Text>{" "}
             wallet
           </Text>
         </View>
@@ -757,7 +783,7 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 6,
-    marginTop:22,
+    marginTop: 22,
   },
   headerTitle: {
     fontSize: 22,

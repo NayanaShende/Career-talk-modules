@@ -16,7 +16,7 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
 
-const BASE_URL = "http:// 172.20.10.3:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const TEAL = "#867795";

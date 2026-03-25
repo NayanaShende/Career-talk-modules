@@ -11,3 +11,4 @@ export const API_URL = `${BASE_URL}/api`;
 export const SOCKET_URL = BASE_URL;
 
 export default { API_URL, SOCKET_URL };
+

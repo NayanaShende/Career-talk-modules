@@ -18,7 +18,7 @@ import axios from "axios";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const BASE_URL = "http:// 172.20.10.3:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -895,4 +895,5 @@ const modalStyles = StyleSheet.create({
     lineHeight: 22,
   },
 });
+
 

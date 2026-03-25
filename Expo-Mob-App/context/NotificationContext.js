@@ -265,3 +265,4 @@ const styles = StyleSheet.create({
   bannerMsg: { fontSize: 13, color: "#ccc" },
   bannerClose: { fontSize: 16, color: "#fff", paddingLeft: 8 },
 });
+
