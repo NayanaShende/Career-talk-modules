@@ -1,9 +1,9 @@
-// src/middleware/protect.js
+// src/middleware/adminProtect.js
 
 const jwt = require("jsonwebtoken");
 const { User } = require("../models");
 
-const protect = async (req, res, next) => {
+const adminProtect = async (req, res, next) => {
   try {
     // ✅ Get token from Authorization header
     const authHeader = req.headers.authorization;
@@ -30,12 +30,20 @@ const protect = async (req, res, next) => {
       });
     }
 
+    // ✅ Check admin role
+    if (user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Admins only.",
+      });
+    }
+
     // ✅ Attach user to request
     req.user = user;
     next();
 
   } catch (err) {
-    console.error("Protect middleware error:", err.message);
+    console.error("AdminProtect middleware error:", err.message);
 
     if (err.name === "TokenExpiredError") {
       return res.status(401).json({
@@ -51,4 +59,4 @@ const protect = async (req, res, next) => {
   }
 };
 
-module.exports = protect;
+module.exports = adminProtect;

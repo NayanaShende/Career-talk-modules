@@ -18,7 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 console.log("🚀 NotificationContext.js FILE LOADED");
 
-const BASE_URL = "http://192.168.1.16:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 const NotificationContext = createContext({
   unreadCounts: {},
@@ -265,3 +265,4 @@ const styles = StyleSheet.create({
   bannerMsg: { fontSize: 13, color: "#ccc" },
   bannerClose: { fontSize: 16, color: "#fff", paddingLeft: 8 },
 });
+
