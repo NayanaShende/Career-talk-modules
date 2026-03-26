@@ -13,11 +13,7 @@ import {
   StatusBar,
   Dimensions,
   Alert,
-<<<<<<< HEAD
-  Animated,
-=======
   Modal,
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -28,28 +24,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-// import { SOCKET_URL as BASE_URL } from "../../constants/config";
-const BASE_URL = "http://192.168.1.14:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
-<<<<<<< HEAD
-// ── Design Tokens ──────────────────────────────────────────────────────────
-const PURPLE = "#7C5CBF";
-const PURPLE_DARK = "#5B3FA0";
-const PURPLE_LIGHT = "#EDE7F6";
-const PURPLE_PALE = "#F3EEFF";
-const BUBBLE_ME = "#7C5CBF";
-const BUBBLE_THEM = "#FFFFFF";
-const CHAT_BG = "#F5F0FF";
-const TEXT_1 = "#1A1035";
-const TEXT_2 = "#7B6F8E";
-const BORDER = "#E8E0F5";
-const WHITE = "#FFFFFF";
-const GREEN_DOT = "#22C55E";
-const GREY_DOT = "#9CA3AF";
-const RED_END = "#EF4444";
-const GOLD = "#F59E0B";
-=======
 // ── Design tokens ──────────────────────────────────────────────────────────
 const TEAL = "#867795";
 const TEAL_LIGHT = "#edddfc";
@@ -61,7 +38,6 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 const WHITE = "#FFFFFF";
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 const sortMessages = (msgs) =>
@@ -109,16 +85,6 @@ const formatTime = (date) =>
       })
     : "";
 
-<<<<<<< HEAD
-// ── Format seconds -> MM:SS ────────────────────────────────────────────────
-const formatDuration = (totalSeconds) => {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-=======
 // ── Smart image URL ────────────────────────────────────────────────────────
 const getImageUri = (image, name) => {
   if (
@@ -157,7 +123,7 @@ function InsufficientBalanceModal({ visible, balance, onAddMoney, onCancel }) {
             <View style={cm.infoRow}>
               <Text style={cm.infoLabel}>Required</Text>
               <Text style={[cm.infoValue, { color: "#ef4444" }]}>
-                ₹50 minimum
+                ₹150 minimum
               </Text>
             </View>
             <View style={[cm.infoRow, { borderBottomWidth: 0 }]}>
@@ -265,7 +231,6 @@ function EndChatModal({
 }
 
 // ── Main Component ─────────────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
 export default function ChatScreen() {
   const {
     expertId,
@@ -287,20 +252,7 @@ export default function ChatScreen() {
       ? rawName
       : "Expert";
 
-<<<<<<< HEAD
-  const cleanImage = rawImage ? rawImage.replace(/^uploads\//, "") : null;
-  const expertAvatarUrl =
-    cleanImage &&
-    cleanImage !== "undefined" &&
-    cleanImage !== "null" &&
-    cleanImage !== ""
-      ? `${BASE_URL}/uploads/${cleanImage}`
-      : `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          expertName,
-        )}&background=7C5CBF&color=fff`;
-=======
   const expertAvatarUrl = getImageUri(rawImage, expertName);
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
 
   // ── State ──────────────────────────────────────────────────────────────
   const [currentUserId, setCurrentUserId] = useState(null);
@@ -315,12 +267,6 @@ export default function ChatScreen() {
   const [walletBalance, setWalletBalance] = useState(0);
   const [expertDbId, setExpertDbId] = useState(null);
 
-<<<<<<< HEAD
-  // ── Live timer: elapsed seconds (THE FIX) ──────────────────────────────
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-
-  // ── Refs ───────────────────────────────────────────────────────────────
-=======
   // ── NEW: custom modal states ──
   const [insufficientModal, setInsufficientModal] = useState({
     visible: false,
@@ -331,7 +277,6 @@ export default function ChatScreen() {
     isBackPress: false,
   });
 
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   const flatListRef = useRef(null);
   const socketRef = useRef(null);
   const preauthDone = useRef(false);
@@ -340,35 +285,7 @@ export default function ChatScreen() {
   const minutesRef = useRef(0);
   const isSendingRef = useRef(false);
 
-<<<<<<< HEAD
-  // ── Animated pulse for the red dot in billing bar ─────────────────────
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (chatActive) {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.4,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start();
-    } else {
-      pulseAnim.setValue(1);
-    }
-  }, [chatActive]);
-
-  // ── Load user ──────────────────────────────────────────────────────────
-=======
   // ── Load user from storage ───────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   useEffect(() => {
     AsyncStorage.getItem("user").then((str) => {
       if (str) {
@@ -385,11 +302,7 @@ export default function ChatScreen() {
     if (RECEIVER_ID) clearUnread(RECEIVER_ID);
   }, [RECEIVER_ID]);
 
-<<<<<<< HEAD
-  // ── Find expert DB id ──────────────────────────────────────────────────
-=======
   // ── Find expert DB id ────────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   const findExpertId = async () => {
     try {
       const expertRes = await API.get("/experts");
@@ -403,11 +316,7 @@ export default function ChatScreen() {
     }
   };
 
-<<<<<<< HEAD
-  // ── Start billing ──────────────────────────────────────────────────────
-=======
   // ── Billing ──────────────────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   const startChatBilling = async (userId) => {
     if (preauthDone.current) return;
     preauthDone.current = true;
@@ -430,17 +339,6 @@ export default function ChatScreen() {
     } catch (e) {
       const err = e?.response?.data;
       if (err?.error === "insufficient_balance") {
-<<<<<<< HEAD
-        Alert.alert(
-          "Insufficient Balance",
-          err.message ||
-            `You need at least ₹50 to start chat.\nYour balance: ₹${err.balance?.toFixed(2) || 0}`,
-          [
-            { text: "Add Money", onPress: () => router.push("/(tabs)/wallet") },
-            { text: "Cancel", style: "cancel", onPress: () => router.back() },
-          ],
-        );
-=======
         // ── Show custom insufficient balance modal ──
         setInsufficientModal({
           visible: true,
@@ -448,7 +346,6 @@ export default function ChatScreen() {
         });
       } else {
         console.log("chatStart error:", e.message);
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
       }
     }
   };
@@ -465,15 +362,12 @@ export default function ChatScreen() {
           minutesRef.current += 1;
           setMinutesUsed(minutesRef.current);
           setWalletBalance(res.data.balance);
-<<<<<<< HEAD
-=======
           console.log(
             "⏱️ Minute",
             minutesRef.current,
             "— Balance:",
             res.data.balance,
           );
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
         }
       } catch (e) {
         if (e?.response?.data?.error === "insufficient_balance") {
@@ -512,13 +406,6 @@ export default function ChatScreen() {
 
       if (res?.data?.success && autoEnded) {
         const { totalCharged, released, duration } = res.data;
-<<<<<<< HEAD
-        Alert.alert(
-          "Chat Ended — Balance Empty",
-          `Duration: ${duration} min\nTotal charged: ₹${totalCharged}\n₹${released} released back to wallet.`,
-          [{ text: "OK", onPress: () => router.back() }],
-        );
-=======
         console.log(
           "✅ Chat ended — charged: ₹" +
             totalCharged +
@@ -530,18 +417,13 @@ export default function ChatScreen() {
           // Auto-ended due to empty balance — just go back
           router.back();
         }
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
       }
     } catch (e) {
       console.log("chatEnd error:", e.message);
     }
   };
 
-<<<<<<< HEAD
-  // ── Load messages ──────────────────────────────────────────────────────
-=======
   // ── Load messages ────────────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   const loadChats = async () => {
     if (!RECEIVER_ID || !currentUserId) return;
     try {
@@ -557,11 +439,7 @@ export default function ChatScreen() {
     }
   };
 
-<<<<<<< HEAD
-  // ── Send message ───────────────────────────────────────────────────────
-=======
   // ── Send message ─────────────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   const handleSend = async () => {
     if (!textMessage.trim() || !RECEIVER_ID || !currentUserId) return;
     if (isSendingRef.current) return;
@@ -596,11 +474,7 @@ export default function ChatScreen() {
     }
   };
 
-<<<<<<< HEAD
-  // ── Socket + billing setup ─────────────────────────────────────────────
-=======
   // ── Socket + billing setup ───────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
     loadChats();
@@ -627,13 +501,6 @@ export default function ChatScreen() {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
         setMessages((prev) =>
           dedupeMessages(sortMessages([...prev, newMessage])),
-<<<<<<< HEAD
-        );
-        setTimeout(
-          () => flatListRef.current?.scrollToEnd({ animated: true }),
-          100,
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
         );
       }
     });
@@ -648,11 +515,7 @@ export default function ChatScreen() {
     };
   }, [currentUserId, RECEIVER_ID, userRole]);
 
-<<<<<<< HEAD
-  // ── Render message ─────────────────────────────────────────────────────
-=======
   // ── Render message item ──────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   const renderItem = ({ item }) => {
     if (item.type === "date") {
       return (
@@ -712,11 +575,7 @@ export default function ChatScreen() {
     );
   };
 
-<<<<<<< HEAD
-  // ── Loading gate ───────────────────────────────────────────────────────
-=======
   // ── Loading gate ─────────────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   if (!currentUserId) {
     return (
       <View style={styles.loadingScreen}>
@@ -726,9 +585,6 @@ export default function ChatScreen() {
     );
   }
 
-<<<<<<< HEAD
-  // ── Main render ────────────────────────────────────────────────────────
-=======
   const handleHeaderPress = () => {
     if (userRole !== "expert") {
       router.push(`/(tabs)/expert/${RECEIVER_ID}`);
@@ -736,16 +592,11 @@ export default function ChatScreen() {
   };
 
   // ── Main render ──────────────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
       <StatusBar backgroundColor={PURPLE_DARK} barStyle="light-content" />
 
-<<<<<<< HEAD
-      {/* ── BILLING BAR ─────────────────────────────────────────────── */}
-=======
       {/* ── BILLING BAR ── */}
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
       {chatActive && (
         <View style={styles.billingBar}>
           {/* Live MM:SS timer */}
@@ -757,85 +608,25 @@ export default function ChatScreen() {
               {formatDuration(elapsedSeconds)}
             </Text>
           </View>
-<<<<<<< HEAD
-
-          {/* Rate badge */}
-          <View style={styles.billingRateBox}>
-            <Ionicons name="flash" size={11} color={GOLD} />
-            <Text style={styles.billingRateText}>₹10/min</Text>
-          </View>
-
-          {/* Wallet balance */}
-          <View style={styles.billingBalanceBox}>
-            <Text style={styles.billingBalanceLabel}>Balance</Text>
-            <Text style={styles.billingBalanceValue}>
-              ₹{walletBalance.toFixed(2)}
-            </Text>
-          </View>
-
-          {/* End button */}
-          <TouchableOpacity
-            style={styles.endChatBtn}
-            onPress={() => {
-              Alert.alert(
-                "End Chat?",
-                `Duration: ${minutesUsed} min\nCharged: ₹${minutesUsed * 10}\nRemaining hold will be released.`,
-                [
-                  {
-                    text: "End Chat",
-                    style: "destructive",
-                    onPress: () => {
-                      endChatBilling(currentUserId, expertDbId);
-                      router.back();
-                    },
-                  },
-                  { text: "Continue", style: "cancel" },
-                ],
-              );
-            }}
-=======
           <Text style={styles.billingBalance}>₹{walletBalance.toFixed(2)}</Text>
           <TouchableOpacity
             style={styles.endChatBtn}
             onPress={() =>
               setEndChatModal({ visible: true, isBackPress: false })
             }
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
           >
             <Text style={styles.endChatTxt}>End</Text>
           </TouchableOpacity>
         </View>
       )}
 
-<<<<<<< HEAD
-      {/* ── HEADER ──────────────────────────────────────────────────── */}
-=======
       {/* ── HEADER ── */}
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backBtn}
           onPress={() => {
             if (chatActive) {
-<<<<<<< HEAD
-              Alert.alert(
-                "End Chat?",
-                `Duration: ${minutesUsed} min\nCharged: ₹${minutesUsed * 10}`,
-                [
-                  {
-                    text: "End & Leave",
-                    style: "destructive",
-                    onPress: () => {
-                      endChatBilling(currentUserId, expertDbId);
-                      router.back();
-                    },
-                  },
-                  { text: "Stay", style: "cancel" },
-                ],
-              );
-=======
               setEndChatModal({ visible: true, isBackPress: true });
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
             } else {
               router.back();
             }
@@ -846,16 +637,8 @@ export default function ChatScreen() {
 
         <TouchableOpacity
           style={styles.headerAvatarPressable}
-<<<<<<< HEAD
-          onPress={() => {
-            if (userRole !== "expert") {
-              router.push({ pathname: `/expert/${RECEIVER_ID}` });
-            }
-          }}
-=======
           onPress={handleHeaderPress}
           activeOpacity={userRole !== "expert" ? 0.7 : 1}
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
         >
           <View style={styles.headerAvatarWrap}>
             <Image
@@ -884,11 +667,7 @@ export default function ChatScreen() {
               <Text
                 style={[
                   styles.headerStatus,
-<<<<<<< HEAD
-                  { color: isOnline ? "#16A34A" : TEXT_2 },
-=======
                   { color: isOnline ? "#16a34a" : TEXT_2 },
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
                 ]}
               >
                 {isOnline ? "Active now" : "Offline"}
@@ -910,11 +689,7 @@ export default function ChatScreen() {
         </View>
       </View>
 
-<<<<<<< HEAD
-      {/* ── CHAT AREA ───────────────────────────────────────────────── */}
-=======
       {/* ── CHAT AREA ── */}
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
       <View style={styles.chatBg}>
         {loading && messages.length === 0 ? (
           <View style={styles.center}>
@@ -953,11 +728,7 @@ export default function ChatScreen() {
         )}
       </View>
 
-<<<<<<< HEAD
-      {/* ── INPUT BAR ───────────────────────────────────────────────── */}
-=======
       {/* ── INPUT BAR ── */}
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
@@ -1031,11 +802,7 @@ export default function ChatScreen() {
   );
 }
 
-<<<<<<< HEAD
-// ── STYLES ───────────────────────────────────────────────────────────────────
-=======
 // ── STYLES ─────────────────────────────────────────────────────────────────
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: CHAT_BG },
   loadingScreen: {
@@ -1043,18 +810,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: CHAT_BG,
-<<<<<<< HEAD
-    gap: 12,
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   },
   center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
   loadingText: { fontSize: 14, color: TEXT_2, fontWeight: "500" },
 
-<<<<<<< HEAD
-  // ── Billing bar ──────────────────────────────────────────────────────
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   billingBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -1109,23 +868,14 @@ const styles = StyleSheet.create({
   },
   endChatTxt: { color: WHITE, fontWeight: "800", fontSize: 12 },
 
-<<<<<<< HEAD
-  // ── Header ───────────────────────────────────────────────────────────
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   header: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: WHITE,
     paddingHorizontal: 14,
-<<<<<<< HEAD
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-=======
     paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: 0.5,
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
     borderBottomColor: BORDER,
     elevation: 4,
     shadowColor: PURPLE,
@@ -1163,19 +913,11 @@ const styles = StyleSheet.create({
     height: 12,
     borderRadius: 6,
     borderWidth: 2,
-<<<<<<< HEAD
-    borderColor: WHITE,
-  },
-  headerInfo: { flex: 1 },
-  headerName: {
-    fontSize: 17,
-=======
     borderColor: "#ffffff",
   },
   headerInfo: { flex: 1 },
   headerName: {
     fontSize: 16,
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
     fontWeight: "800",
     color: TEXT_1,
     letterSpacing: -0.2,
@@ -1188,8 +930,6 @@ const styles = StyleSheet.create({
   },
   statusDot: { width: 6, height: 6, borderRadius: 3 },
   headerStatus: { fontSize: 12, fontWeight: "600" },
-<<<<<<< HEAD
-=======
   viewProfileHint: {
     fontSize: 10,
     color: TEAL_TEXT,
@@ -1197,7 +937,6 @@ const styles = StyleSheet.create({
     marginTop: 1,
     opacity: 0.7,
   },
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   headerActions: { flexDirection: "row", gap: 6 },
   iconBtn: {
     width: 38,
@@ -1208,10 +947,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-<<<<<<< HEAD
-  // ── Chat background ───────────────────────────────────────────────────
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   chatBg: { flex: 1, backgroundColor: CHAT_BG },
   listContent: {
     paddingHorizontal: 14,
@@ -1219,46 +954,23 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
 
-<<<<<<< HEAD
-  // ── Date separator ────────────────────────────────────────────────────
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   dateSepWrap: {
     flexDirection: "row",
     alignItems: "center",
     marginVertical: 16,
     gap: 8,
   },
-<<<<<<< HEAD
-  dateSepLine: { flex: 1, height: 0.75, backgroundColor: "#D8D0F0" },
-=======
   dateSepLine: { flex: 1, height: 0.5, backgroundColor: "#d1d5db" },
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   dateSepPill: {
     backgroundColor: "#EDE7F6",
     paddingVertical: 4,
-<<<<<<< HEAD
-    paddingHorizontal: 12,
-=======
     paddingHorizontal: 10,
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "#D4C9F0",
   },
-<<<<<<< HEAD
-  dateSepText: {
-    fontSize: 11,
-    color: PURPLE,
-    fontWeight: "700",
-    letterSpacing: 0.3,
-  },
-
-  // ── Message row ───────────────────────────────────────────────────────
-=======
   dateSepText: { fontSize: 12, color: TEXT_2, fontWeight: "600" },
 
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   row: { flexDirection: "row", marginBottom: 8, alignItems: "flex-end" },
   rowRight: { justifyContent: "flex-end" },
   rowLeft: { justifyContent: "flex-start" },
@@ -1268,23 +980,16 @@ const styles = StyleSheet.create({
     borderRadius: 15,
     marginRight: 6,
     marginBottom: 2,
-<<<<<<< HEAD
-=======
   },
   msgAvatarLarge: {
     width: 32,
     height: 32,
     borderRadius: 16,
     marginRight: 8,
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
     borderWidth: 1.5,
     borderColor: PURPLE_LIGHT,
   },
 
-<<<<<<< HEAD
-  // ── Bubble ────────────────────────────────────────────────────────────
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   bubble: {
     maxWidth: width * 0.68,
     paddingHorizontal: 14,
@@ -1305,18 +1010,10 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 4,
     shadowColor: "#000",
     shadowOpacity: 0.06,
-<<<<<<< HEAD
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  msgText: { fontSize: 15, lineHeight: 22 },
-  msgTextMe: { color: WHITE },
-=======
     shadowRadius: 4,
   },
   msgText: { fontSize: 15, lineHeight: 22 },
   msgTextMe: { color: "#ffffff" },
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   msgTextThem: { color: TEXT_1 },
   metaRow: {
     flexDirection: "row",
@@ -1329,10 +1026,6 @@ const styles = StyleSheet.create({
   timeMine: { color: "rgba(255,255,255,0.55)" },
   timeTheirs: { color: TEXT_2 },
 
-<<<<<<< HEAD
-  // ── Empty chat ────────────────────────────────────────────────────────
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   emptyChat: { alignItems: "center", paddingTop: 80, gap: 10 },
   emptyChatIcon: {
     width: 72,
@@ -1346,10 +1039,6 @@ const styles = StyleSheet.create({
   emptyChatTitle: { fontSize: 17, fontWeight: "800", color: TEXT_1 },
   emptyChatSub: { fontSize: 14, color: TEXT_2, textAlign: "center" },
 
-<<<<<<< HEAD
-  // ── Input bar ─────────────────────────────────────────────────────────
-=======
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
@@ -1402,13 +1091,11 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-<<<<<<< HEAD
   sendBtnDisabled: {
     backgroundColor: "#C4B8E0",
     shadowOpacity: 0,
     elevation: 0,
   },
-=======
   sendBtnDisabled: { backgroundColor: TEAL, opacity: 0.5 },
 });
 
@@ -1541,6 +1228,4 @@ const cm = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  endTxt: { fontSize: 15, fontWeight: "800", color: WHITE },
->>>>>>> cc6a70c707d2477474b18c7e749fc9e9261274eb
 });

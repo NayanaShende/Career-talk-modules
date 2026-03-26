@@ -25,22 +25,19 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
 // import { SOCKET_URL as BASE_URL } from "../../../constants/config";
-const BASE_URL = "http://192.168.1.14:3000";
+const BASE_URL = "http://172.20.10.3:3000";
 
 // ─────────────────────────────────────────────
 // ✅ Helper: resolve any image (Cloudinary or local)
 // ─────────────────────────────────────────────
 const getImageUri = (image, fallbackName = "Expert") => {
   if (image) {
-    // ✅ Already a full Cloudinary or external URL — return as-is
     if (image.startsWith("http://") || image.startsWith("https://")) {
       return image;
     }
-    // ✅ Local file — prepend base URL
     const cleanImage = image.replace(/^uploads\//, "");
     return `${BASE_URL}/uploads/${cleanImage}`;
   }
-  // ✅ Fallback avatar
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackName)}&background=1F5C4F&color=fff&size=128`;
 };
 
@@ -60,6 +57,77 @@ function StarRating({ rating, size = 20 }) {
         />
       ))}
     </View>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ✅ NEW: Insufficient Balance Modal
+// Matches screenshot exactly:
+//  - Light purple circle + wallet icon
+//  - Bold title
+//  - Info box with red values
+//  - Subtitle
+//  - Cancel (grey) + Add Money (purple) buttons
+// ─────────────────────────────────────────────
+function InsufficientBalanceModal({
+  visible,
+  balance,
+  minimumRequired,
+  onAddMoney,
+  onCancel,
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={ibm.overlay}>
+        <View style={ibm.card}>
+          {/* Wallet icon circle */}
+          <View style={ibm.iconCircle}>
+            <Ionicons name="wallet-outline" size={36} color="#867795" />
+          </View>
+
+          {/* Title */}
+          <Text style={ibm.title}>Insufficient Balance</Text>
+
+          {/* Info box */}
+          <View style={ibm.infoBox}>
+            <View style={ibm.infoRow}>
+              <Text style={ibm.infoLabel}>Required</Text>
+              <Text style={ibm.infoValueRed}>₹{minimumRequired} minimum</Text>
+            </View>
+            <View style={[ibm.infoRow, { borderBottomWidth: 0 }]}>
+              <Text style={ibm.infoLabel}>Your Balance</Text>
+              <Text style={ibm.infoValueRed}>
+                ₹{parseFloat(balance || 0).toFixed(2)}
+              </Text>
+            </View>
+          </View>
+
+          {/* Subtitle */}
+          <Text style={ibm.subtitle}>
+            Add money to your wallet to start chatting with experts.
+          </Text>
+
+          {/* Buttons */}
+          <View style={ibm.btnRow}>
+            <TouchableOpacity
+              style={ibm.cancelBtn}
+              onPress={onCancel}
+              activeOpacity={0.8}
+            >
+              <Text style={ibm.cancelTxt}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={ibm.addBtn}
+              onPress={onAddMoney}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add-circle-outline" size={18} color="#fff" />
+              <Text style={ibm.addTxt}>Add Money</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -160,7 +228,6 @@ const ReviewCard = ({ review }) => {
   const userImage =
     review.user?.image || review.userImage || review.reviewer_image || null;
 
-  // ✅ Use shared getImageUri helper
   const avatarUri = getImageUri(userImage, userName);
 
   const reviewDate = review.createdAt || review.created_at || null;
@@ -263,6 +330,13 @@ export default function ExpertProfile() {
   const [reviews, setReviews] = useState([]);
   const [activeTab, setActiveTab] = useState("Overview");
 
+  // ── NEW: insufficient balance modal state ──
+  const [balanceModal, setBalanceModal] = useState({
+    visible: false,
+    balance: 0,
+    minimumRequired: 150,
+  });
+
   useEffect(() => {
     AsyncStorage.getItem("user").then((str) => {
       if (str) {
@@ -344,7 +418,7 @@ export default function ExpertProfile() {
     }
   };
 
-  // ✅ UPDATED: Check wallet balance before allowing chat
+  // ✅ UPDATED: Check wallet balance — shows custom modal instead of Alert
   const handleChatPress = async () => {
     if (!expert) {
       Alert.alert("Error", "Expert data not loaded");
@@ -355,35 +429,26 @@ export default function ExpertProfile() {
       Alert.alert("Error", "Cannot chat with yourself");
       return;
     }
-    // ✅ STEP 1: Check wallet balance before proceeding to chat
+
+    const MINIMUM_BALANCE = 150;
+
     try {
       const balanceRes = await axiosInstance.get(
         `/wallet/balance/${currentUserId}`,
       );
       const walletBalance = parseFloat(balanceRes?.data?.balance || 0);
 
-      const MINIMUM_BALANCE = 150; // ✅ minimum ₹150 required to start chat
-
       if (walletBalance < MINIMUM_BALANCE) {
-        // ✅ Not enough balance — show alert with option to add money
-        Alert.alert(
-          "Insufficient Balance",
-          `You need at least ₹${MINIMUM_BALANCE} to start a chat.\nYour current balance is ₹${walletBalance.toFixed(2)}.`,
-          [
-            {
-              text: "Add Money",
-              onPress: () => router.push("/(tabs)/wallet"), // ✅ go to wallet tab
-            },
-            {
-              text: "Cancel",
-              style: "cancel",
-            },
-          ],
-        );
-        return; // ✅ stop here — do not go to chat
+        // ── Show custom modal instead of Alert.alert ──
+        setBalanceModal({
+          visible: true,
+          balance: walletBalance,
+          minimumRequired: MINIMUM_BALANCE,
+        });
+        return;
       }
 
-      // ✅ STEP 2: Balance is enough — proceed to chat
+      // ✅ Balance is enough — proceed to chat
       router.push({
         pathname: "/home/chatscreen",
         params: {
@@ -394,7 +459,7 @@ export default function ExpertProfile() {
       });
     } catch (error) {
       console.log("Balance check error:", error.message);
-      // ✅ If balance check fails, still allow chat (don't block user)
+      // If balance check fails, still allow chat
       router.push({
         pathname: "/home/chatscreen",
         params: {
@@ -443,13 +508,26 @@ export default function ExpertProfile() {
         onSubmit={handleSubmitRating}
       />
 
+      {/* ── INSUFFICIENT BALANCE MODAL ── */}
+      <InsufficientBalanceModal
+        visible={balanceModal.visible}
+        balance={balanceModal.balance}
+        minimumRequired={balanceModal.minimumRequired}
+        onAddMoney={() => {
+          setBalanceModal({ visible: false, balance: 0, minimumRequired: 150 });
+          router.push("/(tabs)/wallet");
+        }}
+        onCancel={() =>
+          setBalanceModal({ visible: false, balance: 0, minimumRequired: 150 })
+        }
+      />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 130 }}
       >
         {/* ── HERO HEADER ── */}
         <View style={styles.heroSection}>
-          {/* Back button placeholder */}
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => router.back()}
@@ -457,7 +535,6 @@ export default function ExpertProfile() {
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
 
-          {/* ✅ Avatar — uses shared getImageUri helper */}
           <View style={styles.avatarRing}>
             <Image
               source={{
@@ -592,7 +669,7 @@ export default function ExpertProfile() {
             </View>
           )}
 
-          {/* ✅ Reviews Section — shows each user's rating + comment */}
+          {/* Reviews Section */}
           <ReviewsSection reviews={reviews} />
         </View>
       </ScrollView>
@@ -611,6 +688,123 @@ export default function ExpertProfile() {
     </SafeAreaView>
   );
 }
+
+// ─────────────────────────────────────────────
+// Insufficient Balance Modal Styles
+// ─────────────────────────────────────────────
+const ibm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 36,
+    paddingBottom: 28,
+    width: "100%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 14,
+  },
+  // Light purple circle with wallet icon — matches screenshot
+  iconCircle: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: "#ede8f5",
+    borderWidth: 1.5,
+    borderColor: "#c9bada",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 22,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#111827",
+    marginBottom: 20,
+    letterSpacing: -0.3,
+    textAlign: "center",
+  },
+  // Light blue-grey info box — matches screenshot
+  infoBox: {
+    width: "100%",
+    backgroundColor: "#f0f4ff",
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#dde3f5",
+  },
+  infoLabel: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  // Red values — matches screenshot
+  infoValueRed: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#ef4444",
+  },
+  subtitle: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 28,
+    paddingHorizontal: 8,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  // Grey Cancel button — matches screenshot
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: "#f3f4f6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelTxt: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#6B7280",
+  },
+  // Purple Add Money button with + icon — matches screenshot
+  addBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 7,
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: "#867795",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  addTxt: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#ffffff",
+  },
+});
 
 // ─────────────────────────────────────────────
 // Review Card Styles
@@ -904,7 +1098,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
 
-  // Modal
+  // Rating Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.45)",

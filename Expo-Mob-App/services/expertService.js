@@ -1,16 +1,12 @@
-
 import API from "./api";
 
 export const searchExperts = async (keyword) => {
   try {
     const response = await API.get(`/experts?search=${keyword}`);
-
     // ✅ normalize response
     return response?.data ?? { success: false, data: [] };
-
   } catch (error) {
     console.log("Error fetching experts:", error?.response?.data || error.message);
-
     return { success: false, data: [] };
   }
 };
@@ -18,69 +14,61 @@ export const searchExperts = async (keyword) => {
 export const getRecommendedExperts = async () => {
   try {
     const response = await API.get("/experts/recommended");
-
     // ✅ normalize response
     return response?.data ?? { success: false, data: [] };
-
   } catch (error) {
     console.log(
       "Error fetching recommended experts:",
       error?.response?.data || error.message
     );
-
     return { success: false, data: [] };
   }
 };
-
 
 // get all experts (dashboard list)
 export const getAllExperts = async () => {
   try {
     const response = await API.get("/experts");
-
-    // ✅ return only experts array
-    return response.data.data;
-    // ✅ normalize response
-    return response?.data ?? { success: false, data: [] };
-
+    // ✅ FIXED: removed dead code (second return after first return was never reached)
+    // ✅ safely extract array, fallback to empty array
+    return response?.data?.data ?? [];
   } catch (error) {
     console.log(
       "Error fetching all experts:",
       error?.response?.data || error.message
     );
-
-    return { success: false, data: [] };
+    return [];
   }
 };
-
 
 // get single expert by id (profile page)
 export const getExpertById = async (id) => {
   try {
     const response = await API.get(`/experts/${id}`);
-
-    // ✅ return only expert object
-    return response.data.data;
-    // ✅ normalize response
-    return response?.data ?? { success: false, data: null };
-
+    // ✅ FIXED: removed dead code (second return after first return was never reached)
+    // ✅ safely extract object, fallback to null
+    return response?.data?.data ?? null;
   } catch (error) {
     console.log(
       "Error fetching expert:",
       error?.response?.data || error.message
     );
-
-    return { success: false, data: null };
+    return null;
   }
 };
 
-// get online experts
+// ✅ FIXED: get online experts — now returns consistent { success, data } shape
+// so the screen component can check response.success and read response.data
 export const getOnlineExperts = async () => {
   try {
     const response = await API.get("/experts/online");
-    return response.data?.data || [];
+    const experts = response?.data?.data ?? response?.data ?? [];
+    return { success: true, data: Array.isArray(experts) ? experts : [] };
   } catch (error) {
-    console.log("Error fetching online experts:", error);
-    return [];
+    console.log(
+      "Error fetching online experts:",
+      error?.response?.data || error.message
+    );
+    return { success: false, data: [] };
   }
 };
