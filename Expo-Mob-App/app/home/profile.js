@@ -30,6 +30,7 @@ const CARD_BG = "#ffffff";
 const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#eff0f2";
+const WHITE = "#FFFFFF";
 
 // ─── Modal content (unchanged) ────────────────────────────────────────────────
 const ABOUT_US_CONTENT = {
@@ -153,6 +154,39 @@ function InfoModal({ visible, onClose, content }) {
   );
 }
 
+// ─── Logout Confirm Modal ─────────────────────────────────────────────────────
+function LogoutModal({ visible, onCancel, onConfirm }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={lm.overlay}>
+        <View style={lm.card}>
+
+
+          {/* Title */}
+          <Text style={lm.title}>Logout 🔐</Text>
+
+          {/* Subtitle */}
+          <Text style={lm.subtitle}>
+            Are you sure you want to{"\n"}logout from your account?
+          </Text>
+
+          {/* Buttons */}
+          <View style={lm.btnRow}>
+            <TouchableOpacity style={lm.cancelBtn} onPress={onCancel} activeOpacity={0.8}>
+              <Text style={lm.cancelTxt}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={lm.logoutBtn} onPress={onConfirm} activeOpacity={0.8}>
+              <Ionicons name="log-out-outline" size={16} color={WHITE} />
+              <Text style={lm.logoutTxt}>Logout</Text>
+            </TouchableOpacity>
+          </View>
+
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── Settings Row ─────────────────────────────────────────────────────────────
 function SettingsRow({ icon, iconBg, label, onPress, danger }) {
   return (
@@ -194,6 +228,8 @@ export default function ProfileScreen() {
   const [aboutModal, setAboutModal] = useState(false);
   const [privacyModal, setPrivacyModal] = useState(false);
   const [termsModal, setTermsModal] = useState(false);
+  // ── NEW: custom logout confirmation modal ──
+  const [logoutModal, setLogoutModal] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -242,23 +278,19 @@ export default function ProfileScreen() {
     }, []),
   );
 
-  const handleLogout = () => {
-    Alert.alert("Logout", "Are you sure you want to logout?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Logout",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await AsyncStorage.removeItem("token");
-            await AsyncStorage.removeItem("user");
-            router.replace("/loginOtp");
-          } catch {
-            Alert.alert("Error", "Logout failed. Try again.");
-          }
-        },
-      },
-    ]);
+  // ── Opens custom modal instead of Alert.alert ──
+  const handleLogout = () => setLogoutModal(true);
+
+  // ── Actual logout logic runs after user confirms ──
+  const confirmLogout = async () => {
+    setLogoutModal(false);
+    try {
+      await AsyncStorage.removeItem("token");
+      await AsyncStorage.removeItem("user");
+      router.replace("/loginOtp");
+    } catch {
+      Alert.alert("Error", "Logout failed. Try again.");
+    }
   };
 
   const openCV = () => {
@@ -298,7 +330,6 @@ export default function ProfileScreen() {
         : null;
   const displayName = expertProfile?.name || profile?.fullName || "No Name";
 
-  // initials for fallback
   const initials = displayName
     .trim()
     .split(" ")
@@ -315,14 +346,12 @@ export default function ProfileScreen() {
       >
         {/* ── TEAL COVER ── */}
         <View style={styles.cover}>
-          {/* Back button top left */}
           <TouchableOpacity
             style={styles.coverBackBtn}
             onPress={() => router.back()}
           >
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
-          {/* Edit button top right */}
           <TouchableOpacity
             style={styles.coverEditBtn}
             onPress={() => router.push("/home/edit")}
@@ -336,10 +365,8 @@ export default function ProfileScreen() {
           <View style={styles.avatarRing}>
             <Image source={{ uri: imageUrl }} style={styles.avatar} />
           </View>
-
           <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.domain}>{displayDomain || "Domain not set"}</Text>
-
           {profile?.role && (
             <View style={styles.roleBadge}>
               <Text style={styles.roleText}>
@@ -382,21 +409,9 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <InfoRow icon="mail-outline" label="Email" value={profile?.email} />
           <InfoRow icon="call-outline" label="Mobile" value={profile?.mobile} />
-          <InfoRow
-            icon="calendar-outline"
-            label="Birth Date"
-            value={profile?.dob}
-          />
-          <InfoRow
-            icon="school-outline"
-            label="Qualification"
-            value={displayQualification}
-          />
-          <InfoRow
-            icon="briefcase-outline"
-            label="Experience"
-            value={displayExperience}
-          />
+          <InfoRow icon="calendar-outline" label="Birth Date" value={profile?.dob} />
+          <InfoRow icon="school-outline" label="Qualification" value={displayQualification} />
+          <InfoRow icon="briefcase-outline" label="Experience" value={displayExperience} />
         </View>
 
         {/* ── EXPERT DETAILS CARD ── */}
@@ -407,30 +422,13 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.card}>
               <InfoRow icon="tv-outline" label="Domain" value={displayDomain} />
-              <InfoRow
-                icon="location-outline"
-                label="Location"
-                value={expertProfile?.location}
-              />
-              <InfoRow
-                icon="language-outline"
-                label="Languages"
-                value={expertProfile?.language_spoken}
-              />
-              <InfoRow
-                icon="ribbon-outline"
-                label="Certification"
-                value={expertProfile?.certification}
-              />
-
+              <InfoRow icon="location-outline" label="Location" value={expertProfile?.location} />
+              <InfoRow icon="language-outline" label="Languages" value={expertProfile?.language_spoken} />
+              <InfoRow icon="ribbon-outline" label="Certification" value={expertProfile?.certification} />
               {expertProfile?.bio ? (
                 <View style={styles.bioRow}>
                   <View style={styles.infoIconWrap}>
-                    <Ionicons
-                      name="person-outline"
-                      size={16}
-                      color={TEAL_TEXT}
-                    />
+                    <Ionicons name="person-outline" size={16} color={TEAL_TEXT} />
                   </View>
                   <View style={{ marginLeft: 0, flex: 1 }}>
                     <Text style={styles.infoLabel}>Bio</Text>
@@ -438,7 +436,6 @@ export default function ProfileScreen() {
                   </View>
                 </View>
               ) : null}
-
               {expertProfile?.skills && expertProfile.skills.length > 0 && (
                 <View style={styles.skillsSection}>
                   <Text style={styles.infoLabel}>Skills</Text>
@@ -461,10 +458,7 @@ export default function ProfileScreen() {
             <Ionicons name="document-text-outline" size={18} color="#fff" />
             <Text style={styles.cvBtnText}>View CV</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.editBtn}
-            onPress={() => router.push("/home/edit")}
-          >
+          <TouchableOpacity style={styles.editBtn} onPress={() => router.push("/home/edit")}>
             <Ionicons name="pencil-outline" size={18} color={TEAL} />
             <Text style={styles.editBtnText}>Edit Profile</Text>
           </TouchableOpacity>
@@ -497,28 +491,23 @@ export default function ProfileScreen() {
           />
         </View>
 
-        {/* ── LOGOUT ── */}
+        {/* ── LOGOUT BUTTON ── */}
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="log-out-outline" size={19} color="#fff" />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
       </ScrollView>
 
-      {/* ── MODALS ── */}
-      <InfoModal
-        visible={aboutModal}
-        onClose={() => setAboutModal(false)}
-        content={ABOUT_US_CONTENT}
-      />
-      <InfoModal
-        visible={privacyModal}
-        onClose={() => setPrivacyModal(false)}
-        content={PRIVACY_POLICY_CONTENT}
-      />
-      <InfoModal
-        visible={termsModal}
-        onClose={() => setTermsModal(false)}
-        content={TERMS_CONTENT}
+      {/* ── INFO MODALS ── */}
+      <InfoModal visible={aboutModal} onClose={() => setAboutModal(false)} content={ABOUT_US_CONTENT} />
+      <InfoModal visible={privacyModal} onClose={() => setPrivacyModal(false)} content={PRIVACY_POLICY_CONTENT} />
+      <InfoModal visible={termsModal} onClose={() => setTermsModal(false)} content={TERMS_CONTENT} />
+
+      {/* ── LOGOUT CONFIRM MODAL ── */}
+      <LogoutModal
+        visible={logoutModal}
+        onCancel={() => setLogoutModal(false)}
+        onConfirm={confirmLogout}
       />
     </SafeAreaView>
   );
@@ -526,354 +515,160 @@ export default function ProfileScreen() {
 
 // ── STYLES ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: PAGE_BG,
-  },
-  loadingScreen: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: PAGE_BG,
-  },
+  container: { flex: 1, backgroundColor: PAGE_BG },
+  loadingScreen: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: PAGE_BG },
 
-  // ── Cover ──
-  cover: {
-    height: 130,
-    backgroundColor: TEAL,
-    position: "relative",
-  },
-  coverBackBtn: {
-    position: "absolute",
-    top: 16,
-    left: 16,
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255,255,255,0.18)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginTop: 25,
-  },
-  coverEditBtn: {
-    position: "absolute",
-    top: 16,
-    right: 16,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    justifyContent: "center",
-    marginTop: 25,
+  cover: { height: 130, backgroundColor: TEAL, position: "relative" },
+  coverBackBtn: { position: "absolute", top: 16, left: 16, width: 38, height: 38, borderRadius: 19, backgroundColor: "rgba(255,255,255,0.18)", justifyContent: "center", alignItems: "center", marginTop: 25 },
+  coverEditBtn: { position: "absolute", top: 16, right: 16, width: 34, height: 34, borderRadius: 17, backgroundColor: "rgba(255,255,255,0.2)", justifyContent: "center", marginTop: 25, alignItems: "center" },
 
-    alignItems: "center",
-  },
+  avatarSection: { alignItems: "center", marginTop: -52, paddingBottom: 4 },
+  avatarRing: { width: 106, height: 106, borderRadius: 53, backgroundColor: CARD_BG, padding: 3, elevation: 4, shadowColor: "#000", shadowOpacity: 0.12, shadowRadius: 6 },
+  avatar: { width: 100, height: 100, borderRadius: 50 },
+  name: { fontSize: 22, fontWeight: "800", color: TEXT_1, marginTop: 12, letterSpacing: -0.3 },
+  domain: { fontSize: 14, color: TEXT_2, marginTop: 3, fontWeight: "500" },
+  roleBadge: { marginTop: 8, backgroundColor: TEAL_LIGHT, paddingHorizontal: 16, paddingVertical: 5, borderRadius: 20 },
+  roleText: { color: TEAL_TEXT, fontSize: 12, fontWeight: "700" },
 
-  // ── Avatar section ──
-  avatarSection: {
-    alignItems: "center",
-    marginTop: -52,
-    paddingBottom: 4,
-  },
-  avatarRing: {
-    width: 106,
-    height: 106,
-    borderRadius: 53,
-    backgroundColor: CARD_BG,
-    padding: 3,
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: TEXT_1,
-    marginTop: 12,
-    letterSpacing: -0.3,
-  },
-  domain: {
-    fontSize: 14,
-    color: TEXT_2,
-    marginTop: 3,
-    fontWeight: "500",
-  },
-  roleBadge: {
-    marginTop: 8,
-    backgroundColor: TEAL_LIGHT,
-    paddingHorizontal: 16,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-  roleText: {
-    color: TEAL_TEXT,
-    fontSize: 12,
-    fontWeight: "700",
-  },
+  statsRow: { flexDirection: "row", backgroundColor: CARD_BG, marginHorizontal: 20, marginTop: 16, borderRadius: 18, paddingVertical: 16, borderWidth: 1, borderColor: BORDER, elevation: 1 },
+  statItem: { flex: 1, alignItems: "center" },
+  statNum: { fontSize: 20, fontWeight: "800", color: TEAL },
+  statLabel: { fontSize: 12, color: TEXT_2, marginTop: 3, fontWeight: "500" },
+  statDivider: { width: 1, backgroundColor: BORDER, marginVertical: 4 },
 
-  // ── Stats row ──
-  statsRow: {
-    flexDirection: "row",
-    backgroundColor: CARD_BG,
-    marginHorizontal: 20,
-    marginTop: 16,
-    borderRadius: 18,
-    paddingVertical: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-    elevation: 1,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statNum: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: TEAL,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: TEXT_2,
-    marginTop: 3,
-    fontWeight: "500",
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: BORDER,
-    marginVertical: 4,
-  },
+  sectionLabel: { paddingHorizontal: 20, paddingTop: 20, paddingBottom: 8 },
+  sectionLabelText: { fontSize: 12, fontWeight: "700", color: TEXT_2, letterSpacing: 0.8, textTransform: "uppercase" },
 
-  // ── Section label ──
-  sectionLabel: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 8,
-  },
-  sectionLabelText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: TEXT_2,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
+  card: { backgroundColor: CARD_BG, marginHorizontal: 20, borderRadius: 18, paddingVertical: 6, paddingHorizontal: 16, borderWidth: 1, borderColor: BORDER, elevation: 1 },
 
-  // ── Card ──
-  card: {
-    backgroundColor: CARD_BG,
-    marginHorizontal: 20,
-    borderRadius: 18,
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: BORDER,
-    elevation: 1,
-  },
+  infoRow: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 13, borderBottomWidth: 0.5, borderBottomColor: BORDER },
+  infoIconWrap: { width: 32, height: 32, borderRadius: 10, backgroundColor: TEAL_LIGHT, justifyContent: "center", alignItems: "center", marginRight: 12, marginTop: 1 },
+  infoText: { flex: 1 },
+  infoLabel: { fontSize: 11, color: TEXT_2, fontWeight: "600", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 2 },
+  infoValue: { fontSize: 15, fontWeight: "600", color: TEXT_1 },
 
-  // ── Info row ──
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    paddingVertical: 13,
-    borderBottomWidth: 0.5,
-    borderBottomColor: BORDER,
-  },
-  infoIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: TEAL_LIGHT,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-    marginTop: 1,
-  },
-  infoText: {
-    flex: 1,
-  },
-  infoLabel: {
-    fontSize: 11,
-    color: TEXT_2,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.4,
-    marginBottom: 2,
-  },
-  infoValue: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: TEXT_1,
-  },
+  bioRow: { flexDirection: "row", paddingVertical: 13, borderBottomWidth: 0.5, borderBottomColor: BORDER, gap: 12 },
 
-  // ── Bio row ──
-  bioRow: {
-    flexDirection: "row",
-    paddingVertical: 13,
-    borderBottomWidth: 0.5,
-    borderBottomColor: BORDER,
-    gap: 12,
-  },
+  skillsSection: { paddingVertical: 13 },
+  skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 8 },
+  skillChip: { backgroundColor: TEAL_LIGHT, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 20 },
+  skillChipText: { color: TEAL_TEXT, fontSize: 12, fontWeight: "700" },
 
-  // ── Skills ──
-  skillsSection: {
-    paddingVertical: 13,
-  },
-  skillsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginTop: 8,
-  },
-  skillChip: {
-    backgroundColor: TEAL_LIGHT,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 20,
-  },
-  skillChipText: {
-    color: TEAL_TEXT,
-    fontSize: 12,
-    fontWeight: "700",
-  },
+  actionsRow: { flexDirection: "row", marginHorizontal: 20, marginTop: 16, gap: 12 },
+  cvBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: TEAL, paddingVertical: 14, borderRadius: 14, elevation: 2 },
+  cvBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  editBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: CARD_BG, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: TEAL },
+  editBtnText: { color: TEAL, fontWeight: "700", fontSize: 14 },
 
-  // ── Action buttons ──
-  actionsRow: {
-    flexDirection: "row",
-    marginHorizontal: 20,
-    marginTop: 16,
-    gap: 12,
-  },
-  cvBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: TEAL,
-    paddingVertical: 14,
-    borderRadius: 14,
-    elevation: 2,
-  },
-  cvBtnText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  editBtn: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: CARD_BG,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: TEAL,
-  },
-  editBtnText: {
-    color: TEAL,
-    fontWeight: "700",
-    fontSize: 14,
-  },
+  settingsDivider: { height: 0.5, backgroundColor: BORDER, marginHorizontal: 4 },
 
-  // ── Settings divider ──
-  settingsDivider: {
-    height: 0.5,
-    backgroundColor: BORDER,
-    marginHorizontal: 4,
-  },
-
-  // ── Logout ──
-  logoutBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#ef4444",
-    marginHorizontal: 20,
-    marginTop: 16,
-    paddingVertical: 15,
-    borderRadius: 14,
-    elevation: 2,
-  },
-  logoutText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 15,
-  },
+  logoutBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#ef4444", marginHorizontal: 20, marginTop: 16, paddingVertical: 15, borderRadius: 14, elevation: 2 },
+  logoutText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });
 
 // ── Settings row styles ────────────────────────────────────────────────────
 const settingsStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 4,
-    paddingVertical: 13,
-  },
-  iconBox: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 14,
-  },
-  label: {
-    flex: 1,
-    fontSize: 15,
-    fontWeight: "600",
-    color: TEXT_1,
-  },
+  row: { flexDirection: "row", alignItems: "center", paddingHorizontal: 4, paddingVertical: 13 },
+  iconBox: { width: 34, height: 34, borderRadius: 10, justifyContent: "center", alignItems: "center", marginRight: 14 },
+  label: { flex: 1, fontSize: 15, fontWeight: "600", color: TEXT_1 },
 });
 
-// ── Modal styles ───────────────────────────────────────────────────────────
+// ── Info Modal styles ──────────────────────────────────────────────────────
 const TAB_BAR_HEIGHT = 80;
 const modalStyles = StyleSheet.create({
+  overlay: { position: "absolute", top: 0, left: 0, right: 0, bottom: TAB_BAR_HEIGHT, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: CARD_BG, borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingTop: 14, paddingHorizontal: 24, paddingBottom: 40 },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: BORDER, alignSelf: "center", marginBottom: 18 },
+  header: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
+  title: { fontSize: 19, fontWeight: "800", color: TEXT_1, flex: 1, letterSpacing: -0.2 },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: PAGE_BG, justifyContent: "center", alignItems: "center" },
+  sectionHeading: { fontSize: 14, fontWeight: "700", color: TEXT_1, marginBottom: 5 },
+  sectionBody: { fontSize: 14, color: TEXT_2, lineHeight: 22 },
+});
+
+// ── Logout Confirm Modal styles ────────────────────────────────────────────
+const lm = StyleSheet.create({
   overlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: TAB_BAR_HEIGHT,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 28,
   },
-  sheet: {
-    backgroundColor: CARD_BG,
-    borderTopLeftRadius: 26,
-    borderTopRightRadius: 26,
-    paddingTop: 14,
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 28,
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingTop: 32,
+    paddingBottom: 28,
+    width: "100%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 14,
   },
-  handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: BORDER,
-    alignSelf: "center",
-    marginBottom: 18,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+  // Red soft circle with logout icon
+  iconWrap: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: "#fef2f2",
+    borderWidth: 1.5,
+    borderColor: "#fecaca",
+    justifyContent: "center",
     alignItems: "center",
     marginBottom: 20,
   },
   title: {
-    fontSize: 19,
+    fontSize: 22,
     fontWeight: "800",
     color: TEXT_1,
+    marginBottom: 10,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: TEXT_2,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  cancelBtn: {
     flex: 1,
-    letterSpacing: -0.2,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: PAGE_BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelTxt: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: TEXT_2,
+  },
+  logoutBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#ef4444",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoutTxt: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: WHITE,
   },
   closeBtn: {
     width: 32,

@@ -41,9 +41,148 @@ const CARD_BG = "#ffffff";
 const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
+const WHITE = "#FFFFFF";
 
 const BASE_URL = "http://172.20.10.3:3000";
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
+
+// ── Custom Payment Confirm Modal ───────────────────────────────────────────
+function PaymentModal({ visible, amount, orderId, onSimulate, onCancel }) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={pm.overlay}>
+        <View style={pm.card}>
+          {/* Icon */}
+          <View style={pm.iconWrap}>
+            <Ionicons name="card-outline" size={34} color="#867795" />
+          </View>
+
+          {/* Title */}
+          <Text style={pm.title}>Payment</Text>
+
+          {/* Order info */}
+          <View style={pm.infoBox}>
+            <View style={pm.infoRow}>
+              <Text style={pm.infoLabel}>Amount</Text>
+              <Text style={pm.infoValue}>₹{amount}</Text>
+            </View>
+            <View style={[pm.infoRow, { borderBottomWidth: 0 }]}>
+              <Text style={pm.infoLabel}>Order ID</Text>
+              <Text
+                style={[
+                  pm.infoValue,
+                  { fontSize: 11, color: TEXT_2, maxWidth: "60%" },
+                ]}
+                numberOfLines={1}
+              >
+                {orderId}
+              </Text>
+            </View>
+          </View>
+
+          {/* Note */}
+          <View style={pm.noteBox}>
+            <Ionicons
+              name="information-circle-outline"
+              size={14}
+              color="#867795"
+            />
+            <Text style={pm.noteText}>
+              In production, integrate react-native-razorpay SDK here.
+            </Text>
+          </View>
+
+          {/* Buttons */}
+          <View style={pm.btnRow}>
+            <TouchableOpacity
+              style={pm.cancelBtn}
+              onPress={onCancel}
+              activeOpacity={0.8}
+            >
+              <Text style={pm.cancelTxt}>Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={pm.simulateBtn}
+              onPress={onSimulate}
+              activeOpacity={0.8}
+            >
+              <Text style={pm.simulateTxt}>Processed</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ── Custom Wallet Success Modal ────────────────────────────────────────────
+function WalletSuccessModal({ visible, amount, onClose }) {
+  // Confetti dots — fixed pixel positions
+  const dots = [
+    [22, 20, "#f472b6", 8],
+    [68, 12, "#fbbf24", 7],
+    [128, 7, "#a78bfa", 6],
+    [180, 18, "#34d399", 7],
+    [234, 9, "#60a5fa", 6],
+    [276, 24, "#34d399", 8],
+    [48, 44, "#60a5fa", 6],
+    [100, 36, "#fbbf24", 5],
+    [152, 42, "#f472b6", 6],
+    [206, 34, "#a78bfa", 7],
+    [256, 48, "#fbbf24", 5],
+    [300, 16, "#f472b6", 6],
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <View style={wm.overlay}>
+        <View style={wm.card}>
+          {/* Confetti */}
+          <View style={wm.confettiWrap} pointerEvents="none">
+            {dots.map(([left, top, color, size], i) => (
+              <View
+                key={i}
+                style={{
+                  position: "absolute",
+                  left,
+                  top,
+                  width: size,
+                  height: size,
+                  borderRadius: size / 2,
+                  backgroundColor: color,
+                }}
+              />
+            ))}
+          </View>
+
+          {/* Badge */}
+          <View style={wm.ring}>
+            <View style={wm.circle}>
+              <Ionicons name="checkmark" size={38} color={WHITE} />
+            </View>
+          </View>
+
+          {/* Text */}
+          <Text style={wm.title}>Payment Successful!</Text>
+          <Text style={wm.subtitle}>
+            <Text style={wm.amtHighlight}>₹{amount}</Text> has been added{"\n"}
+            to your wallet.
+          </Text>
+
+          {/* OK button */}
+          <TouchableOpacity
+            style={wm.okBtn}
+            onPress={onClose}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="wallet-outline" size={17} color={WHITE} />
+            <Text style={wm.okTxt}>View Wallet</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 export default function WalletModal({ visible, onClose }) {
   const [balance, setBalance] = useState(0);
@@ -56,6 +195,17 @@ export default function WalletModal({ visible, onClose }) {
   const [userData, setUserData] = useState(null);
   const [selectedTx, setSelectedTx] = useState(null);
   const [txDetailVisible, setTxDetailVisible] = useState(false);
+
+  // ── NEW: custom modal states ──
+  const [paymentModal, setPaymentModal] = useState({
+    visible: false,
+    amount: 0,
+    orderId: "",
+  });
+  const [successModal, setSuccessModal] = useState({
+    visible: false,
+    amount: 0,
+  });
 
   const isTabMode = visible === undefined;
 
@@ -350,15 +500,14 @@ export default function WalletModal({ visible, onClose }) {
       </View>
       <TouchableOpacity
         style={styles.refreshIconBtn}
-        onPress={() => userId && loadUserAndBalance()}>
+        onPress={() => userId && loadUserAndBalance()}
+      >
         <Ionicons name="refresh-outline" size={18} color={GREEN_DARK} />
       </TouchableOpacity>
     </View>
   );
 
   // ── Balance card ───────────────────────────────────────────────────────────
-  // FIX: BalanceCard was completely broken — it contained TransactionDetailModal
-  // JSX mixed inside it. Restored it as a clean standalone component.
   const BalanceCard = () => (
     <View style={styles.balanceCard}>
       <View style={styles.balanceCardBg} />
@@ -381,7 +530,6 @@ export default function WalletModal({ visible, onClose }) {
           <Ionicons name="wallet" size={28} color="rgba(255,255,255,0.9)" />
         </View>
       </View>
-      {/* Paying info strip */}
       {userData && (
         <View style={styles.payingStrip}>
           <Ionicons
@@ -399,7 +547,6 @@ export default function WalletModal({ visible, onClose }) {
   );
 
   // ── Transaction Detail Modal ───────────────────────────────────────────────
-  // FIX: extracted TransactionDetailModal as its own proper component
   const TransactionDetailModal = () => {
     if (!selectedTx) return null;
     const { icon, color } = getTransactionIcon(selectedTx.type);
@@ -409,10 +556,10 @@ export default function WalletModal({ visible, onClose }) {
         visible={txDetailVisible}
         transparent
         animationType="slide"
-        onRequestClose={() => setTxDetailVisible(false)}>
+        onRequestClose={() => setTxDetailVisible(false)}
+      >
         <View style={styles.detailOverlay}>
           <View style={styles.detailSheet}>
-            {/* Header */}
             <View style={styles.detailHeader}>
               <TouchableOpacity onPress={() => setTxDetailVisible(false)}>
                 <Ionicons name="close" size={22} color={TEXT_2} />
@@ -420,8 +567,6 @@ export default function WalletModal({ visible, onClose }) {
               <Text style={styles.detailTitle}>Transaction Detail</Text>
               <View style={{ width: 22 }} />
             </View>
-
-            {/* Amount */}
             <View style={styles.detailAmountWrap}>
               <View
                 style={[
@@ -442,8 +587,6 @@ export default function WalletModal({ visible, onClose }) {
                 {getTransactionLabel(selectedTx.type)}
               </Text>
             </View>
-
-            {/* Detail rows */}
             <View style={styles.detailBody}>
               <View style={styles.detailRow}>
                 <Text style={styles.detailRowLabel}>Date</Text>
@@ -451,7 +594,6 @@ export default function WalletModal({ visible, onClose }) {
                   {formatDate(selectedTx.created_at)}
                 </Text>
               </View>
-
               <View style={styles.detailRow}>
                 <Text style={styles.detailRowLabel}>Type</Text>
                 <View
@@ -464,24 +606,22 @@ export default function WalletModal({ visible, onClose }) {
                   </Text>
                 </View>
               </View>
-
               <View style={styles.detailRow}>
                 <Text style={styles.detailRowLabel}>Currency</Text>
                 <Text style={styles.detailRowValue}>
                   {selectedTx.currency || "INR"}
                 </Text>
               </View>
-
               <View style={styles.detailRow}>
                 <Text style={styles.detailRowLabel}>Status</Text>
                 <View
-                  style={[styles.detailBadge, { backgroundColor: "#e8f5e9" }]}>
+                  style={[styles.detailBadge, { backgroundColor: "#e8f5e9" }]}
+                >
                   <Text style={[styles.detailBadgeText, { color: "#27ae60" }]}>
                     COMPLETED
                   </Text>
                 </View>
               </View>
-
               <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
                 <Text style={styles.detailRowLabel}>Transaction ID</Text>
                 <Text
@@ -489,15 +629,16 @@ export default function WalletModal({ visible, onClose }) {
                     styles.detailRowValue,
                     { fontSize: 10, color: "#aaa", maxWidth: "55%" },
                   ]}
-                  numberOfLines={2}>
+                  numberOfLines={2}
+                >
                   {selectedTx.id}
                 </Text>
               </View>
             </View>
-
             <TouchableOpacity
               style={styles.detailCloseBtn}
-              onPress={() => setTxDetailVisible(false)}>
+              onPress={() => setTxDetailVisible(false)}
+            >
               <Text style={styles.detailCloseBtnText}>Close</Text>
             </TouchableOpacity>
           </View>
@@ -507,7 +648,6 @@ export default function WalletModal({ visible, onClose }) {
   };
 
   // ── Tab switcher ───────────────────────────────────────────────────────────
-  // FIX: TouchableOpacity was missing closing > before its children
   const TabBar = () => (
     <View style={styles.tabBar}>
       {[
@@ -517,7 +657,8 @@ export default function WalletModal({ visible, onClose }) {
         <TouchableOpacity
           key={t.key}
           style={[styles.tabBtn, activeTab === t.key && styles.tabBtnActive]}
-          onPress={() => setActiveTab(t.key)}>
+          onPress={() => setActiveTab(t.key)}
+        >
           <Ionicons
             name={t.icon}
             size={16}
@@ -527,7 +668,8 @@ export default function WalletModal({ visible, onClose }) {
             style={[
               styles.tabBtnText,
               activeTab === t.key && styles.tabBtnTextActive,
-            ]}>
+            ]}
+          >
             {t.label}
           </Text>
         </TouchableOpacity>
@@ -536,7 +678,6 @@ export default function WalletModal({ visible, onClose }) {
   );
 
   // ── Add Money tab ──────────────────────────────────────────────────────────
-  // FIX: removed duplicate style array on the add button
   const TopupTab = () => (
     <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
       <Text style={styles.sectionLabel}>Quick Add</Text>
@@ -548,12 +689,14 @@ export default function WalletModal({ visible, onClose }) {
               styles.quickBtn,
               amount === String(qa) && styles.quickBtnActive,
             ]}
-            onPress={() => setAmount(String(qa))}>
+            onPress={() => setAmount(String(qa))}
+          >
             <Text
               style={[
                 styles.quickBtnText,
                 amount === String(qa) && styles.quickBtnTextActive,
-              ]}>
+              ]}
+            >
               ₹{qa}
             </Text>
           </TouchableOpacity>
@@ -576,7 +719,6 @@ export default function WalletModal({ visible, onClose }) {
         />
       </View>
 
-      {/* Paying as row */}
       {userData && (
         <View style={styles.payingRow}>
           <Image
@@ -597,7 +739,8 @@ export default function WalletModal({ visible, onClose }) {
       <TouchableOpacity
         style={[styles.addBtn, (!amount || loading) && styles.addBtnDisabled]}
         onPress={handleAddMoney}
-        disabled={!amount || loading}>
+        disabled={!amount || loading}
+      >
         {loading ? (
           <ActivityIndicator color="#fff" />
         ) : (
@@ -622,8 +765,6 @@ export default function WalletModal({ visible, onClose }) {
   );
 
   // ── History tab ────────────────────────────────────────────────────────────
-  // FIX: removed misplaced TouchableOpacity open/close fragments that were
-  // orphaned inside the map, and fixed broken ref/from_user_name Text tags
   const HistoryTab = () => (
     <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
       {transactions.length === 0 ? (
@@ -646,9 +787,11 @@ export default function WalletModal({ visible, onClose }) {
                 setSelectedTx(tx);
                 setTxDetailVisible(true);
               }}
-              activeOpacity={0.7}>
+              activeOpacity={0.7}
+            >
               <View
-                style={[styles.txIconWrap, { backgroundColor: color + "18" }]}>
+                style={[styles.txIconWrap, { backgroundColor: color + "18" }]}
+              >
                 <Ionicons name={icon} size={22} color={color} />
               </View>
               <View style={styles.txInfo}>
@@ -672,14 +815,13 @@ export default function WalletModal({ visible, onClose }) {
                   style={[
                     styles.txAmount,
                     { color: isCredit ? "#10b981" : "#ef4444" },
-                  ]}>
+                  ]}
+                >
                   {isCredit ? "+" : "-"}₹{parseFloat(tx.amount).toFixed(2)}
                 </Text>
                 <View
-                  style={[
-                    styles.txTypePill,
-                    { backgroundColor: color + "18" },
-                  ]}>
+                  style={[styles.txTypePill, { backgroundColor: color + "18" }]}
+                >
                   <Text style={[styles.txTypePillText, { color }]}>
                     {getTransactionLabel(tx.type)}
                   </Text>
@@ -710,7 +852,8 @@ export default function WalletModal({ visible, onClose }) {
         <View style={styles.tabHeader}>
           <TouchableOpacity
             style={styles.headerBackBtn}
-            onPress={() => router.back()}>
+            onPress={() => router.back()}
+          >
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
           <View style={styles.headerTitleWrap}>
@@ -719,16 +862,36 @@ export default function WalletModal({ visible, onClose }) {
           </View>
           <TouchableOpacity
             style={styles.headerRefreshBtn}
-            onPress={() => userId && loadUserAndBalance()}>
+            onPress={() => userId && loadUserAndBalance()}
+          >
             <Ionicons name="refresh" size={18} color="#fff" />
           </TouchableOpacity>
         </View>
         <ScrollView
           style={styles.tabContent}
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           <WalletContent />
         </ScrollView>
         <TransactionDetailModal />
+
+        {/* ── Custom Payment Modal ── */}
+        <PaymentModal
+          visible={paymentModal.visible}
+          amount={paymentModal.amount}
+          orderId={paymentModal.orderId}
+          onSimulate={simulatePaymentSuccess}
+          onCancel={() =>
+            setPaymentModal({ visible: false, amount: 0, orderId: "" })
+          }
+        />
+
+        {/* ── Custom Success Modal ── */}
+        <WalletSuccessModal
+          visible={successModal.visible}
+          amount={successModal.amount}
+          onClose={() => setSuccessModal({ visible: false, amount: 0 })}
+        />
       </SafeAreaView>
     );
   }
@@ -739,13 +902,15 @@ export default function WalletModal({ visible, onClose }) {
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}>
+      onRequestClose={onClose}
+    >
       <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
         <TouchableOpacity style={{ flex: 1 }} onPress={onClose} />
       </Animated.View>
 
       <Animated.View
-        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}>
+        style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
+      >
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHeader}>
           <View>
@@ -760,18 +925,31 @@ export default function WalletModal({ visible, onClose }) {
       </Animated.View>
 
       <TransactionDetailModal />
+
+      {/* ── Custom Payment Modal ── */}
+      <PaymentModal
+        visible={paymentModal.visible}
+        amount={paymentModal.amount}
+        orderId={paymentModal.orderId}
+        onSimulate={simulatePaymentSuccess}
+        onCancel={() =>
+          setPaymentModal({ visible: false, amount: 0, orderId: "" })
+        }
+      />
+
+      {/* ── Custom Success Modal ── */}
+      <WalletSuccessModal
+        visible={successModal.visible}
+        amount={successModal.amount}
+        onClose={() => setSuccessModal({ visible: false, amount: 0 })}
+      />
     </Modal>
   );
 }
 
 // ── STYLES ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  // ── Tab mode ──
-  // FIX: tabContainer was missing its opening brace
-  tabContainer: {
-    flex: 1,
-    backgroundColor: PAGE_BG,
-  },
+  tabContainer: { flex: 1, backgroundColor: PAGE_BG },
   tabHeader: {
     backgroundColor: GREEN_DARK,
     flexDirection: "row",
@@ -805,10 +983,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  headerTitleWrap: {
-    flex: 1,
-    paddingHorizontal: 12,
-  },
+  headerTitleWrap: { flex: 1, paddingHorizontal: 12 },
   headerRefreshBtn: {
     width: 36,
     height: 36,
@@ -824,7 +999,6 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
 
-  // ── Modal mode ──
   backdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -857,7 +1031,6 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     marginTop: 4,
   },
-  // FIX: sheetHeaderTitle, sheetHeaderSub, closeBtn were broken/missing braces
   sheetHeaderTitle: {
     fontSize: 20,
     fontWeight: "800",
@@ -879,7 +1052,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  // ── User card ──
   userCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -892,9 +1064,7 @@ const styles = StyleSheet.create({
     elevation: 1,
     gap: 12,
   },
-  userAvatarWrap: {
-    position: "relative",
-  },
+  userAvatarWrap: { position: "relative" },
   userAvatar: {
     width: 46,
     height: 46,
@@ -915,9 +1085,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: CARD_BG,
   },
-  userInfo: {
-    flex: 1,
-  },
+  userInfo: { flex: 1 },
   userName: {
     fontSize: 15,
     fontWeight: "800",
@@ -939,7 +1107,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
-  // ── Balance card ──
   balanceCard: {
     backgroundColor: GREEN_DARK,
     borderRadius: 22,
@@ -1005,7 +1172,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // ── Tab bar ──
   tabBar: {
     flexDirection: "row",
     backgroundColor: CARD_BG,
@@ -1024,19 +1190,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     gap: 6,
   },
-  tabBtnActive: {
-    backgroundColor: GREEN_DARK,
-  },
-  tabBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: GREEN_DARK,
-  },
-  tabBtnTextActive: {
-    color: "#fff",
-  },
+  tabBtnActive: { backgroundColor: GREEN_DARK },
+  tabBtnText: { fontSize: 14, fontWeight: "700", color: GREEN_DARK },
+  tabBtnTextActive: { color: "#fff" },
 
-  // ── Section label ──
   sectionLabel: {
     fontSize: 11,
     fontWeight: "700",
@@ -1046,12 +1203,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // ── Quick amounts ──
-  quickRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 20,
-  },
+  quickRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
   quickBtn: {
     flex: 1,
     paddingVertical: 13,
@@ -1061,19 +1213,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: CARD_BG,
   },
-  quickBtnActive: {
-    backgroundColor: GREEN_DARK,
-  },
-  quickBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: GREEN_DARK,
-  },
-  quickBtnTextActive: {
-    color: "#fff",
-  },
+  quickBtnActive: { backgroundColor: GREEN_DARK },
+  quickBtnText: { fontSize: 14, fontWeight: "700", color: GREEN_DARK },
+  quickBtnTextActive: { color: "#fff" },
 
-  // ── Amount input ──
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1094,11 +1237,7 @@ const styles = StyleSheet.create({
     borderRightWidth: 1,
     borderRightColor: BORDER,
   },
-  rupeeSign: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: TEAL,
-  },
+  rupeeSign: { fontSize: 20, fontWeight: "800", color: TEAL },
   amountInput: {
     flex: 1,
     fontSize: 22,
@@ -1107,7 +1246,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
 
-  // ── Paying row ──
   payingRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1127,17 +1265,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: TEAL,
   },
-  payingRowText: {
-    fontSize: 13,
-    color: GREEN_DARK,
-    fontWeight: "500",
-  },
-  payingRowName: {
-    fontWeight: "800",
-    color: GREEN_DARK,
-  },
+  payingRowText: { fontSize: 13, color: GREEN_DARK, fontWeight: "500" },
+  payingRowName: { fontWeight: "800", color: GREEN_DARK },
 
-  // ── Add button ──
   addBtn: {
     backgroundColor: GREEN_DARK,
     borderRadius: 16,
@@ -1158,13 +1288,8 @@ const styles = StyleSheet.create({
     elevation: 0,
     shadowOpacity: 0,
   },
-  addBtnText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "800",
-  },
+  addBtnText: { color: "#fff", fontSize: 16, fontWeight: "800" },
 
-  // ── Secure box ──
   secureBox: {
     flexDirection: "row",
     alignItems: "center",
@@ -1192,12 +1317,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // ── Empty state ──
-  emptyWrap: {
-    alignItems: "center",
-    paddingVertical: 60,
-    gap: 10,
-  },
+  emptyWrap: { alignItems: "center", paddingVertical: 60, gap: 10 },
   emptyIconWrap: {
     width: 70,
     height: 70,
@@ -1207,17 +1327,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 4,
   },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: TEXT_1,
-  },
-  emptySub: {
-    fontSize: 13,
-    color: TEXT_2,
-  },
+  emptyTitle: { fontSize: 17, fontWeight: "800", color: TEXT_1 },
+  emptySub: { fontSize: 13, color: TEXT_2 },
 
-  // ── Transaction row ──
   txRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -1237,44 +1349,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  txInfo: {
-    flex: 1,
-  },
-  txLabel: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: TEXT_1,
-  },
-  txDate: {
-    fontSize: 11,
-    color: TEXT_2,
-    marginTop: 2,
-  },
-  txRef: {
-    fontSize: 10,
-    color: "#bbb",
-    marginTop: 2,
-  },
-  txRight: {
-    alignItems: "flex-end",
-    gap: 5,
-  },
-  txAmount: {
-    fontSize: 16,
-    fontWeight: "800",
-  },
-  txTypePill: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 20,
-  },
-  txTypePillText: {
-    fontSize: 10,
-    fontWeight: "700",
-  },
+  txInfo: { flex: 1 },
+  txLabel: { fontSize: 14, fontWeight: "700", color: TEXT_1 },
+  txDate: { fontSize: 11, color: TEXT_2, marginTop: 2 },
+  txRef: { fontSize: 10, color: "#bbb", marginTop: 2 },
+  txRight: { alignItems: "flex-end", gap: 5 },
+  txAmount: { fontSize: 16, fontWeight: "800" },
+  txTypePill: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 20 },
+  txTypePillText: { fontSize: 10, fontWeight: "700" },
 
-  // ── Transaction detail modal ──
-  // FIX: these styles were orphaned fragments; restored as proper objects
   detailOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -1294,15 +1377,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 20,
   },
-  detailTitle: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: TEXT_1,
-  },
-  detailAmountWrap: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
+  detailTitle: { fontSize: 17, fontWeight: "800", color: TEXT_1 },
+  detailAmountWrap: { alignItems: "center", marginBottom: 20 },
   detailIconCircle: {
     width: 72,
     height: 72,
@@ -1311,16 +1387,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 12,
   },
-  detailAmount: {
-    fontSize: 32,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  detailType: {
-    fontSize: 15,
-    color: "#888",
-    fontWeight: "500",
-  },
+  detailAmount: { fontSize: 32, fontWeight: "800", marginBottom: 4 },
+  detailType: { fontSize: 15, color: "#888", fontWeight: "500" },
   detailBody: {
     backgroundColor: "#f8f9ff",
     borderRadius: 16,
@@ -1335,26 +1403,15 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#e8eeff",
   },
-  detailRowLabel: {
-    fontSize: 13,
-    color: "#888",
-    fontWeight: "600",
-  },
+  detailRowLabel: { fontSize: 13, color: "#888", fontWeight: "600" },
   detailRowValue: {
     fontSize: 13,
     color: "#1a1a2e",
     fontWeight: "700",
     textAlign: "right",
   },
-  detailBadge: {
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  detailBadgeText: {
-    fontSize: 11,
-    fontWeight: "700",
-  },
+  detailBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  detailBadgeText: { fontSize: 11, fontWeight: "700" },
   detailCloseBtn: {
     backgroundColor: "#0B2D72",
     borderRadius: 14,
@@ -1362,9 +1419,211 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  detailCloseBtnText: {
-    color: "#fff",
-    fontSize: 16,
+  detailCloseBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+});
+
+// ── Payment Modal Styles ───────────────────────────────────────────────────
+const pm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 28,
+    width: "100%",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 14,
+  },
+  iconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "#eef2ff",
+    borderWidth: 1.5,
+    borderColor: "#c7d2fe",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 18,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: TEXT_1,
+    marginBottom: 16,
+    letterSpacing: -0.3,
+  },
+  infoBox: {
+    width: "100%",
+    backgroundColor: "#f8f9ff",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 13,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#e8eeff",
+  },
+  infoLabel: {
+    fontSize: 13,
+    color: TEXT_2,
+    fontWeight: "600",
+  },
+  infoValue: {
+    fontSize: 15,
+    color: TEXT_1,
+    fontWeight: "800",
+  },
+  noteBox: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    backgroundColor: "#eef2ff",
+    borderRadius: 12,
+    padding: 12,
+    width: "100%",
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#c7d2fe",
+  },
+  noteText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#867795",
+    lineHeight: 18,
+    fontWeight: "500",
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: PAGE_BG,
+    borderWidth: 1,
+    borderColor: BORDER,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelTxt: {
+    fontSize: 15,
     fontWeight: "700",
+    color: TEXT_2,
+  },
+  simulateBtn: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: "#867795",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  simulateTxt: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: WHITE,
+  },
+});
+
+// ── Wallet Success Modal Styles ────────────────────────────────────────────
+const wm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 28,
+    paddingHorizontal: 24,
+    paddingTop: 72,
+    paddingBottom: 28,
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 14,
+  },
+  confettiWrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  ring: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: "#e8e8e8",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  circle: {
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: "#10b981",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: TEXT_1,
+    marginBottom: 10,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: TEXT_2,
+    textAlign: "center",
+    lineHeight: 22,
+    marginBottom: 28,
+  },
+  amtHighlight: {
+    fontWeight: "800",
+    color: "#10b981",
+    fontSize: 16,
+  },
+  okBtn: {
+    width: "100%",
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 15,
+    borderRadius: 16,
+    backgroundColor: "#10b981",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  okTxt: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: WHITE,
   },
 });
