@@ -15,6 +15,13 @@ import Sidebar from "./components/dashboard/Sidebar";
 import SearchExperts from "./pages/expert/SearchExperts";
 import RecommendedExperts from "./pages/expert/RecommendedExperts";
 
+// Admin Pages
+import AdminLogin from "./pages/admin/AdminLogin";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminExperts from "./pages/admin/AdminExperts";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminPayments from "./pages/admin/AdminPayments";
+
 // ================= LAYOUT =================
 const ExpertLayout = ({ children }) => {
   return (
@@ -65,6 +72,13 @@ export default function App() {
           </ExpertLayout>
         }
       />
+
+      {/* ─── Admin Routes ─── */}
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin" element={<AdminDashboard />} />
+      <Route path="/admin/experts" element={<AdminExperts />} />
+      <Route path="/admin/users" element={<AdminUsers />} />
+      <Route path="/admin/payments" element={<AdminPayments />} />
 
     </Routes>
   );
