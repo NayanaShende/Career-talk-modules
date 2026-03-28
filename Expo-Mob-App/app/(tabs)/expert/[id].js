@@ -452,9 +452,10 @@ export default function ExpertProfile() {
       router.push({
         pathname: "/home/chatscreen",
         params: {
-          expertId: receiverUserId,
-          name: expert?.name,
-          avatar: expert?.image,
+          expertId:   receiverUserId,
+          name:       expert?.name,
+          avatar:     expert?.image,
+          ratePerMin: ratePerMin,   // ✅ pass expert's rate to chatscreen
         },
       });
     } catch (error) {
@@ -463,9 +464,10 @@ export default function ExpertProfile() {
       router.push({
         pathname: "/home/chatscreen",
         params: {
-          expertId: receiverUserId,
-          name: expert?.name,
-          avatar: expert?.image,
+          expertId:   receiverUserId,
+          name:       expert?.name,
+          avatar:     expert?.image,
+          ratePerMin: ratePerMin,
         },
       });
     }
@@ -497,6 +499,7 @@ export default function ExpertProfile() {
   const totalReviews = ratingData.totalReviews || expert.total_reviews || 0;
   const skills = Array.isArray(expert?.skills) ? expert.skills : [];
   const displayDomain = expert?.domain || "Expert";
+  const ratePerMin = expert?.rate_per_minute || 10;  // ✅ expert's custom rate
 
   return (
     <SafeAreaView style={styles.container}>
@@ -574,7 +577,7 @@ export default function ExpertProfile() {
             <StatPill value={totalReviews} label="Reviews" />
           </View>
 
-          {/* Stars + Rate Button */}
+          {/* Stars + Rate Expert button */}
           <View style={styles.ratingRow}>
             <StarRating rating={ratingData.avgRating} size={18} />
             <TouchableOpacity
@@ -585,6 +588,16 @@ export default function ExpertProfile() {
               <Text style={styles.rateBtnText}>Rate</Text>
             </TouchableOpacity>
           </View>
+
+          {/* ✅ CHAT RATE BADGE */}
+          <View style={styles.chatRateBadge}>
+            <Ionicons name="pricetag" size={14} color="#fff" />
+            <Text style={styles.chatRateText}>
+              ₹{ratePerMin} / min
+            </Text>
+            <Text style={styles.chatRateSub}> · min ₹{ratePerMin * 5} to start</Text>
+          </View>
+
         </View>
 
         {/* ── CONTENT CARD ── */}
@@ -939,6 +952,28 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.2)",
   },
 
+  chatRateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 10,
+    backgroundColor: "rgba(16,185,129,0.25)",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(16,185,129,0.4)",
+  },
+  chatRateText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  chatRateSub: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+    fontWeight: "500",
+  },
   // Rating row
   ratingRow: {
     flexDirection: "row",

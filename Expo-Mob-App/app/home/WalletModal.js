@@ -348,7 +348,7 @@ export default function WalletModal({ visible, onClose }) {
         description: "Career-Talk Wallet Topup",
         image: "https://your-logo-url.com/logo.png", // ← Replace with your logo URL
         currency: "INR",
-        key: "rzp_test_XXXXXXXXXXXXXXXX", // ← Replace with your Razorpay Key ID
+        key: "rzp_test_SNSlvTnPShezAs", // ✅ Razorpay Key ID
         amount: amt * 100, // Razorpay expects paise
         name: "Career-Talk",
         order_id: order.id,
