@@ -244,3 +244,36 @@ exports.getWalletTransactions = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// ─── PLATFORM FEES ──────────────────────────────────────────────────────────────
+// GET /api/admin/platform-fee
+exports.getPlatformFee = async (req, res) => {
+  try {
+    let fee = await db.PlatformFee.findOne();
+    if (!fee) {
+      fee = await db.PlatformFee.create({ fee_percent: 10 });
+    }
+    return res.status(200).json({ success: true, data: fee });
+  } catch (err) {
+    console.error("getPlatformFee error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// PUT /api/admin/platform-fee
+exports.updatePlatformFee = async (req, res) => {
+  try {
+    const { fee_percent } = req.body;
+    let fee = await db.PlatformFee.findOne();
+    if (!fee) {
+      fee = await db.PlatformFee.create({ fee_percent: fee_percent || 10 });
+    } else {
+      await fee.update({ fee_percent });
+    }
+    return res.status(200).json({ success: true, message: "Platform fee updated", data: fee });
+  } catch (err) {
+    console.error("updatePlatformFee error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+

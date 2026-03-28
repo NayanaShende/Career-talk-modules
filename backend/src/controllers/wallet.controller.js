@@ -202,7 +202,15 @@ exports.chatTick = async (req, res) => {
       });
     }
 
-    // Debit from user
+    // Fetch Platform Fee Configuration
+    let platformFeeConfig = await db.PlatformFee.findOne();
+    let feePercent = platformFeeConfig ? platformFeeConfig.fee_percent : 10;
+    
+    // Calculate split
+    const feeAmount = (RATE * feePercent) / 100;
+    const expertCredit = RATE - feeAmount;
+
+    // Debit full rate from user
     await db.WalletTransaction.create({
       user_id:  Number(userId),
       type:     "debit",
@@ -211,23 +219,33 @@ exports.chatTick = async (req, res) => {
       ref_id:   String(expertId),
     });
 
-    // Credit to expert
+    // Log the platform fee taken dynamically
+    await db.WalletTransaction.create({
+      user_id:  Number(expert.userId),
+      type:     "platform_fee",
+      amount:   feeAmount,
+      currency: "INR",
+      ref_id:   String(userId),
+    });
+
+    // Credit remainder to expert
     await db.WalletTransaction.create({
       user_id:  Number(expert.userId),
       type:     "topup",
-      amount:   RATE,
+      amount:   expertCredit,
       currency: "INR",
       ref_id:   String(userId),
     });
 
     const newBalance = userBalance - RATE;
-    console.log(`✅ Tick — debited ₹${RATE} from user, credited to expert. Balance: ${newBalance}`);
+    console.log(`✅ Tick — Debited ₹${RATE}. Platform Fee: ₹${feeAmount}. Expert Credited: ₹${expertCredit}. User Balance: ${newBalance}`);
 
     res.status(200).json({
       success:    true,
-      message:    `₹${RATE} debited. Expert credited.`,
+      message:    `₹${RATE} debited. Platform Fee ₹${feeAmount} collected. Expert credited ₹${expertCredit}.`,
       balance:    newBalance,
       ratePerMin: RATE,
+      feeTaken:   feeAmount
     });
   } catch (error) {
     console.error("chatTick error:", error.message);
