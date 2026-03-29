@@ -24,8 +24,7 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-// import { SOCKET_URL as BASE_URL } from "../../../constants/config";
-const BASE_URL = "http://172.20.10.3:3000";
+import { BASE_URL } from "../../../constants/config";
 
 // ─────────────────────────────────────────────
 // ✅ Helper: resolve any image (Cloudinary or local)

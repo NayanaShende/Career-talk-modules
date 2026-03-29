@@ -25,7 +25,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://172.20.10.3:3000";
+import { BASE_URL } from "../../constants/config";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -348,21 +348,34 @@ export default function ChatScreen() {
     }
   };
 
-  // ── Start tick timer (every 60s deducts ₹10)
+  // ── Start UI-only visual timer for the Expert (since User handles actual billing)
+  const startExpertVisualTimer = () => {
+    tickIntervalRef.current = setInterval(() => {
+      minutesRef.current += 1;
+      setMinutesUsed(minutesRef.current);
+      console.log("⏱️ Minute elapsed (Expert UI):", minutesRef.current);
+    }, 60000);
+  };
+
+  // ── Start tick timer (every 60s deducts ₹Rate)
   const startTickTimer = (userId, eId) => {
     tickIntervalRef.current = setInterval(async () => {
+      // ✅ 1. Update UI immediately so user sees "1 min", "2 min" regardless of network lag
+      minutesRef.current += 1;
+      setMinutesUsed(minutesRef.current);
+      console.log("⏱️ Minute elapsed in UI:", minutesRef.current);
+
       try {
+        // ✅ 2. Fire backend billing deduction
         const res = await API.post("/wallet/chat-tick", {
           userId:   userId,
           expertId: eId,
         });
 
         if (res?.data?.success) {
-          minutesRef.current += 1;
-          setMinutesUsed(minutesRef.current);
           const newBal = res.data.balance;
           setCurrentBalance(newBal);
-          console.log("⏱️ Minute", minutesRef.current, "— Balance:", newBal);
+          console.log("✅ Billing successful — Balance:", newBal);
         }
       } catch (e) {
         const err = e?.response?.data;
@@ -452,6 +465,14 @@ export default function ChatScreen() {
         setMessages((prev) =>
           dedupeMessages(sortMessages([...prev, newMessage])),
         );
+
+        // ✅ If the Expert receives a message, initialize their UI timer
+        if (userRole === "expert" && !preauthDone.current) {
+          preauthDone.current = true;
+          setChatActive(true);
+          startExpertVisualTimer();
+        }
+
         setTimeout(() => {
           flatListRef.current?.scrollToEnd({ animated: true });
         }, 100);
@@ -522,6 +543,11 @@ export default function ChatScreen() {
       }
 
       setBillingLoading(false);
+    } else if (userRole === "expert" && !preauthDone.current) {
+      // ✅ Start expert UI timer if they happen to reply or send the very first message
+      preauthDone.current = true;
+      setChatActive(true);
+      startExpertVisualTimer();
     }
 
     // ── STEP 2: Send the actual message (for both users and experts)

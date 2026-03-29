@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useNotification } from "../../context/NotificationContext";
-import { SOCKET_URL as BASE_URL } from "../../constants/config";
+import { BASE_URL } from "../../constants/config";
 
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 

@@ -12,7 +12,7 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       type: {
-        type: DataTypes.ENUM("topup", "hold", "debit", "refund", "release"),
+        type: DataTypes.ENUM("topup", "hold", "debit", "refund", "release", "platform_fee"),
         allowNull: false,
       },
       amount: {

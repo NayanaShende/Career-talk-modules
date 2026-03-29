@@ -20,6 +20,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import axiosInstance from "../../services/api";
 import { router } from "expo-router";
+import { BASE_URL } from "../../constants/config";
 // ── Razorpay SDK — safe import for Expo Go compatibility ──
 let RazorpayCheckout = null;
 try {
@@ -43,7 +44,6 @@ const TEXT_2 = "#6b7280";
 const BORDER = "#e5e7eb";
 const WHITE = "#FFFFFF";
 
-const BASE_URL = "http://172.20.10.3:3000";
 const QUICK_AMOUNTS = [100, 200, 500, 1000];
 
 // ── Custom Payment Confirm Modal ───────────────────────────────────────────
@@ -323,13 +323,22 @@ export default function WalletModal({ visible, onClose }) {
       return;
     }
 
-    // ✅ FIXED: Razorpay is not available in Expo Go — show friendly message
+    // ✅ OVERRIDE: If Razorpay is not configured (like Expo Go or Web), bypass and hit Topup API directly for easy testing.
     if (!RazorpayCheckout) {
-      Alert.alert(
-        "Not Available",
-        "Payments are not supported in Expo Go.\nPlease use a development build or production app.",
-        [{ text: "OK" }],
-      );
+      try {
+        setLoading(true);
+        await axiosInstance.post("/wallet/topup", { userId, amount: amt });
+        await fetchBalance(userId);
+        await fetchHistory(userId);
+        setAmount("");
+        setActiveTab("history");
+        Alert.alert("✅ Test Success", `₹${amt} added to your wallet directly (Test Mode)!`);
+      } catch (e) {
+        console.log("Mock Topup Error:", e);
+        Alert.alert("Error", "Bypass topup failed. Check console.");
+      } finally {
+        setLoading(false);
+      }
       return;
     }
 

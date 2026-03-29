@@ -18,7 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 console.log("🚀 NotificationContext.js FILE LOADED");
 
-const BASE_URL = "http://172.20.10.3:3000";
+import { BASE_URL } from "../constants/config";
 
 const NotificationContext = createContext({
   unreadCounts: {},
