@@ -14,7 +14,6 @@ import {
   Dimensions,
   Modal,
   Alert,
-  Modal,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -338,13 +337,13 @@ export default function ChatScreen() {
       if (bal < minRequired) {
         setBalanceInsufficient(true);
       }
-    } catch (e) {
-      console.log("balance pre-check error:", e.message);
-        // ── Show custom insufficient balance modal ──
-        setInsufficientModal({
-          visible: true,
-          balance: err.balance || 0,
-        });
+    } catch (err) {
+      console.log("balance pre-check error:", err.message);
+      // ── Show custom insufficient balance modal ──
+      setInsufficientModal({
+        visible: true,
+        balance: err.balance || 0,
+      });
     }
   };
 
@@ -407,8 +406,9 @@ export default function ChatScreen() {
         console.log(
           "✅ Chat ended — charged: ₹" + totalCharged +
           ", released: ₹" + released,
-          // Auto-ended due to empty balance — just go back
-          router.back();
+        );
+        // Auto-ended due to empty balance — just go back
+        if (autoEnded) router.back();
         setEndModalData({ totalCharged, released, duration, autoEnded });
         setShowEndModal(true);
       }
@@ -436,7 +436,6 @@ export default function ChatScreen() {
   };
 
   // ── Socket + balance pre-check setup
-    if (isSendingRef.current) return;
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
 
@@ -1164,7 +1163,12 @@ const styles = StyleSheet.create({
   timeMine:   { color: "rgba(255,255,255,0.6)" },
   timeTheirs: { color: TEXT_2 },
 
-  emptyChat: { alignItems: "center", paddingTop: 80, gap: 10 },
+  emptyChat: {
+    alignItems: "center",
+    paddingTop: 80,
+    gap: 10,
+    paddingHorizontal: 24,
+  },
   emptyChatIcon: {
     width: 72,
     height: 72,
@@ -1176,8 +1180,6 @@ const styles = StyleSheet.create({
   },
   emptyChatTitle: { fontSize: 17, fontWeight: "800", color: TEXT_1 },
   emptyChatSub: { fontSize: 14, color: TEXT_2, textAlign: "center" },
-    paddingHorizontal: 24,
-  },
   ratePill: {
     flexDirection: "row",
     alignItems: "center",
@@ -1187,6 +1189,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
+  },
   ratePillText: { fontSize: 11, color: TEAL_TEXT, fontWeight: "600" },
 
   inputBar: {
@@ -1229,6 +1232,7 @@ const styles = StyleSheet.create({
     maxHeight: 100,
   },
   micBtn: { marginLeft: 6, marginBottom: 1 },
+  billingInputPlaceholder: {
     flexDirection: "row",
     alignItems: "center",
   },
@@ -1236,6 +1240,7 @@ const styles = StyleSheet.create({
     color: TEXT_2,
     fontSize: 14,
     fontStyle: "italic",
+  },
   sendBtn: {
     width: 40,
     height: 40,
@@ -1377,6 +1382,7 @@ const cm = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  endTxt: { fontSize: 15, fontWeight: "800", color: WHITE },
   endModalIcon: { marginBottom: 14 },
   endModalTitle: {
     fontSize: 20,
