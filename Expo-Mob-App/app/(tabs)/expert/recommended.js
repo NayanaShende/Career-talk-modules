@@ -18,7 +18,7 @@ import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
 // import { SOCKET_URL as BASE_URL } from "../../../constants/config";
-const BASE_URL = "http://192.168.1.16:3000";
+const BASE_URL = "http://10.235.241.9:3000";
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const GREEN = "#867795";
 const GREEN_DARK = "#867795";

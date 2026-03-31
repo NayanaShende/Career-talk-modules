@@ -15,41 +15,87 @@ import {
 } from "react-native";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { router } from "expo-router";
 
 console.log("🚀 NotificationContext.js FILE LOADED");
 
-const BASE_URL = "http://192.168.1.16:3000";
+const BASE_URL = "http://10.235.241.9:3000";
 
 const NotificationContext = createContext({
   unreadCounts: {},
   clearUnread: () => {},
   totalUnread: 0,
   currentUserId: null,
-  socket: null, // ✅ expose global socket so chatscreen reuses it
+  socket: null,
+  // ✅ NEW: set/clear which chat is currently open
+  setActiveChatUserId: () => {},
 });
 
 export function NotificationProvider({ children }) {
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [userRole, setUserRole] = useState("user");
   const [banner, setBanner] = useState(null);
   const [unreadCounts, setUnreadCounts] = useState({});
   const socketRef = useRef(null);
   const bannerTimer = useRef(null);
   const slideAnim = useRef(new Animated.Value(-100)).current;
   const appState = useRef(AppState.currentState);
+  const navReadyRef = useRef(false);
+  const pendingCallRef = useRef(null);
 
-  // ✅ Try all possible storage keys + retry until found
+  // ✅ NEW: Track which sender's chat is currently open on screen
+  // When user is inside chatscreen with sender X, we skip unread++ for X
+  const activeChatUserIdRef = useRef(null);
+
+  const setActiveChatUserId = (userId) => {
+    activeChatUserIdRef.current = userId ? Number(userId) : null;
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navReadyRef.current = true;
+      console.log("✅ Navigation is ready");
+      if (pendingCallRef.current) {
+        console.log("📲 Flushing pending incoming call navigation");
+        navigateToIncomingCall(pendingCallRef.current);
+        pendingCallRef.current = null;
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const navigateToIncomingCall = (data) => {
+    const { callId, callerId, callType, callerName, callerImage } = data;
+    try {
+      router.push({
+        pathname: "/incomingcall",
+        params: {
+          callId: String(callId),
+          callerId: String(callerId),
+          callerName: callerName || "User",
+          callerImage: callerImage || "",
+          callType: callType || "voice",
+        },
+      });
+      console.log(`📲 Navigated to /incomingcall for callId: ${callId}`);
+    } catch (err) {
+      console.log("❌ router.push error:", err.message);
+    }
+  };
+
   useEffect(() => {
     const tryLoadUser = async () => {
       try {
         const keys = ["user", "userData", "currentUser", "token"];
         let uid = null;
-
+        let role = "user";
         for (const key of keys) {
           const str = await AsyncStorage.getItem(key);
           if (str) {
             try {
               const u = JSON.parse(str);
               uid = u?.id || u?.userId || u?.user?.id;
+              role = (u?.role || u?.userType || "user").toLowerCase();
               if (uid) {
                 console.log(
                   `👤 NotificationContext found userId ${uid} in key "${key}"`,
@@ -61,9 +107,9 @@ export function NotificationProvider({ children }) {
             }
           }
         }
-
         if (uid) {
           setCurrentUserId(Number(uid));
+          setUserRole(role);
           return;
         }
       } catch (e) {
@@ -94,7 +140,6 @@ export function NotificationProvider({ children }) {
     }).start(() => setBanner(null));
   };
 
-  // ✅ Single global socket — shared with chatscreen via context
   useEffect(() => {
     if (!currentUserId) return;
 
@@ -133,16 +178,39 @@ export function NotificationProvider({ children }) {
       socket.emit("joinRoom", { userId: currentUserId });
     });
 
-    // ✅ Only NotificationContext handles newNotification — no chatscreen socket needed
     socket.on("newNotification", (notif) => {
       console.log("🔔 Global newNotification received:", notif);
-      if (Number(notif.sender_id) !== Number(currentUserId)) {
+
+      // ✅ Skip if this notification is from ourselves
+      if (Number(notif.sender_id) === Number(currentUserId)) return;
+
+      // ✅ FIX: Skip unread increment if user is currently viewing this sender's chat
+      const isViewingThisChat =
+        activeChatUserIdRef.current !== null &&
+        Number(activeChatUserIdRef.current) === Number(notif.sender_id);
+
+      if (!isViewingThisChat) {
+        // Only show banner and increment if NOT currently in that chat
         showBanner(notif);
         setUnreadCounts((prev) => ({
           ...prev,
           [notif.sender_id]: (prev[notif.sender_id] || 0) + 1,
         }));
+      } else {
+        console.log("💬 User is viewing this chat — skipping unread increment");
       }
+    });
+
+    socket.on("incoming-call", (data) => {
+      console.log("📞 incoming-call received:", data);
+      const { receiverId } = data;
+      if (Number(receiverId) !== Number(currentUserId)) return;
+      if (!navReadyRef.current) {
+        console.log("⏳ Nav not ready yet, queuing call...");
+        pendingCallRef.current = data;
+        return;
+      }
+      navigateToIncomingCall(data);
     });
 
     socket.on("disconnect", (reason) => {
@@ -155,6 +223,7 @@ export function NotificationProvider({ children }) {
 
     return () => {
       socket.off("newNotification");
+      socket.off("incoming-call");
       socket.off("connect");
       socket.off("reconnect");
       socket.off("disconnect");
@@ -164,7 +233,6 @@ export function NotificationProvider({ children }) {
     };
   }, [currentUserId]);
 
-  // ✅ Rejoin room when app comes back to foreground
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (
@@ -183,12 +251,11 @@ export function NotificationProvider({ children }) {
       }
       appState.current = nextAppState;
     });
-
     return () => subscription.remove();
   }, [currentUserId]);
 
   const clearUnread = (userId) => {
-    setUnreadCounts((prev) => ({ ...prev, [userId]: 0 }));
+    setUnreadCounts((prev) => ({ ...prev, [Number(userId)]: 0 }));
   };
 
   const totalUnread = Object.values(unreadCounts).reduce((a, b) => a + b, 0);
@@ -200,7 +267,9 @@ export function NotificationProvider({ children }) {
         clearUnread,
         totalUnread,
         currentUserId,
-        socket: socketRef, // ✅ expose socketRef so chatscreen can use .current
+        userRole,
+        socket: socketRef,
+        setActiveChatUserId, // ✅ exposed to chat screen
       }}
     >
       {children}
@@ -231,7 +300,6 @@ export function useNotification() {
   return useContext(NotificationContext);
 }
 
-// ✅ Required by Expo Router
 export default function NotificationContextScreen() {
   return null;
 }
