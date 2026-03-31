@@ -24,8 +24,7 @@ import axiosInstance from "../../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { width } = Dimensions.get("window");
-// import { SOCKET_URL as BASE_URL } from "../../../constants/config";
-const BASE_URL = "http://172.20.10.3:3000";
+import { BASE_URL } from "../../../constants/config";
 
 // ─────────────────────────────────────────────
 // ✅ Helper: resolve any image (Cloudinary or local)
@@ -173,8 +172,7 @@ function RatingModal({ visible, onClose, onSubmit }) {
               <Pressable
                 key={star}
                 onPress={() => setSelectedRating(star)}
-                style={styles.starBtn}
-              >
+                style={styles.starBtn}>
                 <Ionicons
                   name={star <= selectedRating ? "star" : "star-outline"}
                   size={36}
@@ -206,8 +204,7 @@ function RatingModal({ visible, onClose, onSubmit }) {
             <TouchableOpacity
               style={[styles.submitRatingBtn, submitting && { opacity: 0.6 }]}
               onPress={handleSubmit}
-              disabled={submitting}
-            >
+              disabled={submitting}>
               <Text style={styles.submitRatingBtnText}>
                 {submitting ? "Submitting..." : "Submit Review"}
               </Text>
@@ -455,6 +452,7 @@ export default function ExpertProfile() {
           expertId: receiverUserId,
           name: expert?.name,
           avatar: expert?.image,
+          ratePerMin: ratePerMin, // ✅ pass expert's rate to chatscreen
         },
       });
     } catch (error) {
@@ -466,6 +464,7 @@ export default function ExpertProfile() {
           expertId: receiverUserId,
           name: expert?.name,
           avatar: expert?.image,
+          ratePerMin: ratePerMin,
         },
       });
     }
@@ -497,6 +496,7 @@ export default function ExpertProfile() {
   const totalReviews = ratingData.totalReviews || expert.total_reviews || 0;
   const skills = Array.isArray(expert?.skills) ? expert.skills : [];
   const displayDomain = expert?.domain || "Expert";
+  const ratePerMin = expert?.rate_per_minute || 10; // ✅ expert's custom rate
 
   return (
     <SafeAreaView style={styles.container}>
@@ -524,14 +524,12 @@ export default function ExpertProfile() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 130 }}
-      >
+        contentContainerStyle={{ paddingBottom: 130 }}>
         {/* ── HERO HEADER ── */}
         <View style={styles.heroSection}>
           <TouchableOpacity
             style={styles.backBtn}
-            onPress={() => router.back()}
-          >
+            onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={22} color="#fff" />
           </TouchableOpacity>
 
@@ -574,16 +572,25 @@ export default function ExpertProfile() {
             <StatPill value={totalReviews} label="Reviews" />
           </View>
 
-          {/* Stars + Rate Button */}
+          {/* Stars + Rate Expert button */}
           <View style={styles.ratingRow}>
             <StarRating rating={ratingData.avgRating} size={18} />
             <TouchableOpacity
               style={styles.rateBtn}
-              onPress={() => setRatingModal(true)}
-            >
+              onPress={() => setRatingModal(true)}>
               <Ionicons name="create-outline" size={15} color="#1F5C4F" />
               <Text style={styles.rateBtnText}>Rate</Text>
             </TouchableOpacity>
+          </View>
+
+          {/* ✅ CHAT RATE BADGE */}
+          <View style={styles.chatRateBadge}>
+            <Ionicons name="pricetag" size={14} color="#fff" />
+            <Text style={styles.chatRateText}>₹{ratePerMin} / min</Text>
+            <Text style={styles.chatRateSub}>
+              {" "}
+              · min ₹{ratePerMin * 5} to start
+            </Text>
           </View>
         </View>
 
@@ -598,14 +605,12 @@ export default function ExpertProfile() {
                   styles.tabItem,
                   activeTab === tab && styles.tabItemActive,
                 ]}
-                onPress={() => setActiveTab(tab)}
-              >
+                onPress={() => setActiveTab(tab)}>
                 <Text
                   style={[
                     styles.tabText,
                     activeTab === tab && styles.tabTextActive,
-                  ]}
-                >
+                  ]}>
                   {tab}
                 </Text>
               </TouchableOpacity>
@@ -939,6 +944,28 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.2)",
   },
 
+  chatRateBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 10,
+    backgroundColor: "rgba(16,185,129,0.25)",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(16,185,129,0.4)",
+  },
+  chatRateText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "800",
+  },
+  chatRateSub: {
+    color: "rgba(255,255,255,0.7)",
+    fontSize: 12,
+    fontWeight: "500",
+  },
   // Rating row
   ratingRow: {
     flexDirection: "row",

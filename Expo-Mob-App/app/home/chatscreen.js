@@ -12,8 +12,8 @@ import {
   Platform,
   StatusBar,
   Dimensions,
-  Alert,
   Modal,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, router } from "expo-router";
@@ -24,19 +24,19 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNotification } from "../../context/NotificationContext";
 
 const { width } = Dimensions.get("window");
-const BASE_URL = "http://172.20.10.3:3000";
+import { BASE_URL } from "../../constants/config";
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
 // ── Design tokens ──────────────────────────────────────────────────────────
-const TEAL = "#867795";
-const TEAL_LIGHT = "#edddfc";
-const TEAL_TEXT = "#867795";
-const BUBBLE_ME = "#867795";
+const TEAL        = "#867795";
+const TEAL_LIGHT  = "#edddfc";
+const TEAL_TEXT   = "#867795";
+const BUBBLE_ME   = "#867795";
 const BUBBLE_THEM = "#ffffff";
-const CHAT_BG = "#f0f4f3";
-const TEXT_1 = "#1a1a2e";
-const TEXT_2 = "#6b7280";
-const BORDER = "#e5e7eb";
+const CHAT_BG     = "#f0f4f3";
+const TEXT_1      = "#1a1a2e";
+const TEXT_2      = "#6b7280";
+const BORDER      = "#e5e7eb";
 const WHITE = "#FFFFFF";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -61,7 +61,7 @@ const groupByDate = (msgs) => {
       ? new Date(msg.created_at).toDateString()
       : null;
     if (msgDate && msgDate !== lastDate) {
-      const today = new Date().toDateString();
+      const today     = new Date().toDateString();
       const yesterday = new Date(Date.now() - 86400000).toDateString();
       const label =
         msgDate === today
@@ -238,13 +238,13 @@ export default function ChatScreen() {
     avatar,
     expertName: paramExpertName,
     expertImage,
+    ratePerMin: paramRatePerMin,  // ✅ expert's rate passed from profile page
   } = useLocalSearchParams();
 
   const RECEIVER_ID = Number(expertId);
 
-  const { clearUnread, socket: globalSocketRef } = useNotification();
 
-  const rawName = paramExpertName || name;
+  const rawName  = paramExpertName || name;
   const rawImage = expertImage || avatar;
 
   const expertName =
@@ -254,18 +254,27 @@ export default function ChatScreen() {
 
   const expertAvatarUrl = getImageUri(rawImage, expertName);
 
-  // ── State ──────────────────────────────────────────────────────────────
+  // ── Core state
   const [currentUserId, setCurrentUserId] = useState(null);
   const [userRole, setUserRole] = useState("user");
-  const [messages, setMessages] = useState([]);
-  const [textMessage, setTextMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [isOnline, setIsOnline] = useState(false);
+  const [messages,      setMessages]      = useState([]);
+  const [textMessage,   setTextMessage]   = useState("");
+  const [loading,       setLoading]       = useState(false);
+  const [isOnline,      setIsOnline]      = useState(false);
 
-  const [chatActive, setChatActive] = useState(false);
-  const [minutesUsed, setMinutesUsed] = useState(0);
-  const [walletBalance, setWalletBalance] = useState(0);
-  const [expertDbId, setExpertDbId] = useState(null);
+  // ── Billing state
+  const [chatActive,           setChatActive]           = useState(false);
+  const [billingLoading,       setBillingLoading]       = useState(false);  // true while chat-start API runs
+  const [billingFailed,        setBillingFailed]        = useState(false);  // true if chat-start failed
+  const [balanceInsufficient,  setBalanceInsufficient]  = useState(false);  // shows overlay
+  const [currentBalance,       setCurrentBalance]       = useState(0);      // live balance
+  const [minutesUsed,          setMinutesUsed]          = useState(0);
+  const [expertDbId,           setExpertDbId]           = useState(null);
+  const [ratePerMin,           setRatePerMin]           = useState(parseInt(paramRatePerMin, 10) || 10); // ✅ expert's rate
+
+  // ── End chat modal
+  const [showEndModal, setShowEndModal] = useState(false);
+  const [endModalData, setEndModalData] = useState(null);
 
   // ── NEW: custom modal states ──
   const [insufficientModal, setInsufficientModal] = useState({
@@ -277,20 +286,19 @@ export default function ChatScreen() {
     isBackPress: false,
   });
 
-  const flatListRef = useRef(null);
-  const socketRef = useRef(null);
-  const preauthDone = useRef(false);
-  const tickIntervalRef = useRef(null); // billing tick every 60s
-  const secondTimerRef = useRef(null); // UI live timer every 1s
-  const minutesRef = useRef(0);
+  const flatListRef    = useRef(null);
+  const socketRef      = useRef(null);
+  const preauthDone    = useRef(false);
+  const tickIntervalRef = useRef(null);
+  const minutesRef     = useRef(0);
   const isSendingRef = useRef(false);
 
-  // ── Load user from storage ───────────────────────────────────────────────
+  // ── Load user from storage
   useEffect(() => {
     AsyncStorage.getItem("user").then((str) => {
       if (str) {
         const u = JSON.parse(str);
-        const uid = u?.id || u?.userId || u?.user?.id;
+        const uid  = u?.id || u?.userId || u?.user?.id;
         const role = (u?.role || u?.userType || "user").toLowerCase();
         setCurrentUserId(Number(uid));
         setUserRole(role);
@@ -302,7 +310,7 @@ export default function ChatScreen() {
     if (RECEIVER_ID) clearUnread(RECEIVER_ID);
   }, [RECEIVER_ID]);
 
-  // ── Find expert DB id ────────────────────────────────────────────────────
+  // ── Find expert DB id
   const findExpertId = async () => {
     try {
       const expertRes = await API.get("/experts");
@@ -310,120 +318,108 @@ export default function ChatScreen() {
       const expert = allExperts.find(
         (e) => Number(e.userId) === Number(RECEIVER_ID),
       );
-      return expert ? expert.id : RECEIVER_ID;
-    } catch {
+      const eId = expert ? expert.id : RECEIVER_ID;
+      console.log("✅ Expert found — Expert.id:", eId);
+      return eId;
+    } catch (e) {
+      console.log("findExpertId error:", e.message);
       return RECEIVER_ID;
     }
   };
 
-  // ── Billing ──────────────────────────────────────────────────────────────
-  const startChatBilling = async (userId) => {
-    if (preauthDone.current) return;
-    preauthDone.current = true;
-
+  // ── PRE-CHECK: verify balance on mount (for users only)
+  const checkWalletBalance = async (userId) => {
     try {
-      const eId = await findExpertId();
-      setExpertDbId(eId);
-
-      const res = await API.post("/wallet/chat-start", {
-        userId,
-        expertId: eId,
+      const res = await API.get(`/wallet/balance/${userId}`);
+      const bal = parseFloat(res?.data?.balance || 0);
+      const minRequired = ratePerMin * 5;   // ✅ dynamic: 5 minutes pre-hold
+      setCurrentBalance(bal);
+      if (bal < minRequired) {
+        setBalanceInsufficient(true);
+      }
+    } catch (err) {
+      console.log("balance pre-check error:", err.message);
+      // ── Show custom insufficient balance modal ──
+      setInsufficientModal({
+        visible: true,
+        balance: err.balance || 0,
       });
-
-      if (res?.data?.success) {
-        setChatActive(true);
-        setWalletBalance(res.data.balance);
-        startTickTimer(userId, eId);
-        startSecondTimer(); // start live UI timer
-      }
-    } catch (e) {
-      const err = e?.response?.data;
-      if (err?.error === "insufficient_balance") {
-        // ── Show custom insufficient balance modal ──
-        setInsufficientModal({
-          visible: true,
-          balance: err.balance || 0,
-        });
-      } else {
-        console.log("chatStart error:", e.message);
-      }
     }
   };
 
-  // ── Billing tick: every 60 s ───────────────────────────────────────────
+  // ── Start UI-only visual timer for the Expert (since User handles actual billing)
+  const startExpertVisualTimer = () => {
+    tickIntervalRef.current = setInterval(() => {
+      minutesRef.current += 1;
+      setMinutesUsed(minutesRef.current);
+      console.log("⏱️ Minute elapsed (Expert UI):", minutesRef.current);
+    }, 60000);
+  };
+
+  // ── Start tick timer (every 60s deducts ₹Rate)
   const startTickTimer = (userId, eId) => {
     tickIntervalRef.current = setInterval(async () => {
+      // ✅ 1. Update UI immediately so user sees "1 min", "2 min" regardless of network lag
+      minutesRef.current += 1;
+      setMinutesUsed(minutesRef.current);
+      console.log("⏱️ Minute elapsed in UI:", minutesRef.current);
+
       try {
+        // ✅ 2. Fire backend billing deduction
         const res = await API.post("/wallet/chat-tick", {
-          userId,
+          userId:   userId,
           expertId: eId,
         });
+
         if (res?.data?.success) {
-          minutesRef.current += 1;
-          setMinutesUsed(minutesRef.current);
-          setWalletBalance(res.data.balance);
-          console.log(
-            "⏱️ Minute",
-            minutesRef.current,
-            "— Balance:",
-            res.data.balance,
-          );
+          const newBal = res.data.balance;
+          setCurrentBalance(newBal);
+          console.log("✅ Billing successful — Balance:", newBal);
         }
       } catch (e) {
-        if (e?.response?.data?.error === "insufficient_balance") {
+        const err = e?.response?.data;
+        if (err?.error === "insufficient_balance") {
           endChatBilling(userId, eId, true);
         }
+        console.log("chatTick error:", e?.message);
       }
     }, 60000);
   };
 
-  // ── UI live timer: every 1 s — THIS FIXES the timer not updating ───────
-  const startSecondTimer = () => {
-    setElapsedSeconds(0);
-    secondTimerRef.current = setInterval(() => {
-      setElapsedSeconds((prev) => prev + 1);
-    }, 1000);
-  };
-
-  // ── End billing ────────────────────────────────────────────────────────
+  // ── End chat billing — shows premium modal instead of plain Alert
   const endChatBilling = async (userId, eId, autoEnded = false) => {
     if (tickIntervalRef.current) {
       clearInterval(tickIntervalRef.current);
       tickIntervalRef.current = null;
     }
-    if (secondTimerRef.current) {
-      clearInterval(secondTimerRef.current);
-      secondTimerRef.current = null;
-    }
     setChatActive(false);
 
     try {
       const res = await API.post("/wallet/chat-end", {
-        userId,
-        expertId: eId || expertDbId,
+        userId:      userId,
+        expertId:    eId || expertDbId,
         minutesUsed: minutesRef.current,
       });
 
-      if (res?.data?.success && autoEnded) {
+      if (res?.data?.success) {
         const { totalCharged, released, duration } = res.data;
         console.log(
-          "✅ Chat ended — charged: ₹" +
-            totalCharged +
-            ", released: ₹" +
-            released,
+          "✅ Chat ended — charged: ₹" + totalCharged +
+          ", released: ₹" + released,
         );
-
-        if (autoEnded) {
-          // Auto-ended due to empty balance — just go back
-          router.back();
-        }
+        // Auto-ended due to empty balance — just go back
+        if (autoEnded) router.back();
+        setEndModalData({ totalCharged, released, duration, autoEnded });
+        setShowEndModal(true);
       }
     } catch (e) {
       console.log("chatEnd error:", e.message);
+      // fallback: just go back
+      if (autoEnded) router.back();
     }
   };
 
-  // ── Load messages ────────────────────────────────────────────────────────
+  // ── Load messages
   const loadChats = async () => {
     if (!RECEIVER_ID || !currentUserId) return;
     try {
@@ -439,48 +435,14 @@ export default function ChatScreen() {
     }
   };
 
-  // ── Send message ─────────────────────────────────────────────────────────
-  const handleSend = async () => {
-    if (!textMessage.trim() || !RECEIVER_ID || !currentUserId) return;
-    if (isSendingRef.current) return;
-    isSendingRef.current = true;
-
-    const messageToSend = textMessage;
-    setTextMessage("");
-    const tempId = `temp_${Date.now()}`;
-    setMessages((prev) =>
-      sortMessages([
-        ...prev,
-        {
-          id: tempId,
-          sender_id: currentUserId,
-          receiver_id: RECEIVER_ID,
-          message: messageToSend,
-          created_at: new Date(),
-        },
-      ]),
-    );
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
-    try {
-      await API.post("/chat/send", {
-        sender_id: currentUserId,
-        receiver_id: RECEIVER_ID,
-        message: messageToSend,
-      });
-    } catch {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-    } finally {
-      isSendingRef.current = false;
-    }
-  };
-
-  // ── Socket + billing setup ───────────────────────────────────────────────
+  // ── Socket + balance pre-check setup
   useEffect(() => {
     if (!currentUserId || !RECEIVER_ID) return;
+
     loadChats();
 
     if (userRole !== "expert") {
-      startChatBilling(currentUserId);
+      checkWalletBalance(currentUserId);
     }
 
     socketRef.current = io(BASE_URL, {
@@ -502,6 +464,17 @@ export default function ChatScreen() {
         setMessages((prev) =>
           dedupeMessages(sortMessages([...prev, newMessage])),
         );
+
+        // ✅ If the Expert receives a message, initialize their UI timer
+        if (userRole === "expert" && !preauthDone.current) {
+          preauthDone.current = true;
+          setChatActive(true);
+          startExpertVisualTimer();
+        }
+
+        setTimeout(() => {
+          flatListRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       }
     });
 
@@ -510,12 +483,105 @@ export default function ChatScreen() {
       socketRef.current.off("connect");
       socketRef.current.off("disconnect");
       socketRef.current.disconnect();
-      if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
-      if (secondTimerRef.current) clearInterval(secondTimerRef.current);
+      if (tickIntervalRef.current) {
+        clearInterval(tickIntervalRef.current);
+        tickIntervalRef.current = null;
+      }
     };
   }, [currentUserId, RECEIVER_ID, userRole]);
 
-  // ── Render message item ──────────────────────────────────────────────────
+  // ── SEND MESSAGE — billing triggers on FIRST message for users
+  const handleSend = async () => {
+    if (!textMessage.trim() || !RECEIVER_ID || !currentUserId) return;
+    if (isSendingRef.current) return;
+    if (billingLoading) return; // prevent double-tap during billing
+
+    const messageToSend = textMessage;
+
+    // ── STEP 1: First message from a user → start billing first
+    if (userRole !== "expert" && !preauthDone.current) {
+      setTextMessage(""); // clear input optimistically
+      setBillingLoading(true);
+      setBillingFailed(false);
+
+      try {
+        const eId = await findExpertId();
+        setExpertDbId(eId);
+
+        const res = await API.post("/wallet/chat-start", {
+          userId:   currentUserId,
+          expertId: eId,
+        });
+
+        if (res?.data?.success) {
+          preauthDone.current = true;
+          setChatActive(true);
+          setCurrentBalance(res.data.balance);
+          // ✅ Use the authoritative rate from API response
+          if (res.data.ratePerMin) setRatePerMin(res.data.ratePerMin);
+          console.log("✅ Chat billing started. Balance:", res.data.balance, "Rate:", res.data.ratePerMin);
+          startTickTimer(currentUserId, eId);
+          // Now actually send the message below
+        }
+      } catch (e) {
+        const err = e?.response?.data;
+        setBillingLoading(false);
+        setBillingFailed(true);
+
+        if (err?.error === "insufficient_balance") {
+          setCurrentBalance(err.balance || 0);
+          setBalanceInsufficient(true);
+        } else {
+          Alert.alert(
+            "Chat Start Failed",
+            "Could not start chat session. Please try again.",
+            [{ text: "OK" }],
+          );
+        }
+        return; // don't send message
+      }
+
+      setBillingLoading(false);
+    } else if (userRole === "expert" && !preauthDone.current) {
+      // ✅ Start expert UI timer if they happen to reply or send the very first message
+      preauthDone.current = true;
+      setChatActive(true);
+      startExpertVisualTimer();
+    }
+
+    // ── STEP 2: Send the actual message (for both users and experts)
+    isSendingRef.current = true;
+
+    const tempId = `temp_${Date.now()}`;
+    setTextMessage("");
+    setMessages((prev) =>
+      sortMessages([
+        ...prev,
+        {
+          id:          tempId,
+          sender_id:   currentUserId,
+          receiver_id: RECEIVER_ID,
+          message:     messageToSend,
+          created_at:  new Date(),
+        },
+      ]),
+    );
+    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: false }), 50);
+
+    try {
+      await API.post("/chat/send", {
+        sender_id:   currentUserId,
+        receiver_id: RECEIVER_ID,
+        message:     messageToSend,
+      });
+    } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+    } finally {
+      isSendingRef.current = false;
+    }
+  };
+
+  // ── Render message item
   const renderItem = ({ item }) => {
     if (item.type === "date") {
       return (
@@ -529,7 +595,7 @@ export default function ChatScreen() {
       );
     }
 
-    const isUser = Number(item.sender_id) === Number(currentUserId);
+    const isUser  = Number(item.sender_id) === Number(currentUserId);
     const msgText = item.message != null ? String(item.message) : "";
     const timeText = formatTime(item.created_at);
 
@@ -539,31 +605,19 @@ export default function ChatScreen() {
           <Image source={{ uri: expertAvatarUrl }} style={styles.msgAvatar} />
         )}
 
-        <View
-          style={[styles.bubble, isUser ? styles.bubbleMe : styles.bubbleThem]}
-        >
-          <Text
-            style={[
-              styles.msgText,
-              isUser ? styles.msgTextMe : styles.msgTextThem,
-            ]}
-          >
+        <View style={[styles.bubble, isUser ? styles.bubbleMe : styles.bubbleThem]}>
+          <Text style={[styles.msgText, isUser ? styles.msgTextMe : styles.msgTextThem]}>
             {msgText}
           </Text>
           <View style={styles.metaRow}>
-            <Text
-              style={[
-                styles.timeText,
-                isUser ? styles.timeMine : styles.timeTheirs,
-              ]}
-            >
+            <Text style={[styles.timeText, isUser ? styles.timeMine : styles.timeTheirs]}>
               {timeText}
             </Text>
             {isUser && (
               <Ionicons
                 name="checkmark-done"
                 size={13}
-                color="rgba(255,255,255,0.55)"
+                color="rgba(255,255,255,0.6)"
                 style={{ marginLeft: 3 }}
               />
             )}
@@ -575,40 +629,70 @@ export default function ChatScreen() {
     );
   };
 
-  // ── Loading gate ─────────────────────────────────────────────────────────
-  if (!currentUserId) {
-    return (
-      <View style={styles.loadingScreen}>
-        <ActivityIndicator size="large" color={PURPLE} />
-        <Text style={styles.loadingText}>Setting up chat…</Text>
-      </View>
-    );
-  }
-
+  // ── Navigate to expert profile
   const handleHeaderPress = () => {
     if (userRole !== "expert") {
       router.push(`/(tabs)/expert/${RECEIVER_ID}`);
     }
   };
 
-  // ── Main render ──────────────────────────────────────────────────────────
+  // ── Derived state for UX
+  const isLowBalance   = chatActive && currentBalance > 0 && currentBalance < (ratePerMin * 2);
+  const isUserRole     = userRole !== "expert";
+  // Input is locked only while billing API is in flight
+  const inputDisabled  = billingLoading;
+  const sendDisabled   = !textMessage.trim() || inputDisabled;
+
+  // ── Loading gate
+  if (!currentUserId) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={TEAL} />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar backgroundColor={PURPLE_DARK} barStyle="light-content" />
+      <StatusBar backgroundColor={TEAL} barStyle="light-content" />
 
-      {/* ── BILLING BAR ── */}
-      {chatActive && (
+      {/* ── INSUFFICIENT BALANCE OVERLAY ── */}
+      {balanceInsufficient && !chatActive && (
+        <InsufficientBalanceOverlay
+          balance={currentBalance}
+          required={ratePerMin * 5}
+          onAddMoney={() => router.push("/(tabs)/wallet")}
+          onBack={() => router.back()}
+        />
+      )}
+
+      {/* ── END CHAT MODAL ── */}
+      <EndChatModal
+        visible={showEndModal}
+        data={endModalData}
+        onClose={() => setShowEndModal(false)}
+      />
+
+      {/* ── BILLING LOADING BANNER ── */}
+      {billingLoading && (
+        <View style={styles.billingLoadingBar}>
+          <ActivityIndicator size="small" color="#fff" />
+          <Text style={styles.billingLoadingText}>
+            Starting your chat session...
+          </Text>
+        </View>
+      )}
+
+      {/* ── BILLING ACTIVE BAR ── */}
+      {chatActive && !billingLoading && (
         <View style={styles.billingBar}>
-          {/* Live MM:SS timer */}
-          <View style={styles.billingTimerBox}>
-            <Animated.View
-              style={[styles.timerDot, { transform: [{ scale: pulseAnim }] }]}
-            />
-            <Text style={styles.billingTimerText}>
-              {formatDuration(elapsedSeconds)}
-            </Text>
+          <View style={styles.billingLeft}>
+            <Text style={styles.billingTimer}>⏱️ {minutesUsed} min</Text>
+            <Text style={styles.billingRate}>₹{ratePerMin}/min</Text>
           </View>
-          <Text style={styles.billingBalance}>₹{walletBalance.toFixed(2)}</Text>
+          <Text style={styles.billingBalance}>
+            ₹{parseFloat(currentBalance).toFixed(2)}
+          </Text>
           <TouchableOpacity
             style={styles.endChatBtn}
             onPress={() =>
@@ -616,6 +700,19 @@ export default function ChatScreen() {
             }
           >
             <Text style={styles.endChatTxt}>End</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* ── LOW BALANCE WARNING BANNER ── */}
+      {isLowBalance && (
+        <View style={styles.lowBalanceBanner}>
+          <Ionicons name="warning" size={14} color="#92400e" />
+          <Text style={styles.lowBalanceText}>
+            ⚠️ Low balance! Only ₹{parseFloat(currentBalance).toFixed(0)} left.{" "}
+          </Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/wallet")}>
+            <Text style={styles.lowBalanceLink}>Add Money →</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -641,14 +738,11 @@ export default function ChatScreen() {
           activeOpacity={userRole !== "expert" ? 0.7 : 1}
         >
           <View style={styles.headerAvatarWrap}>
-            <Image
-              source={{ uri: expertAvatarUrl }}
-              style={styles.headerAvatar}
-            />
+            <Image source={{ uri: expertAvatarUrl }} style={styles.headerAvatar} />
             <View
               style={[
                 styles.headerOnlineDot,
-                { backgroundColor: isOnline ? GREEN_DOT : GREY_DOT },
+                { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
               ]}
             />
           </View>
@@ -661,15 +755,10 @@ export default function ChatScreen() {
               <View
                 style={[
                   styles.statusDot,
-                  { backgroundColor: isOnline ? GREEN_DOT : GREY_DOT },
+                  { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
                 ]}
               />
-              <Text
-                style={[
-                  styles.headerStatus,
-                  { color: isOnline ? "#16a34a" : TEXT_2 },
-                ]}
-              >
+              <Text style={[styles.headerStatus, { color: isOnline ? "#16a34a" : TEXT_2 }]}>
                 {isOnline ? "Active now" : "Offline"}
               </Text>
             </View>
@@ -681,10 +770,10 @@ export default function ChatScreen() {
 
         <View style={styles.headerActions}>
           <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons name="videocam-outline" size={20} color={PURPLE} />
+            <Ionicons name="videocam-outline" size={20} color={TEXT_1} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons name="call-outline" size={19} color={PURPLE} />
+            <Ionicons name="call-outline" size={19} color={TEXT_1} />
           </TouchableOpacity>
         </View>
       </View>
@@ -693,8 +782,8 @@ export default function ChatScreen() {
       <View style={styles.chatBg}>
         {loading && messages.length === 0 ? (
           <View style={styles.center}>
-            <ActivityIndicator size="large" color={PURPLE} />
-            <Text style={styles.loadingText}>Loading messages…</Text>
+            <ActivityIndicator size="large" color={TEAL} />
+            <Text style={styles.loadingText}>Loading messages...</Text>
           </View>
         ) : (
           <FlatList
@@ -710,18 +799,20 @@ export default function ChatScreen() {
             ListEmptyComponent={
               <View style={styles.emptyChat}>
                 <View style={styles.emptyChatIcon}>
-                  <Ionicons
-                    name="chatbubbles-outline"
-                    size={36}
-                    color={PURPLE}
-                  />
+                  <Ionicons name="chatbubbles-outline" size={36} color={TEAL} />
                 </View>
-                <Text style={styles.emptyChatTitle}>
-                  Start the conversation
-                </Text>
+                <Text style={styles.emptyChatTitle}>Start the conversation</Text>
                 <Text style={styles.emptyChatSub}>
-                  Send a message to {expertName}
+                  {isUserRole
+                    ? `Send a message to ${expertName} — billing starts with your first message.`
+                    : `Send a message to ${expertName}`}
                 </Text>
+                {isUserRole && (
+                  <View style={styles.ratePill}>
+                    <Ionicons name="pricetag-outline" size={12} color={TEAL_TEXT} />
+                    <Text style={styles.ratePillText}>₹{ratePerMin} / minute · Min ₹{ratePerMin * 5} to start</Text>
+                  </View>
+                )}
               </View>
             }
           />
@@ -732,34 +823,60 @@ export default function ChatScreen() {
       <KeyboardAvoidingView
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
-        <View style={styles.inputBar}>
-          <TouchableOpacity style={styles.attachBtn}>
-            <Ionicons name="add" size={22} color={PURPLE} />
+        {/* Billing failed banner above input */}
+        {billingFailed && !billingLoading && !chatActive && (
+          <View style={styles.billingFailedBanner}>
+            <Ionicons name="alert-circle" size={14} color="#7f1d1d" />
+            <Text style={styles.billingFailedText}>
+              Failed to start session.
+            </Text>
+            <TouchableOpacity onPress={() => { setBillingFailed(false); }}>
+              <Text style={styles.billingFailedRetry}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        <View style={[styles.inputBar, inputDisabled && styles.inputBarLocked]}>
+          <TouchableOpacity style={styles.attachBtn} disabled={inputDisabled}>
+            <Ionicons name="add" size={22} color={inputDisabled ? "#ccc" : TEAL} />
           </TouchableOpacity>
 
           <View style={styles.inputWrap}>
-            <TextInput
-              placeholder="Type a message…"
-              placeholderTextColor="#B0A8C8"
-              style={styles.input}
-              value={textMessage}
-              onChangeText={setTextMessage}
-              multiline
-            />
-            {!textMessage.trim() && (
-              <TouchableOpacity style={styles.micBtn}>
-                <Ionicons name="mic-outline" size={20} color={TEXT_2} />
-              </TouchableOpacity>
+            {billingLoading ? (
+              <View style={styles.billingInputPlaceholder}>
+                <ActivityIndicator size="small" color={TEAL} style={{ marginRight: 8 }} />
+                <Text style={styles.billingInputPlaceholderText}>
+                  Starting session...
+                </Text>
+              </View>
+            ) : (
+              <>
+                <TextInput
+                  placeholder={
+                    isUserRole && !chatActive
+                      ? "Type your first message to start..."
+                      : "Type a message..."
+                  }
+                  placeholderTextColor="#AAAAAA"
+                  style={styles.input}
+                  value={textMessage}
+                  onChangeText={setTextMessage}
+                  multiline
+                  editable={!inputDisabled}
+                />
+                {!textMessage.trim() && (
+                  <TouchableOpacity style={styles.micBtn}>
+                    <Ionicons name="mic-outline" size={20} color={TEXT_2} />
+                  </TouchableOpacity>
+                )}
+              </>
             )}
           </View>
 
           <TouchableOpacity
-            style={[
-              styles.sendBtn,
-              !textMessage.trim() && styles.sendBtnDisabled,
-            ]}
+            style={[styles.sendBtn, sendDisabled && styles.sendBtnDisabled]}
             onPress={handleSend}
-            disabled={!textMessage.trim()}
+            disabled={sendDisabled}
           >
             <Ionicons
               name="send"
@@ -814,80 +931,109 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
   loadingText: { fontSize: 14, color: TEXT_2, fontWeight: "500" },
 
+  billingLoadingBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: TEAL,
+    paddingVertical: 9,
+    gap: 10,
+  },
+  billingLoadingText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
+  },
+
+  // ── Billing active bar ──
   billingBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#1A1035",
+    backgroundColor: "#1f2937",
     paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(124,92,191,0.3)",
+    paddingVertical: 8,
   },
-  billingTimerBox: { flexDirection: "row", alignItems: "center", gap: 7 },
-  timerDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: RED_END,
+  billingLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
+  billingTimer: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  billingRate:  { color: "rgba(255,255,255,0.6)", fontSize: 11 },
+  billingBalance: { color: "#4ADE80", fontSize: 15, fontWeight: "800" },
+  endChatBtn: {
+    backgroundColor: "#ef4444",
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 5,
   },
-  billingTimerText: {
-    color: WHITE,
-    fontSize: 16,
-    fontWeight: "800",
-    letterSpacing: 1,
-  },
-  billingRateBox: {
+  endChatTxt: { color: "#fff", fontWeight: "700", fontSize: 13 },
+
+  // ── Low balance banner ──
+  lowBalanceBanner: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(245,158,11,0.12)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 10,
-  },
-  billingRateText: { color: GOLD, fontSize: 11, fontWeight: "700" },
-  billingBalanceBox: { alignItems: "flex-end" },
-  billingBalanceLabel: {
-    color: "rgba(255,255,255,0.4)",
-    fontSize: 9,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  billingBalanceValue: { color: "#4ADE80", fontSize: 14, fontWeight: "800" },
-  endChatBtn: {
-    backgroundColor: RED_END,
-    borderRadius: 10,
+    justifyContent: "center",
+    backgroundColor: "#fef3c7",
+    paddingVertical: 7,
     paddingHorizontal: 14,
-    paddingVertical: 6,
-    shadowColor: RED_END,
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 4,
+    gap: 6,
+    borderBottomWidth: 1,
+    borderBottomColor: "#fde68a",
   },
-  endChatTxt: { color: WHITE, fontWeight: "800", fontSize: 12 },
+  lowBalanceText: {
+    color: "#92400e",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  lowBalanceLink: {
+    color: "#b45309",
+    fontSize: 12,
+    fontWeight: "800",
+    textDecorationLine: "underline",
+  },
+
+  // ── Billing failed banner ──
+  billingFailedBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fee2e2",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    gap: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#fecaca",
+  },
+  billingFailedText: {
+    flex: 1,
+    color: "#7f1d1d",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  billingFailedRetry: {
+    color: "#b91c1c",
+    fontSize: 12,
+    fontWeight: "800",
+    textDecorationLine: "underline",
+  },
 
   header: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: WHITE,
+    backgroundColor: "#ffffff",
     paddingHorizontal: 14,
     paddingTop: 16,
     paddingBottom: 16,
     borderBottomWidth: 0.5,
     borderBottomColor: BORDER,
-    elevation: 4,
-    shadowColor: PURPLE,
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
     gap: 10,
   },
   backBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: PURPLE_PALE,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f4f5f7",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -899,18 +1045,18 @@ const styles = StyleSheet.create({
   },
   headerAvatarWrap: { position: "relative" },
   headerAvatar: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 2.5,
-    borderColor: PURPLE_LIGHT,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: TEAL_LIGHT,
   },
   headerOnlineDot: {
     position: "absolute",
     bottom: 1,
     right: 1,
-    width: 12,
-    height: 12,
+    width: 11,
+    height: 11,
     borderRadius: 6,
     borderWidth: 2,
     borderColor: "#ffffff",
@@ -939,10 +1085,10 @@ const styles = StyleSheet.create({
   },
   headerActions: { flexDirection: "row", gap: 6 },
   iconBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: PURPLE_PALE,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#f4f5f7",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -962,32 +1108,22 @@ const styles = StyleSheet.create({
   },
   dateSepLine: { flex: 1, height: 0.5, backgroundColor: "#d1d5db" },
   dateSepPill: {
-    backgroundColor: "#EDE7F6",
+    backgroundColor: "#e5e7eb",
     paddingVertical: 4,
     paddingHorizontal: 10,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: "#D4C9F0",
   },
   dateSepText: { fontSize: 12, color: TEXT_2, fontWeight: "600" },
 
   row: { flexDirection: "row", marginBottom: 8, alignItems: "flex-end" },
   rowRight: { justifyContent: "flex-end" },
-  rowLeft: { justifyContent: "flex-start" },
+  rowLeft:  { justifyContent: "flex-start" },
   msgAvatar: {
     width: 30,
     height: 30,
     borderRadius: 15,
     marginRight: 6,
     marginBottom: 2,
-  },
-  msgAvatarLarge: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginRight: 8,
-    borderWidth: 1.5,
-    borderColor: PURPLE_LIGHT,
   },
 
   bubble: {
@@ -1000,14 +1136,15 @@ const styles = StyleSheet.create({
   bubbleMe: {
     backgroundColor: BUBBLE_ME,
     borderBottomRightRadius: 4,
-    shadowColor: PURPLE,
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 3,
+    elevation: 1,
+    shadowColor: TEAL,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   bubbleThem: {
     backgroundColor: BUBBLE_THEM,
     borderBottomLeftRadius: 4,
+    elevation: 1,
     shadowColor: "#000",
     shadowOpacity: 0.06,
     shadowRadius: 4,
@@ -1022,38 +1159,57 @@ const styles = StyleSheet.create({
     marginTop: 4,
     gap: 2,
   },
-  timeText: { fontSize: 10, fontWeight: "500" },
-  timeMine: { color: "rgba(255,255,255,0.55)" },
+  timeText:   { fontSize: 10, fontWeight: "500" },
+  timeMine:   { color: "rgba(255,255,255,0.6)" },
   timeTheirs: { color: TEXT_2 },
 
-  emptyChat: { alignItems: "center", paddingTop: 80, gap: 10 },
+  emptyChat: {
+    alignItems: "center",
+    paddingTop: 80,
+    gap: 10,
+    paddingHorizontal: 24,
+  },
   emptyChatIcon: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: PURPLE_LIGHT,
+    backgroundColor: TEAL_LIGHT,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 4,
   },
   emptyChatTitle: { fontSize: 17, fontWeight: "800", color: TEXT_1 },
   emptyChatSub: { fontSize: 14, color: TEXT_2, textAlign: "center" },
+  ratePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 4,
+    backgroundColor: TEAL_LIGHT,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+  },
+  ratePillText: { fontSize: 11, color: TEAL_TEXT, fontWeight: "600" },
 
   inputBar: {
     flexDirection: "row",
     alignItems: "flex-end",
     paddingHorizontal: 12,
     paddingVertical: 10,
-    backgroundColor: WHITE,
-    borderTopWidth: 1,
+    backgroundColor: "#ffffff",
+    borderTopWidth: 0.5,
     borderTopColor: BORDER,
     gap: 8,
+  },
+  inputBarLocked: {
+    backgroundColor: "#f9fafb",
   },
   attachBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: PURPLE_PALE,
+    backgroundColor: TEAL_LIGHT,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 1,
@@ -1062,13 +1218,11 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: "row",
     alignItems: "flex-end",
-    backgroundColor: PURPLE_PALE,
+    backgroundColor: "#f4f5f7",
     borderRadius: 22,
     paddingHorizontal: 14,
     paddingVertical: 9,
     minHeight: 42,
-    borderWidth: 1,
-    borderColor: BORDER,
   },
   input: {
     flex: 1,
@@ -1078,23 +1232,23 @@ const styles = StyleSheet.create({
     maxHeight: 100,
   },
   micBtn: { marginLeft: 6, marginBottom: 1 },
+  billingInputPlaceholder: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  billingInputPlaceholderText: {
+    color: TEXT_2,
+    fontSize: 14,
+    fontStyle: "italic",
+  },
   sendBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: PURPLE,
+    backgroundColor: TEAL,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 1,
-    shadowColor: PURPLE,
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  sendBtnDisabled: {
-    backgroundColor: "#C4B8E0",
-    shadowOpacity: 0,
-    elevation: 0,
   },
   sendBtnDisabled: { backgroundColor: TEAL, opacity: 0.5 },
 });
@@ -1228,4 +1382,56 @@ const cm = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  endTxt: { fontSize: 15, fontWeight: "800", color: WHITE },
+  endModalIcon: { marginBottom: 14 },
+  endModalTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: TEXT_1,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  endModalRows: {
+    width: "100%",
+    backgroundColor: "#f9fafb",
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginBottom: 22,
+  },
+  endModalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  endModalDivider: { height: 0.5, backgroundColor: BORDER },
+  endModalLabel: { fontSize: 14, color: TEXT_2, fontWeight: "500" },
+  endModalValue: { fontSize: 16, fontWeight: "800", color: TEXT_1 },
+  endModalBtns: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  endModalWalletBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: TEAL,
+  },
+  endModalWalletTxt: { color: TEAL, fontWeight: "700", fontSize: 14 },
+  endModalDoneBtn: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 13,
+    borderRadius: 12,
+    backgroundColor: TEAL,
+  },
+  endModalDoneTxt: { color: "#fff", fontWeight: "700", fontSize: 14 },
 });

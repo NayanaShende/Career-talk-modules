@@ -66,8 +66,14 @@ exports.getStats = async (req, res) => {
     const walletTopups = await db.WalletTransaction.findAll({ where: { type: "topup" } });
     const totalWalletTopup = walletTopups.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
 
-    // Platform fee = 10% of wallet topup
-    const platformRevenue = totalRevenue > 0 ? totalRevenue / 100 : totalWalletTopup * 0.10;
+    // Platform fee collected from dynamic rates
+    const feeTxns = await db.WalletTransaction.findAll({ where: { type: "platform_fee" } });
+    let platformRevenue = feeTxns.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+
+    // Fallback if no chats happened yet, check old logic
+    if (platformRevenue === 0 && totalRevenue > 0) {
+      platformRevenue = totalRevenue / 100;
+    }
 
     return res.status(200).json({
       success: true,
@@ -231,11 +237,16 @@ exports.getWalletTransactions = async (req, res) => {
       .filter((t) => t.type === "topup" && t.ref_id === "topup")
       .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
+    const totalPlatformFees = enriched
+      .filter((t) => t.type === "platform_fee")
+      .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
     return res.status(200).json({
       success: true,
       data: enriched,
       summary: {
         totalTopup,
+        totalPlatformFees,
         totalTransactions: enriched.length,
       },
     });
@@ -244,3 +255,36 @@ exports.getWalletTransactions = async (req, res) => {
     res.status(500).json({ success: false, message: err.message });
   }
 };
+
+// ─── PLATFORM FEES ──────────────────────────────────────────────────────────────
+// GET /api/admin/platform-fee
+exports.getPlatformFee = async (req, res) => {
+  try {
+    let fee = await db.PlatformFee.findOne();
+    if (!fee) {
+      fee = await db.PlatformFee.create({ fee_percent: 10 });
+    }
+    return res.status(200).json({ success: true, data: fee });
+  } catch (err) {
+    console.error("getPlatformFee error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// PUT /api/admin/platform-fee
+exports.updatePlatformFee = async (req, res) => {
+  try {
+    const { fee_percent } = req.body;
+    let fee = await db.PlatformFee.findOne();
+    if (!fee) {
+      fee = await db.PlatformFee.create({ fee_percent: fee_percent || 10 });
+    } else {
+      await fee.update({ fee_percent });
+    }
+    return res.status(200).json({ success: true, message: "Platform fee updated", data: fee });
+  } catch (err) {
+    console.error("updatePlatformFee error:", err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
