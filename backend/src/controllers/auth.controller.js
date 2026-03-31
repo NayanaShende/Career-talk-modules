@@ -10,6 +10,7 @@ const uploadToCloudinary = require("../utils/cloudinaryUpload");
 // SEND OTP
 // ---------------------------------------
 exports.sendOtp = async (req, res) => {
+  console.log("✅ SEND OTP API HIT");
   try {
     const { mobile } = req.body;
 

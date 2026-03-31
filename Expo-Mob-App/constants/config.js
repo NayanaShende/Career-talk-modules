@@ -1,10 +1,9 @@
 import { Platform } from "react-native";
 
-// ✅ Production backend URL (Render)
 export const BASE_URL =
   Platform.OS === "web"
     ? "http://localhost:3000"
-    : "https://career-talk-modules-backend.onrender.com";
+    : "https://user-management-backend-api-24le.onrender.com"; // ✅ correct
 
 export const API_URL = `${BASE_URL}/api`;
 export const SOCKET_URL = BASE_URL;
