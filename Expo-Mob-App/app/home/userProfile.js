@@ -21,8 +21,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-
-const BASE_URL = "http://172.20.10.3:3000";
+import { BASE_URL } from "../../constants/config";
 
 // ── Domain-specific skills ───────────────────────────────────────────────────
 const DOMAIN_SKILLS_MAP = {
@@ -1320,6 +1319,7 @@ export default function ProfileScreen() {
     domain: "",
     customDomain: "",
     sub_domain: "",
+    rate_per_minute: "10",  // ✅ expert's chat rate (default ₹10/min)
   });
 
   const [selectedSkills, setSelectedSkills] = useState([]);
@@ -1434,6 +1434,11 @@ export default function ProfileScreen() {
           "Please upload your certificate — this is required to verify your domain expertise";
       if (formData.location === "Other" && !formData.customLocation.trim())
         e.customLocation = "Please specify your city";
+
+      // ✅ Validate rate
+      const rate = parseInt(formData.rate_per_minute, 10);
+      if (!formData.rate_per_minute || isNaN(rate) || rate < 5 || rate > 500)
+        e.rate_per_minute = "Rate must be between ₹5 and ₹500 per minute";
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -1507,6 +1512,11 @@ export default function ProfileScreen() {
           form.append(key, resolvedData[key]);
         }
       });
+
+      // ✅ Send rate_per_minute for experts
+      if (role === "Expert" && formData.rate_per_minute) {
+        form.append("rate_per_minute", parseInt(formData.rate_per_minute, 10));
+      }
 
       if (selectedSkills.length > 0)
         form.append("skills", selectedSkills.join(", "));
@@ -1972,6 +1982,36 @@ export default function ProfileScreen() {
                   value={formData.bio}
                   onChangeText={(v) => setField("bio", v)}
                 />
+
+                {/* ✅ RATE PER MINUTE — Expert sets their own chat rate */}
+                <Label text="Your Chat Rate (₹ per minute)" required />
+                <View
+                  style={[
+                    s.input,
+                    s.row,
+                    errors.rate_per_minute && s.inputErr,
+                    { paddingHorizontal: 14, alignItems: "center", gap: 8 },
+                  ]}
+                >
+                  <Text style={{ fontSize: 18, color: "#16a34a", fontWeight: "700" }}>₹</Text>
+                  <TextInput
+                    style={{ flex: 1, fontSize: 16, color: INK, fontWeight: "700" }}
+                    placeholder="e.g. 10"
+                    placeholderTextColor={MUTED2}
+                    keyboardType="number-pad"
+                    value={formData.rate_per_minute}
+                    onChangeText={(v) => {
+                      const num = v.replace(/[^0-9]/g, "");
+                      setField("rate_per_minute", num);
+                    }}
+                    maxLength={3}
+                  />
+                  <Text style={{ fontSize: 13, color: MUTED, fontWeight: "500" }}>/min</Text>
+                </View>
+                <Text style={{ fontSize: 11, color: MUTED, marginTop: 4, marginLeft: 2 }}>
+                  Users will be charged this amount per minute. Minimum ₹5, Maximum ₹500.
+                </Text>
+                <FieldError message={errors.rate_per_minute} />
               </Section>
             </>
           )}

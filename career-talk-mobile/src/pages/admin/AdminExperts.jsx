@@ -103,7 +103,7 @@ export default function AdminExperts() {
               ) : (
                 filtered.map((expert, i) => (
                   <tr key={expert.id}>
-                    <td style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>{i + 1}</td>
+                    <td style={{ color: "#9ca3af", fontSize: "12px" }}>{i + 1}</td>
                     <td>
                       <div className="expert-name-cell">
                         {expert.image ? (
@@ -117,10 +117,10 @@ export default function AdminExperts() {
                           <div className="expert-avatar">🎓</div>
                         )}
                         <div>
-                          <div style={{ fontWeight: 600, color: "#fff" }}>
+                          <div style={{ fontWeight: 600, color: "#111827" }}>
                             {expert.name || expert.user?.fullName || "—"}
                           </div>
-                          <div style={{ fontSize: 11, color: "rgba(255,255,255,0.4)" }}>
+                          <div style={{ fontSize: 11, color: "#6b7280" }}>
                             {expert.user?.email || ""}
                           </div>
                         </div>

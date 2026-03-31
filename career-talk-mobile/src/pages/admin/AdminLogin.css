@@ -1,4 +1,4 @@
-/* src/pages/admin/AdminLogin.css */
+/* src/pages/admin/AdminLogin.css - Light Theme Rewrite */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 * {
@@ -9,7 +9,7 @@
 
 .admin-login-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+  background: #f8fafc; /* Refreshing light slate */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,12 +18,13 @@
   overflow: hidden;
 }
 
+/* Subtle light mesh gradients */
 .admin-login-page::before {
   content: '';
   position: absolute;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
   top: -150px;
   right: -150px;
   border-radius: 50%;
@@ -35,7 +36,7 @@
   position: absolute;
   width: 400px;
   height: 400px;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
   bottom: -100px;
   left: -100px;
   border-radius: 50%;
@@ -43,22 +44,20 @@
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 0.6; }
-  50% { transform: scale(1.1); opacity: 1; }
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
 }
 
 .admin-login-card {
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 24px;
   padding: 48px 40px;
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   position: relative;
   z-index: 1;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.08); /* Sophisticated floating shadow */
   animation: slideUp 0.6s ease-out;
 }
 
@@ -75,101 +74,109 @@
 }
 
 .admin-login-logo-icon {
-  width: 48px;
-  height: 48px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
-  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6);
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
 }
 
 .admin-login-logo-text h2 {
-  font-size: 18px;
-  font-weight: 700;
-  color: #fff;
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
 .admin-login-logo-text span {
   font-size: 11px;
-  color: rgba(255,255,255,0.5);
-  font-weight: 400;
-  letter-spacing: 1px;
+  color: #6b7280;
+  font-weight: 600;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
+  margin-top: 4px;
+  display: block;
 }
 
 .admin-login-title {
   font-size: 28px;
   font-weight: 800;
-  color: #fff;
-  margin-bottom: 6px;
+  color: #111827;
+  margin-bottom: 8px;
+  letter-spacing: -0.02em;
 }
 
 .admin-login-subtitle {
-  color: rgba(255,255,255,0.5);
-  font-size: 14px;
-  margin-bottom: 32px;
+  color: #6b7280;
+  font-size: 15px;
+  margin-bottom: 36px;
+  font-weight: 500;
 }
 
 .admin-field {
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .admin-field label {
   display: block;
   font-size: 13px;
-  font-weight: 500;
-  color: rgba(255,255,255,0.7);
+  font-weight: 600;
+  color: #4b5563;
   margin-bottom: 8px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 
 .admin-field input {
   width: 100%;
   padding: 14px 16px;
-  background: rgba(255,255,255,0.07);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
   border-radius: 12px;
-  color: #fff;
+  color: #1e293b;
   font-size: 15px;
   font-family: 'Inter', sans-serif;
   outline: none;
-  transition: all 0.3s;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.01) inset;
 }
 
 .admin-field input::placeholder {
-  color: rgba(255,255,255,0.3);
+  color: #94a3b8;
 }
 
 .admin-field input:focus {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.1);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+  border-color: #4f46e5;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
 }
 
 .admin-login-btn {
   width: 100%;
-  padding: 15px;
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  padding: 16px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
   border: none;
   border-radius: 12px;
-  color: #fff;
+  color: #ffffff;
   font-size: 16px;
   font-weight: 600;
   font-family: 'Inter', sans-serif;
   cursor: pointer;
-  transition: all 0.3s;
-  margin-top: 8px;
-  letter-spacing: 0.5px;
+  transition: all 0.2s;
+  margin-top: 12px;
+  letter-spacing: 0.3px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2), 0 2px 4px -1px rgba(79, 70, 229, 0.1);
 }
 
 .admin-login-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.3), 0 4px 6px -2px rgba(79, 70, 229, 0.15);
 }
 
 .admin-login-btn:active {
@@ -177,35 +184,38 @@
 }
 
 .admin-login-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
   transform: none;
+  background: #94a3b8;
+  box-shadow: none;
 }
 
 .admin-login-error {
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: #fef2f2;
+  border: 1px solid #fecaca;
   border-radius: 10px;
   padding: 12px 16px;
-  color: #f87171;
+  color: #dc2626;
   font-size: 13px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 8px;
+  font-weight: 500;
 }
 
 .admin-login-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(16, 185, 129, 0.15);
-  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
   border-radius: 20px;
   padding: 4px 12px;
   font-size: 11px;
-  color: #34d399;
-  font-weight: 500;
+  color: #059669;
+  font-weight: 600;
   margin-bottom: 24px;
   letter-spacing: 0.5px;
 }

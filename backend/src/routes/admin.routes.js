@@ -30,4 +30,11 @@ router.get("/payments", adminProtect, adminController.getPlatformPayments);
 // GET /api/admin/wallet-transactions
 router.get("/wallet-transactions", adminProtect, adminController.getWalletTransactions);
 
+// ─── PLATFORM FEES ────────────────────────────────────────────────────────────
+// GET /api/admin/platform-fee
+router.get("/platform-fee", adminProtect, adminController.getPlatformFee);
+
+// PUT /api/admin/platform-fee
+router.put("/platform-fee", adminProtect, adminController.updatePlatformFee);
+
 module.exports = router;

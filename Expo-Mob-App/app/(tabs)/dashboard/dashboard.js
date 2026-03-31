@@ -18,7 +18,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WalletModal from "../../home/WalletModal";
 
-const BASE_URL = "http://172.20.10.3:3000";
+import { BASE_URL } from "../../../constants/config";
 
 const SKILL_FILTERS = [
   "All",

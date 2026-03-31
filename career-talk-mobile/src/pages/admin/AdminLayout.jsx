@@ -1,5 +1,5 @@
 // src/pages/admin/AdminLayout.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import "./AdminLayout.css";
 
@@ -10,7 +10,7 @@ const navItems = [
   { icon: "💳", label: "Payments", path: "/admin/payments" },
 ];
 
-function AdminSidebar() {
+function AdminSidebar({ isOpen, closeSidebar }) {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -21,7 +21,12 @@ function AdminSidebar() {
   };
 
   return (
-    <div className="admin-sidebar">
+    <>
+      <div 
+        className={`admin-sidebar-overlay ${isOpen ? 'active' : ''}`}
+        onClick={closeSidebar}
+      />
+      <div className={`admin-sidebar ${isOpen ? 'open' : ''}`}>
       <div className="admin-sidebar-logo">
         <div className="admin-sidebar-logo-icon">🎓</div>
         <div className="admin-sidebar-logo-text">
@@ -36,6 +41,7 @@ function AdminSidebar() {
           <Link
             key={item.path}
             to={item.path}
+            onClick={closeSidebar}
             className={`admin-nav-link ${location.pathname === item.path ? "active" : ""}`}
           >
             <span className="admin-nav-icon">{item.icon}</span>
@@ -50,14 +56,22 @@ function AdminSidebar() {
           Logout
         </button>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 
 export default function AdminLayout({ children, title }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const token = localStorage.getItem("adminToken");
   const adminInfo = JSON.parse(localStorage.getItem("adminInfo") || "{}");
+
+  // Close sidebar automatically on route change (for mobile navigations)
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location]);
 
   // Redirect if no admin token
   if (!token) {
@@ -67,10 +81,15 @@ export default function AdminLayout({ children, title }) {
 
   return (
     <div className="admin-layout">
-      <AdminSidebar />
+      <AdminSidebar isOpen={sidebarOpen} closeSidebar={() => setSidebarOpen(false)} />
       <div className="admin-main">
         <div className="admin-topbar">
-          <div className="admin-topbar-title">{title || "Admin Dashboard"}</div>
+          <div className="admin-topbar-left">
+            <button className="admin-menu-btn" onClick={() => setSidebarOpen(true)}>
+              ☰
+            </button>
+            <div className="admin-topbar-title">{title || "Admin Dashboard"}</div>
+          </div>
           <div className="admin-topbar-right">
             <div className="admin-topbar-user">
               <div className="admin-topbar-avatar">👤</div>

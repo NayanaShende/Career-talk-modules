@@ -71,10 +71,10 @@ export default function AdminUsers() {
               ) : (
                 filtered.map((u, i) => (
                   <tr key={u.id}>
-                    <td style={{ color: "rgba(255,255,255,0.3)", fontSize: "12px" }}>{i + 1}</td>
+                    <td style={{ color: "#9ca3af", fontSize: "12px" }}>{i + 1}</td>
                     <td style={{ fontWeight: 600 }}>{u.fullName || "—"}</td>
                     <td>{u.mobile}</td>
-                    <td style={{ color: "rgba(255,255,255,0.55)" }}>{u.email || "—"}</td>
+                    <td style={{ color: "#6b7280" }}>{u.email || "—"}</td>
                     <td>
                       <span className={`badge ${u.role}`}>{u.role}</span>
                     </td>
@@ -83,7 +83,7 @@ export default function AdminUsers() {
                         {u.hasProfile ? "Complete" : "Incomplete"}
                       </span>
                     </td>
-                    <td style={{ color: "rgba(255,255,255,0.4)", fontSize: "12px" }}>
+                    <td style={{ color: "#9ca3af", fontSize: "12px" }}>
                       {new Date(u.createdAt).toLocaleDateString("en-IN")}
                     </td>
                   </tr>

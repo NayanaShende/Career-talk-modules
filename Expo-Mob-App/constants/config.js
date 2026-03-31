@@ -1,14 +1,12 @@
 import { Platform } from "react-native";
 
-// ✅ CHANGE ONLY THIS ONE IP ADDRESS WHEN YOUR NETWORK CHANGES
-const LOCAL_IP = "172.20.10.3";
-
-// Automatically picks correct URL for web vs mobile
-const BASE_URL =
-  Platform.OS === "web" ? "http://localhost:3000" : `http://${LOCAL_IP}:3000`;
+// ✅ Production backend URL (Render)
+export const BASE_URL =
+  Platform.OS === "web"
+    ? "http://localhost:3000"
+    : "https://career-talk-modules-backend.onrender.com";
 
 export const API_URL = `${BASE_URL}/api`;
 export const SOCKET_URL = BASE_URL;
 
-export default { API_URL, SOCKET_URL };
-
+export default { API_URL, SOCKET_URL, BASE_URL };
