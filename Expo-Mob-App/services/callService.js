@@ -4,26 +4,58 @@ import { API_URL } from "../constants/config";
 const API = axios.create({
   baseURL: API_URL, // ⚠️ change this
 });
-
-// Initiate Call
-export const initiateCall = (callerId, receiverId) => {
-  return API.post("/calls/initiate", {
+ 
+// ── Initiate Call (balance check happens on backend)
+export const initiateCall = async (
+  callerId,
+  receiverId,
+  callType = "voice",
+  callerName = "",
+  callerImage = "",
+) => {
+  const res = await API.post("/calls/initiate", {
     callerId,
     receiverId,
+    call_type: callType,
+    callerName,
+    callerImage,
   });
+  return res.data;
 };
-
-// Accept Call
-export const acceptCall = (callId) => {
-  return API.put(`/calls/accept/${callId}`);
+ 
+// ── Accept Call (expert side)
+export const acceptCall = async (callId) => {
+  const res = await API.post("/calls/accept", { callId });
+  return res.data;
 };
-
-// Reject Call
-export const rejectCall = (callId) => {
-  return API.put(`/calls/reject/${callId}`);
+ 
+// ── Reject Call (expert side)
+export const rejectCall = async (callId) => {
+  const res = await API.post("/calls/reject", { callId });
+  return res.data;
 };
-
-// End Call
-export const endCall = (callId) => {
-  return API.put(`/calls/end/${callId}`);
+ 
+// ── Per-minute billing tick for CALLS
+// ✅ FIX: Now calls /wallet/call-tick (not /calls/tick which didn't exist)
+// This is only called AFTER expert answers (call status = active)
+export const callTick = async (callId, caller_id) => {
+  const res = await API.post("/wallet/call-tick", { callId, caller_id });
+  return res.data;
 };
+ 
+// ── End Call (either side)
+export const endCall = async (callId, caller_id, minutesUsed = 0) => {
+  const res = await API.post("/calls/end", {
+    callId,
+    caller_id,
+    minutesUsed,
+  });
+  return res.data;
+};
+ 
+// ── Call History
+export const getCallHistory = async (userId) => {
+  const res = await API.get(`/calls/history/${userId}`);
+  return res.data;
+};
+ 

@@ -3,11 +3,11 @@ const { Expert } = require("./models");
 
 let io;
 const socketToExpert = {};
-const userSockets = {}; // uid → Set of socket IDs (support multiple tabs/devices)
+const userSockets = {};
 
 // ✅ Prevent duplicate messages
 const recentMessages = {};
-const MESSAGE_TTL = 3000; // 3 seconds
+const MESSAGE_TTL = 3000;
 
 function initSocket(server) {
   io = new Server(server, {
@@ -22,14 +22,10 @@ function initSocket(server) {
     socket.on("joinRoom", ({ userId }) => {
       const uid = userId.toString();
 
-      // ✅ FIX: Instead of disconnecting old socket (which causes reconnect loop),
-      // just make sure this socket joins the room. We track a SET of socket IDs
-      // per user so multiple sockets (reconnects) all receive messages.
       if (!userSockets[uid]) {
         userSockets[uid] = new Set();
       }
 
-      // Clean up any stale socket IDs that are no longer connected
       for (const oldSid of userSockets[uid]) {
         if (!io.sockets.sockets.get(oldSid)) {
           userSockets[uid].delete(oldSid);
@@ -41,38 +37,22 @@ function initSocket(server) {
       console.log(`User ${userId} joined room (socket: ${socket.id}, total sockets: ${userSockets[uid].size})`);
     });
 
+    // ── Chat ──────────────────────────────────────────────────────────────
     socket.on("sendMessage", (data) => {
       const { senderId, receiverId, message } = data;
-
       const timestamp = Date.now();
-      const messageKey = `${senderId}-${receiverId}-${message}-${Math.floor(
-        timestamp / 1000
-      )}`;
+      const messageKey = `${senderId}-${receiverId}-${message}-${Math.floor(timestamp / 1000)}`;
 
-      // ✅ Block duplicate messages
       if (recentMessages[messageKey]) {
         console.log("⚠️ Duplicate message blocked:", messageKey);
         return;
       }
 
       recentMessages[messageKey] = true;
+      setTimeout(() => { delete recentMessages[messageKey]; }, MESSAGE_TTL);
 
-      // ✅ Auto cleanup memory
-      setTimeout(() => {
-        delete recentMessages[messageKey];
-      }, MESSAGE_TTL);
-
-      const payload = {
-        senderId,
-        receiverId,
-        message,
-        created_at: new Date(),
-      };
-
-      // send message to receiver
+      const payload = { senderId, receiverId, message, created_at: new Date() };
       io.to(receiverId.toString()).emit("receiveMessage", payload);
-
-      // send notification
       io.to(receiverId.toString()).emit("newNotification", {
         type: "message",
         title: "New Message",
@@ -87,19 +67,16 @@ function initSocket(server) {
 
     socket.on("sendNotification", (data) => {
       const { senderId, receiverId, title, message, type } = data;
-
       io.to(receiverId.toString()).emit("newNotification", {
         sender_id: Number(senderId),
         receiver_id: Number(receiverId),
-        title,
-        message,
-        type,
+        title, message, type,
         created_at: new Date(),
       });
-
       console.log(`🔔 Notification ${senderId} → ${receiverId}`);
     });
 
+    // ── Call signaling ────────────────────────────────────────────────────
     socket.on("call-user", (data) => {
       const { callId, callerId, receiverId } = data;
       console.log(`📞 Call initiated from ${callerId} to ${receiverId}`);
@@ -125,21 +102,45 @@ function initSocket(server) {
       io.to(receiverId.toString()).emit("call-ended", { callId });
     });
 
+    // ── WebRTC signaling ──────────────────────────────────────────────────
+
+    // ✅ NEW: Receiver tells caller "I am ready to receive the offer"
+    // This fixes the timing issue where offer was sent before receiver joined
+    socket.on("receiver-ready", ({ callId, callerId }) => {
+      console.log(`📣 Receiver ready for call ${callId}, notifying caller ${callerId}`);
+      io.to(callerId.toString()).emit("receiver-ready", { callId });
+    });
+
+    // ✅ Caller → Receiver: send SDP offer
+    socket.on("webrtc-offer", ({ callId, receiverId, sdp }) => {
+      console.log(`📡 Relaying offer for call ${callId} to ${receiverId}`);
+      io.to(receiverId.toString()).emit("webrtc-offer", { callId, sdp });
+    });
+
+    // ✅ Receiver → Caller: send SDP answer
+    socket.on("webrtc-answer", ({ callId, callerId, sdp }) => {
+      console.log(`📡 Relaying answer for call ${callId} to ${callerId}`);
+      io.to(callerId.toString()).emit("webrtc-answer", { callId, sdp });
+    });
+
+    // ✅ ICE candidate relay (both directions)
+    socket.on("webrtc-ice-candidate", ({ callId, targetUserId, candidate }) => {
+      io.to(targetUserId.toString()).emit("webrtc-ice-candidate", { callId, candidate });
+    });
+
+    // ✅ Media state relay (mute/camera toggle)
+    socket.on("webrtc-media-state", ({ targetUserId, isMuted, isCameraOff, callId }) => {
+      io.to(targetUserId.toString()).emit("webrtc-media-state", { isMuted, isCameraOff, callId });
+    });
+
+    // ── Expert online/offline ─────────────────────────────────────────────
     socket.on("expert:online", async (userId) => {
       try {
         const expert = await Expert.findOne({ where: { userId: userId } });
-
-        if (!expert) {
-          console.log(`⚠️ No expert found for userId: ${userId}`);
-          return;
-        }
-
+        if (!expert) { console.log(`⚠️ No expert found for userId: ${userId}`); return; }
         socketToExpert[socket.id] = expert.id;
-
         await Expert.update({ is_online: true }, { where: { id: expert.id } });
-
         io.emit("expert:status", { expertId: expert.id, is_online: true });
-
         console.log(`🟢 Expert ${expert.id} is ONLINE`);
       } catch (err) {
         console.error("expert:online error:", err.message);
@@ -149,16 +150,9 @@ function initSocket(server) {
     socket.on("expert:offline", async (userId) => {
       try {
         const expert = await Expert.findOne({ where: { userId } });
-
-        if (!expert) {
-          console.log(`⚠️ No expert found for userId: ${userId}`);
-          return;
-        }
-
+        if (!expert) { console.log(`⚠️ No expert found for userId: ${userId}`); return; }
         await Expert.update({ is_online: false }, { where: { id: expert.id } });
-
         io.emit("expert:status", { expertId: expert.id, is_online: false });
-
         console.log(`🔴 Expert ${expert.id} is OFFLINE`);
       } catch (err) {
         console.error("expert:offline error:", err.message);
@@ -166,38 +160,22 @@ function initSocket(server) {
     });
 
     socket.on("disconnect", async () => {
-      // ✅ FIX: Remove only this specific socket ID from the user's set
       for (const [uid, socketSet] of Object.entries(userSockets)) {
         if (socketSet.has(socket.id)) {
           socketSet.delete(socket.id);
-          // Clean up empty sets
-          if (socketSet.size === 0) {
-            delete userSockets[uid];
-          }
+          if (socketSet.size === 0) { delete userSockets[uid]; }
           break;
         }
       }
 
       const expertId = socketToExpert[socket.id];
-
       if (expertId) {
         try {
-          // ✅ FIX: Only mark expert offline if they have NO remaining sockets
-          const expertUid = Object.keys(userSockets).find((uid) => {
-            // Check if any remaining socket belongs to this expert
-            return false; // handled below
-          });
-
-          // Check if expert still has other active sockets
-          const expertStillConnected = Object.values(userSockets).some(
-            (socketSet) => socketSet.size > 0
-          );
-
-          // Only go offline if this was the last socket for this expert user
           const expertUserSockets = Object.entries(userSockets).find(
-            ([uid, socketSet]) => socketSet.size > 0 && socketToExpert[Array.from(socketSet)[0]] === expertId
+            ([uid, socketSet]) =>
+              socketSet.size > 0 &&
+              socketToExpert[Array.from(socketSet)[0]] === expertId
           );
-
           if (!expertUserSockets) {
             await Expert.update({ is_online: false }, { where: { id: expertId } });
             io.emit("expert:status", { expertId, is_online: false });
@@ -206,7 +184,6 @@ function initSocket(server) {
         } catch (err) {
           console.error("disconnect error:", err.message);
         }
-
         delete socketToExpert[socket.id];
       }
 

@@ -6,6 +6,7 @@ import {
   Image,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   FlatList,
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,7 +17,7 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLocalSearchParams, router } from "expo-router";
+import { useLocalSearchParams, router, useFocusEffect } from "expo-router";
 import axios from "axios";
 import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -38,8 +39,8 @@ const TEXT_1      = "#1a1a2e";
 const TEXT_2      = "#6b7280";
 const BORDER      = "#e5e7eb";
 const WHITE = "#FFFFFF";
+const SELECT_BG = "rgba(134,119,149,0.18)";
 
-// ── Helpers ────────────────────────────────────────────────────────────────
 const sortMessages = (msgs) =>
   [...msgs].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
@@ -85,7 +86,6 @@ const formatTime = (date) =>
       })
     : "";
 
-// ── Smart image URL ────────────────────────────────────────────────────────
 const getImageUri = (image, name) => {
   if (
     image &&
@@ -93,32 +93,108 @@ const getImageUri = (image, name) => {
     image !== "null" &&
     image.trim() !== ""
   ) {
-    if (image.startsWith("http://") || image.startsWith("https://")) {
+    if (image.startsWith("http://") || image.startsWith("https://"))
       return image;
-    }
-    const cleanImage = image.replace(/^uploads\//, "");
-    return `${BASE_URL}/uploads/${cleanImage}`;
+    return `${BASE_URL}/uploads/${image.replace(/^uploads\//, "")}`;
   }
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(
-    name || "Expert",
-  )}&background=0B2D72&color=fff`;
+  return `https://ui-avatars.com/api/?name=${encodeURIComponent(name || "Expert")}&background=0B2D72&color=fff`;
 };
 
-// ── Insufficient Balance Modal ─────────────────────────────────────────────
+const extractUserName = (u) => {
+  if (!u) return "User";
+  return (
+    u?.fullName ||
+    u?.full_name ||
+    u?.name ||
+    u?.username ||
+    u?.user?.fullName ||
+    u?.user?.name ||
+    "User"
+  );
+};
+
+const extractUserImage = (u) => {
+  if (!u) return "";
+  return (
+    u?.image ||
+    u?.avatar ||
+    u?.profileImage ||
+    u?.profile_image ||
+    u?.photo ||
+    u?.user?.image ||
+    ""
+  );
+};
+
+// ─── TICK COMPONENT ──────────────────────────────────────────────────────────
+// WhatsApp-style: single grey = sent, double grey = delivered, double blue = seen
+function MessageTick({ isSeen, isDelivered, isTemp }) {
+  if (isTemp) {
+    // Clock icon while sending
+    return (
+      <Ionicons
+        name="time-outline"
+        size={12}
+        color="rgba(255,255,255,0.5)"
+        style={{ marginLeft: 3 }}
+      />
+    );
+  }
+  if (isSeen) {
+    // Double blue tick = seen
+    return (
+      <View style={tick.wrap}>
+        <Ionicons name="checkmark" size={12} color="#53BDEB" />
+        <Ionicons
+          name="checkmark"
+          size={12}
+          color="#53BDEB"
+          style={tick.second}
+        />
+      </View>
+    );
+  }
+  if (isDelivered) {
+    // Double grey tick = delivered
+    return (
+      <View style={tick.wrap}>
+        <Ionicons name="checkmark" size={12} color="rgba(255,255,255,0.6)" />
+        <Ionicons
+          name="checkmark"
+          size={12}
+          color="rgba(255,255,255,0.6)"
+          style={tick.second}
+        />
+      </View>
+    );
+  }
+  // Single grey tick = sent
+  return (
+    <Ionicons
+      name="checkmark"
+      size={12}
+      color="rgba(255,255,255,0.6)"
+      style={{ marginLeft: 3 }}
+    />
+  );
+}
+
+const tick = StyleSheet.create({
+  wrap: { flexDirection: "row", marginLeft: 3 },
+  second: { marginLeft: -6 },
+});
+
+// ─── MODALS ──────────────────────────────────────────────────────────────────
+
 function InsufficientBalanceModal({ visible, balance, onAddMoney, onCancel }) {
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={cm.overlay}>
         <View style={cm.card}>
-          {/* Icon */}
           <View style={cm.iconWrap}>
             <Ionicons name="wallet-outline" size={34} color="#867795" />
           </View>
-
-          {/* Title */}
           <Text style={cm.title}>Insufficient Balance</Text>
-
-          {/* Info box */}
           <View style={cm.infoBox}>
             <View style={cm.infoRow}>
               <Text style={cm.infoLabel}>Required</Text>
@@ -133,12 +209,9 @@ function InsufficientBalanceModal({ visible, balance, onAddMoney, onCancel }) {
               </Text>
             </View>
           </View>
-
           <Text style={cm.subtitle}>
             Add money to your wallet to start chatting with experts.
           </Text>
-
-          {/* Buttons */}
           <View style={cm.btnRow}>
             <TouchableOpacity
               style={cm.cancelBtn}
@@ -162,20 +235,20 @@ function InsufficientBalanceModal({ visible, balance, onAddMoney, onCancel }) {
   );
 }
 
-// ── End Chat Modal ─────────────────────────────────────────────────────────
 function EndChatModal({
   visible,
   minutesUsed,
+  ratePerMin,
   onEndChat,
   onStay,
   title,
   stayLabel,
 }) {
+  const rate = ratePerMin || 10;
   return (
     <Modal visible={visible} transparent animationType="fade">
       <View style={cm.overlay}>
         <View style={cm.card}>
-          {/* Icon */}
           <View
             style={[
               cm.iconWrap,
@@ -184,11 +257,7 @@ function EndChatModal({
           >
             <Ionicons name="time-outline" size={34} color="#ef4444" />
           </View>
-
-          {/* Title */}
           <Text style={cm.title}>{title || "End Chat?"}</Text>
-
-          {/* Stats box */}
           <View style={cm.infoBox}>
             <View style={cm.infoRow}>
               <Text style={cm.infoLabel}>Duration</Text>
@@ -197,16 +266,13 @@ function EndChatModal({
             <View style={[cm.infoRow, { borderBottomWidth: 0 }]}>
               <Text style={cm.infoLabel}>Charged</Text>
               <Text style={[cm.infoValue, { color: "#ef4444" }]}>
-                ₹{minutesUsed * 10}
+                ₹{minutesUsed * rate}
               </Text>
             </View>
           </View>
-
           <Text style={cm.subtitle}>
             Remaining hold amount will be released back to your wallet.
           </Text>
-
-          {/* Buttons */}
           <View style={cm.btnRow}>
             <TouchableOpacity
               style={cm.stayBtn}
@@ -230,7 +296,165 @@ function EndChatModal({
   );
 }
 
-// ── Main Component ─────────────────────────────────────────────────────────
+function DeleteSelectedModal({
+  visible,
+  count,
+  onDeleteForMe,
+  onDeleteForEveryone,
+  onCancel,
+  allMine,
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <TouchableWithoutFeedback onPress={onCancel}>
+        <View style={cm.overlay}>
+          <TouchableWithoutFeedback>
+            <View style={[cm.card, { paddingTop: 24, paddingBottom: 20 }]}>
+              <View
+                style={[
+                  cm.iconWrap,
+                  { backgroundColor: "#fef2f2", borderColor: "#fecaca" },
+                ]}
+              >
+                <Ionicons name="trash-outline" size={30} color="#ef4444" />
+              </View>
+              <Text style={cm.title}>
+                Delete {count} message{count > 1 ? "s" : ""}?
+              </Text>
+              <View style={{ width: "100%", gap: 10 }}>
+                {allMine && (
+                  <TouchableOpacity
+                    style={dm.optionBtn}
+                    onPress={onDeleteForEveryone}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="people-outline" size={20} color="#ef4444" />
+                    <View style={dm.optionText}>
+                      <Text style={dm.optionTitle}>Delete for Everyone</Text>
+                      <Text style={dm.optionSub}>
+                        Remove for all participants
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  style={dm.optionBtn}
+                  onPress={onDeleteForMe}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="person-outline" size={20} color={TEAL} />
+                  <View style={dm.optionText}>
+                    <Text style={[dm.optionTitle, { color: TEAL }]}>
+                      Delete for Me
+                    </Text>
+                    <Text style={dm.optionSub}>{"Only you won't see these"}</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    dm.optionBtn,
+                    { borderColor: BORDER, backgroundColor: "#f9f9f9" },
+                  ]}
+                  onPress={onCancel}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="close-outline" size={20} color={TEXT_2} />
+                  <View style={dm.optionText}>
+                    <Text style={[dm.optionTitle, { color: TEXT_2 }]}>
+                      Cancel
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+}
+
+function DeleteConversationModal({
+  visible,
+  onDeleteForMe,
+  onDeleteForEveryone,
+  onCancel,
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade">
+      <TouchableWithoutFeedback onPress={onCancel}>
+        <View style={cm.overlay}>
+          <TouchableWithoutFeedback>
+            <View style={[cm.card, { paddingTop: 24, paddingBottom: 20 }]}>
+              <View
+                style={[
+                  cm.iconWrap,
+                  { backgroundColor: "#fef2f2", borderColor: "#fecaca" },
+                ]}
+              >
+                <Ionicons
+                  name="chatbubbles-outline"
+                  size={30}
+                  color="#ef4444"
+                />
+              </View>
+              <Text style={cm.title}>Delete Conversation?</Text>
+              <Text style={[cm.subtitle, { marginBottom: 16 }]}>
+                Choose how you want to delete this conversation.
+              </Text>
+              <View style={{ width: "100%", gap: 10 }}>
+                <TouchableOpacity
+                  style={dm.optionBtn}
+                  onPress={onDeleteForEveryone}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="people-outline" size={20} color="#ef4444" />
+                  <View style={dm.optionText}>
+                    <Text style={dm.optionTitle}>Delete for Everyone</Text>
+                    <Text style={dm.optionSub}>
+                      Removes chat for both sides
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={dm.optionBtn}
+                  onPress={onDeleteForMe}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="person-outline" size={20} color={TEAL} />
+                  <View style={dm.optionText}>
+                    <Text style={[dm.optionTitle, { color: TEAL }]}>
+                      Delete for Me
+                    </Text>
+                    <Text style={dm.optionSub}>Only clears your view</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    dm.optionBtn,
+                    { borderColor: BORDER, backgroundColor: "#f9f9f9" },
+                  ]}
+                  onPress={onCancel}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="close-outline" size={20} color={TEXT_2} />
+                  <View style={dm.optionText}>
+                    <Text style={[dm.optionTitle, { color: TEXT_2 }]}>
+                      Cancel
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
+  );
+}
+
+// ─── MAIN SCREEN ─────────────────────────────────────────────────────────────
+
 export default function ChatScreen() {
   const {
     expertId,
@@ -246,12 +470,10 @@ export default function ChatScreen() {
 
   const rawName  = paramExpertName || name;
   const rawImage = expertImage || avatar;
-
   const expertName =
     rawName && rawName !== "undefined" && rawName !== "null"
       ? rawName
       : "Expert";
-
   const expertAvatarUrl = getImageUri(rawImage, expertName);
 
   // ── Core state
@@ -276,7 +498,6 @@ export default function ChatScreen() {
   const [showEndModal, setShowEndModal] = useState(false);
   const [endModalData, setEndModalData] = useState(null);
 
-  // ── NEW: custom modal states ──
   const [insufficientModal, setInsufficientModal] = useState({
     visible: false,
     balance: 0,
@@ -292,6 +513,14 @@ export default function ChatScreen() {
   const tickIntervalRef = useRef(null);
   const minutesRef     = useRef(0);
   const isSendingRef = useRef(false);
+  const isInCallRef = useRef(false);
+  const userDataRef = useRef({
+    name: "User",
+    image: "",
+    id: null,
+    role: "user",
+  });
+  const currentUserIdRef = useRef(null);
 
   // ── Load user from storage
   useEffect(() => {
@@ -306,9 +535,137 @@ export default function ChatScreen() {
     });
   }, []);
 
-  useEffect(() => {
-    if (RECEIVER_ID) clearUnread(RECEIVER_ID);
-  }, [RECEIVER_ID]);
+  // ✅ Set active chat + mark messages seen when screen focused
+  useFocusEffect(
+    React.useCallback(() => {
+      setActiveChatUserId(RECEIVER_ID);
+      clearUnread(RECEIVER_ID);
+
+      // ✅ Mark all messages from RECEIVER_ID as seen
+      if (currentUserIdRef.current) {
+        API.post("/chat/seen", {
+          viewerId: currentUserIdRef.current,
+          senderId: RECEIVER_ID,
+        }).catch(() => {});
+      }
+
+      return () => {
+        setActiveChatUserId(null);
+      };
+    }, [RECEIVER_ID]),
+  );
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (
+        billingStarted.current &&
+        chatActive &&
+        !tickIntervalRef.current &&
+        currentUserId &&
+        expertDbId
+      ) {
+        isInCallRef.current = false;
+        startTickTimer(currentUserId, expertDbId);
+      }
+      return () => {
+        if (tickIntervalRef.current) {
+          clearInterval(tickIntervalRef.current);
+          tickIntervalRef.current = null;
+          isInCallRef.current = true;
+        }
+      };
+    }, [chatActive, currentUserId, expertDbId]),
+  );
+
+  // ✅ Exit selection mode on back press
+  const handleBack = () => {
+    if (selectionMode) {
+      exitSelectionMode();
+      return;
+    }
+    if (chatActive) {
+      setEndChatModal({ visible: true, isBackPress: true });
+    } else {
+      router.back();
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
+  // ✅ Long press — enter selection mode and select first message
+  const handleLongPress = (item) => {
+    if (String(item.id).startsWith("temp_")) return;
+    setSelectionMode(true);
+    setSelectedIds(new Set([item.id]));
+  };
+
+  // ✅ Tap in selection mode — toggle selection
+  const handleTapInSelection = (item) => {
+    if (String(item.id).startsWith("temp_")) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(item.id)) {
+        next.delete(item.id);
+        if (next.size === 0) {
+          setSelectionMode(false);
+        }
+      } else {
+        next.add(item.id);
+      }
+      return next;
+    });
+  };
+
+  // ✅ Delete selected messages
+  const handleDeleteSelected = async (deleteForEveryone) => {
+    setShowDeleteModal(false);
+    const idsToDelete = Array.from(selectedIds);
+    exitSelectionMode();
+
+    // Optimistically remove from UI
+    setMessages((prev) => prev.filter((m) => !idsToDelete.includes(m.id)));
+
+    try {
+      await Promise.all(
+        idsToDelete.map((msgId) =>
+          API.post("/chat/delete/message", {
+            messageId: msgId,
+            userId: currentUserId,
+            deleteForEveryone,
+          }),
+        ),
+      );
+    } catch (e) {
+      console.log("Delete selected error:", e.message);
+      loadChats();
+    }
+  };
+
+  const handleDeleteConversation = async (deleteForEveryone) => {
+    setDeleteConvModal(false);
+    try {
+      await API.post("/chat/delete/conversation", {
+        userId: currentUserId,
+        otherUserId: RECEIVER_ID,
+        deleteForEveryone,
+      });
+      setMessages([]);
+    } catch (e) {
+      Alert.alert("Error", "Could not delete conversation.");
+    }
+  };
+
+  // ✅ Check if all selected messages are sent by current user
+  const allSelectedMine = () => {
+    for (const id of selectedIds) {
+      const msg = messages.find((m) => m.id === id);
+      if (msg && Number(msg.sender_id) !== Number(currentUserId)) return false;
+    }
+    return true;
+  };
 
   // ── Find expert DB id
   const findExpertId = async () => {
@@ -318,11 +675,8 @@ export default function ChatScreen() {
       const expert = allExperts.find(
         (e) => Number(e.userId) === Number(RECEIVER_ID),
       );
-      const eId = expert ? expert.id : RECEIVER_ID;
-      console.log("✅ Expert found — Expert.id:", eId);
-      return eId;
+      return expert ? expert.id : RECEIVER_ID;
     } catch (e) {
-      console.log("findExpertId error:", e.message);
       return RECEIVER_ID;
     }
   };
@@ -358,6 +712,7 @@ export default function ChatScreen() {
 
   // ── Start tick timer (every 60s deducts ₹Rate)
   const startTickTimer = (userId, eId) => {
+    if (tickIntervalRef.current) clearInterval(tickIntervalRef.current);
     tickIntervalRef.current = setInterval(async () => {
       // ✅ 1. Update UI immediately so user sees "1 min", "2 min" regardless of network lag
       minutesRef.current += 1;
@@ -370,7 +725,6 @@ export default function ChatScreen() {
           userId:   userId,
           expertId: eId,
         });
-
         if (res?.data?.success) {
           const newBal = res.data.balance;
           setCurrentBalance(newBal);
@@ -378,10 +732,8 @@ export default function ChatScreen() {
         }
       } catch (e) {
         const err = e?.response?.data;
-        if (err?.error === "insufficient_balance") {
+        if (err?.error === "insufficient_balance")
           endChatBilling(userId, eId, true);
-        }
-        console.log("chatTick error:", e?.message);
       }
     }, 60000);
   };
@@ -393,7 +745,7 @@ export default function ChatScreen() {
       tickIntervalRef.current = null;
     }
     setChatActive(false);
-
+    billingStarted.current = false;
     try {
       const res = await API.post("/wallet/chat-end", {
         userId:      userId,
@@ -462,7 +814,41 @@ export default function ChatScreen() {
     socketRef.current.on("receiveMessage", (newMessage) => {
       if (Number(newMessage.sender_id) !== Number(currentUserId)) {
         setMessages((prev) =>
-          dedupeMessages(sortMessages([...prev, newMessage])),
+          dedupeMessages(
+            sortMessages([...prev, { ...newMessage, is_delivered: true }]),
+          ),
+        );
+        setTimeout(
+          () => flatListRef.current?.scrollToEnd({ animated: true }),
+          100,
+        );
+
+        // ✅ Mark as seen immediately since we're viewing the chat
+        API.post("/chat/seen", {
+          viewerId: currentUserId,
+          senderId: newMessage.sender_id,
+        }).catch(() => {});
+      }
+    });
+
+    // ✅ NEW: Delivered event — update tick from single to double grey
+    socketRef.current.on("message-delivered", ({ messageId }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, is_delivered: true } : m,
+        ),
+      );
+    });
+
+    // ✅ NEW: Seen event — update tick from grey to blue
+    socketRef.current.on("messages-seen", ({ by }) => {
+      if (Number(by) === Number(RECEIVER_ID)) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            Number(m.sender_id) === Number(currentUserId)
+              ? { ...m, is_seen: true }
+              : m,
+          ),
         );
 
         // ✅ If the Expert receives a message, initialize their UI timer
@@ -479,16 +865,18 @@ export default function ChatScreen() {
     });
 
     return () => {
-      socketRef.current.off("receiveMessage");
-      socketRef.current.off("connect");
-      socketRef.current.off("disconnect");
-      socketRef.current.disconnect();
+      socketRef.current?.off("receiveMessage");
+      socketRef.current?.off("message-delivered");
+      socketRef.current?.off("messages-seen");
+      socketRef.current?.off("connect");
+      socketRef.current?.off("disconnect");
+      socketRef.current?.disconnect();
       if (tickIntervalRef.current) {
         clearInterval(tickIntervalRef.current);
         tickIntervalRef.current = null;
       }
     };
-  }, [currentUserId, RECEIVER_ID, userRole]);
+  }, [currentUserId, RECEIVER_ID]);
 
   // ── SEND MESSAGE — billing triggers on FIRST message for users
   const handleSend = async () => {
@@ -598,6 +986,8 @@ export default function ChatScreen() {
     const isUser  = Number(item.sender_id) === Number(currentUserId);
     const msgText = item.message != null ? String(item.message) : "";
     const timeText = formatTime(item.created_at);
+    const isSelected = selectedIds.has(item.id);
+    const isTemp = !!item._isTemp;
 
     return (
       <View style={[styles.row, isUser ? styles.rowRight : styles.rowLeft]}>
@@ -613,19 +1003,29 @@ export default function ChatScreen() {
             <Text style={[styles.timeText, isUser ? styles.timeMine : styles.timeTheirs]}>
               {timeText}
             </Text>
-            {isUser && (
-              <Ionicons
-                name="checkmark-done"
-                size={13}
-                color="rgba(255,255,255,0.6)"
-                style={{ marginLeft: 3 }}
-              />
-            )}
+            <View style={styles.metaRow}>
+              <Text
+                style={[
+                  styles.timeText,
+                  isUser ? styles.timeMine : styles.timeTheirs,
+                ]}
+              >
+                {timeText}
+              </Text>
+              {/* ✅ Show ticks only for sender's messages */}
+              {isUser && (
+                <MessageTick
+                  isSeen={item.is_seen}
+                  isDelivered={item.is_delivered}
+                  isTemp={isTemp}
+                />
+              )}
+            </View>
           </View>
-        </View>
 
-        {!isUser && <View style={{ width: 52 }} />}
-      </View>
+          {!isUser && !selectionMode && <View style={{ width: 52 }} />}
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -654,7 +1054,10 @@ export default function ChatScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
-      <StatusBar backgroundColor={TEAL} barStyle="light-content" />
+      <StatusBar
+        backgroundColor={selectionMode ? "#1a1a2e" : TEAL}
+        barStyle="light-content"
+      />
 
       {/* ── INSUFFICIENT BALANCE OVERLAY ── */}
       {balanceInsufficient && !chatActive && (
@@ -747,38 +1150,91 @@ export default function ChatScreen() {
             />
           </View>
 
-          <View style={styles.headerInfo}>
-            <Text style={styles.headerName} numberOfLines={1}>
-              {expertName}
-            </Text>
-            <View style={styles.statusRow}>
+          <TouchableOpacity
+            style={styles.headerAvatarPressable}
+            onPress={() => {
+              if (userRole !== "expert")
+                router.push(`/(tabs)/expert/${RECEIVER_ID}`);
+            }}
+            activeOpacity={userRole !== "expert" ? 0.7 : 1}
+          >
+            <View style={styles.headerAvatarWrap}>
+              <Image
+                source={{ uri: expertAvatarUrl }}
+                style={styles.headerAvatar}
+              />
               <View
                 style={[
-                  styles.statusDot,
+                  styles.headerOnlineDot,
                   { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
                 ]}
               />
               <Text style={[styles.headerStatus, { color: isOnline ? "#16a34a" : TEXT_2 }]}>
                 {isOnline ? "Active now" : "Offline"}
               </Text>
+              <View style={styles.statusRow}>
+                <View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: isOnline ? "#22C55E" : "#9CA3AF" },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.headerStatus,
+                    { color: isOnline ? "#16a34a" : TEXT_2 },
+                  ]}
+                >
+                  {isOnline ? "Active now" : "Offline"}
+                </Text>
+              </View>
+              {userRole !== "expert" && (
+                <Text style={styles.viewProfileHint}>Tap to view profile</Text>
+              )}
             </View>
+          </TouchableOpacity>
+
+          <View style={styles.headerActions}>
             {userRole !== "expert" && (
-              <Text style={styles.viewProfileHint}>Tap to view profile</Text>
+              <>
+                <TouchableOpacity
+                  style={[styles.iconBtn, isCallLoading && { opacity: 0.5 }]}
+                  onPress={handleVideoCall}
+                  disabled={isCallLoading}
+                >
+                  {isCallLoading ? (
+                    <ActivityIndicator size="small" color={TEXT_1} />
+                  ) : (
+                    <Ionicons
+                      name="videocam-outline"
+                      size={20}
+                      color={TEXT_1}
+                    />
+                  )}
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.iconBtn, isCallLoading && { opacity: 0.5 }]}
+                  onPress={handleVoiceCall}
+                  disabled={isCallLoading}
+                >
+                  {isCallLoading ? (
+                    <ActivityIndicator size="small" color={TEXT_1} />
+                  ) : (
+                    <Ionicons name="call-outline" size={19} color={TEXT_1} />
+                  )}
+                </TouchableOpacity>
+              </>
             )}
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={() => setDeleteConvModal(true)}
+            >
+              <Ionicons name="ellipsis-vertical" size={19} color={TEXT_1} />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
-
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons name="videocam-outline" size={20} color={TEXT_1} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons name="call-outline" size={19} color={TEXT_1} />
-          </TouchableOpacity>
         </View>
-      </View>
+      )}
 
-      {/* ── CHAT AREA ── */}
       <View style={styles.chatBg}>
         {loading && messages.length === 0 ? (
           <View style={styles.center}>
@@ -872,6 +1328,8 @@ export default function ChatScreen() {
               </>
             )}
           </View>
+        </KeyboardAvoidingView>
+      )}
 
           <TouchableOpacity
             style={[styles.sendBtn, sendDisabled && styles.sendBtnDisabled]}
@@ -902,11 +1360,11 @@ export default function ChatScreen() {
         }}
       />
 
-      {/* ── END CHAT MODAL ── */}
       <EndChatModal
         visible={endChatModal.visible}
         minutesUsed={minutesUsed}
-        title={endChatModal.isBackPress ? "End Chat?" : "End Chat?"}
+        ratePerMin={ratePerMin}
+        title="End Chat?"
         stayLabel={endChatModal.isBackPress ? "Stay" : "Continue"}
         onEndChat={() => {
           setEndChatModal({ visible: false, isBackPress: false });
@@ -915,11 +1373,29 @@ export default function ChatScreen() {
         }}
         onStay={() => setEndChatModal({ visible: false, isBackPress: false })}
       />
+
+      {/* ✅ Delete selected messages modal */}
+      <DeleteSelectedModal
+        visible={showDeleteModal}
+        count={selectedIds.size}
+        allMine={allSelectedMine()}
+        onDeleteForMe={() => handleDeleteSelected(false)}
+        onDeleteForEveryone={() => handleDeleteSelected(true)}
+        onCancel={() => setShowDeleteModal(false)}
+      />
+
+      <DeleteConversationModal
+        visible={deleteConvModal}
+        onDeleteForMe={() => handleDeleteConversation(false)}
+        onDeleteForEveryone={() => handleDeleteConversation(true)}
+        onCancel={() => setDeleteConvModal(false)}
+      />
     </SafeAreaView>
   );
 }
 
-// ── STYLES ─────────────────────────────────────────────────────────────────
+// ─── STYLES ──────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: CHAT_BG },
   loadingScreen: {
@@ -1092,14 +1568,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-
   chatBg: { flex: 1, backgroundColor: CHAT_BG },
   listContent: {
     paddingHorizontal: 14,
     paddingVertical: 14,
     paddingBottom: 10,
   },
-
   dateSepWrap: {
     flexDirection: "row",
     alignItems: "center",
@@ -1114,8 +1588,13 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   dateSepText: { fontSize: 12, color: TEXT_2, fontWeight: "600" },
-
-  row: { flexDirection: "row", marginBottom: 8, alignItems: "flex-end" },
+  row: {
+    flexDirection: "row",
+    marginBottom: 8,
+    alignItems: "flex-end",
+    paddingHorizontal: 4,
+    borderRadius: 8,
+  },
   rowRight: { justifyContent: "flex-end" },
   rowLeft:  { justifyContent: "flex-start" },
   msgAvatar: {
@@ -1253,7 +1732,6 @@ const styles = StyleSheet.create({
   sendBtnDisabled: { backgroundColor: TEAL, opacity: 0.5 },
 });
 
-// ── Custom Modal Styles ────────────────────────────────────────────────────
 const cm = StyleSheet.create({
   overlay: {
     flex: 1,
@@ -1276,7 +1754,6 @@ const cm = StyleSheet.create({
     shadowRadius: 24,
     elevation: 14,
   },
-  // Amber circle for wallet, red for end chat
   iconWrap: {
     width: 76,
     height: 76,
@@ -1310,16 +1787,8 @@ const cm = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: "#e8eeff",
   },
-  infoLabel: {
-    fontSize: 13,
-    color: TEXT_2,
-    fontWeight: "600",
-  },
-  infoValue: {
-    fontSize: 15,
-    color: TEXT_1,
-    fontWeight: "800",
-  },
+  infoLabel: { fontSize: 13, color: TEXT_2, fontWeight: "600" },
+  infoValue: { fontSize: 15, color: TEXT_1, fontWeight: "800" },
   subtitle: {
     fontSize: 13,
     color: TEXT_2,
@@ -1328,12 +1797,7 @@ const cm = StyleSheet.create({
     marginBottom: 24,
     paddingHorizontal: 4,
   },
-  btnRow: {
-    flexDirection: "row",
-    gap: 12,
-    width: "100%",
-  },
-  // Cancel / Stay buttons
+  btnRow: { flexDirection: "row", gap: 12, width: "100%" },
   cancelBtn: {
     flex: 1,
     paddingVertical: 14,
@@ -1345,7 +1809,6 @@ const cm = StyleSheet.create({
     justifyContent: "center",
   },
   cancelTxt: { fontSize: 15, fontWeight: "700", color: TEXT_2 },
-
   stayBtn: {
     flex: 1,
     paddingVertical: 14,
@@ -1357,8 +1820,6 @@ const cm = StyleSheet.create({
     justifyContent: "center",
   },
   stayTxt: { fontSize: 15, fontWeight: "700", color: TEXT_2 },
-
-  // Add Money button (amber/orange)
   addBtn: {
     flex: 1,
     flexDirection: "row",
@@ -1370,8 +1831,6 @@ const cm = StyleSheet.create({
     justifyContent: "center",
   },
   addTxt: { fontSize: 15, fontWeight: "800", color: WHITE },
-
-  // End Chat button (red)
   endBtn: {
     flex: 1,
     flexDirection: "row",

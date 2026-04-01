@@ -7,7 +7,6 @@ router.post("/initiate", callController.initiateCall);
 router.post("/accept", callController.acceptCall);
 router.post("/reject", callController.rejectCall);
 router.post("/end", callController.endCall);
-
-
+router.post("/tick", callController.callTick); // NEW ROUTE for call tick
 
 module.exports = router;
