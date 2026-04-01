@@ -286,7 +286,4 @@ const s = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  rejectBtn: { backgroundColor: "#ef4444" },
-  acceptBtn: { backgroundColor: "#22C55E" },
-  btnLabel: { color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: "600" },
 });

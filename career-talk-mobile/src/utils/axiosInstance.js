@@ -1,11 +1,12 @@
 import axios from "axios";
 
+import { API_URL } from "../config";
+
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:5000/api",
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  baseURL: "http://localhost:3000/api",
 });
 
 axiosInstance.interceptors.request.use((config) => {
@@ -13,5 +14,20 @@ axiosInstance.interceptors.request.use((config) => {
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+// Handle expired user tokens globally
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 401) {
+      console.warn("Unauthorized/Token Expired: Redirecting to login...");
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      // Redirect to main login page
+      window.location.href = "/";
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default axiosInstance;

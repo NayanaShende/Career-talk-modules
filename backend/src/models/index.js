@@ -32,6 +32,7 @@ db.Expert = require("./expert")(sequelize, DataTypes);
 db.Review = require("./review")(sequelize, DataTypes);
 db.WalletTransaction = require("./walletTransaction")(sequelize, DataTypes);
 db.Payment = require("./payment")(sequelize, DataTypes);
+db.PlatformFee = require("./platformFee")(sequelize, DataTypes);
 
 try {
   db.ExpertSkill = require("./expertSkill")(sequelize, DataTypes);

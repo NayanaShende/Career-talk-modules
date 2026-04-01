@@ -94,6 +94,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+
+      // ✅ Expert's own rate per minute (set during profile creation)
+      rate_per_minute: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 10,
+        validate: { min: 5, max: 500 },
+      },
     },
     {
       tableName: "Experts",

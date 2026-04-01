@@ -17,8 +17,8 @@ import { router, Stack } from "expo-router";
 import axiosInstance from "../../../services/api";
 import { Ionicons } from "@expo/vector-icons";
 
-// import { SOCKET_URL as BASE_URL } from "../../../constants/config";
-const BASE_URL = "http://10.235.241.9:3000";
+import { BASE_URL } from "../../../constants/config";
+
 // ─── Design Tokens ────────────────────────────────────────────────────────────
 const GREEN = "#867795";
 const GREEN_DARK = "#867795";
@@ -791,3 +791,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
 });
+

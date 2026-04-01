@@ -2,10 +2,7 @@ const { WalletTransaction } = require("../models");
 const walletService = require("../services/wallet.service");
 const db = require("../models");
 
-// ─── CONSTANTS ───────────────────────────────────────────────────────────────
-const CHAT_RATE_PER_MIN = 10;   // ₹10 per minute
-const CHAT_HOLD_AMOUNT  = 50;   // ₹50 held when chat starts
-const MIN_BALANCE       = 50;   // user must have at least ₹50 to start chat
+const CHAT_HOLD_MULTIPLIER = 5;   // hold = 5× rate (e.g. rate=₹10 → hold=₹50)
 
 // TOPUP
 exports.topup = async (req, res) => {
@@ -105,6 +102,17 @@ exports.chatStart = async (req, res) => {
       return res.status(400).json({ error: "userId and expertId required" });
     }
 
+    // ✅ Fetch expert's custom rate
+    const expert = await db.Expert.findOne({
+      where: { id: Number(expertId) },
+      attributes: ["id", "userId", "name", "rate_per_minute"],
+    });
+    if (!expert) return res.status(404).json({ error: "Expert not found" });
+
+    const RATE        = expert.rate_per_minute || 10;
+    const HOLD_AMOUNT = RATE * CHAT_HOLD_MULTIPLIER;   // 5 minutes pre-hold
+    const MIN_BALANCE = HOLD_AMOUNT;
+
     const transactions = await WalletTransaction.findAll({
       where: { user_id: Number(userId) },
     });
@@ -118,34 +126,35 @@ exports.chatStart = async (req, res) => {
       }
     });
 
-    console.log("💰 User balance before chat start:", balance);
+    console.log("💰 User balance before chat start:", balance, "| Expert rate:", RATE);
 
     if (balance < MIN_BALANCE) {
       return res.status(400).json({
         error: "insufficient_balance",
         message: `Minimum ₹${MIN_BALANCE} required to start chat. Your balance: ₹${balance.toFixed(2)}`,
-        balance: balance,
+        balance:  balance,
         required: MIN_BALANCE,
+        ratePerMin: RATE,
       });
     }
 
     const holdTx = await db.WalletTransaction.create({
-      user_id: Number(userId),
-      type: "hold",
-      amount: CHAT_HOLD_AMOUNT,
+      user_id:  Number(userId),
+      type:     "hold",
+      amount:   HOLD_AMOUNT,
       currency: "INR",
-      ref_id: String(expertId),
+      ref_id:   String(expertId),
     });
 
-    console.log("✅ Chat started — hold created:", holdTx.id);
+    console.log("✅ Chat started — hold created:", holdTx.id, "amount:", HOLD_AMOUNT);
 
     res.status(200).json({
-      success: true,
-      message: `Chat started. ₹${CHAT_HOLD_AMOUNT} held from wallet.`,
-      holdTxId: holdTx.id,
-      balance: balance - CHAT_HOLD_AMOUNT,
-      ratePerMin: CHAT_RATE_PER_MIN,
-      holdAmount: CHAT_HOLD_AMOUNT,
+      success:    true,
+      message:    `Chat started. ₹${HOLD_AMOUNT} held from wallet.`,
+      holdTxId:   holdTx.id,
+      balance:    balance - HOLD_AMOUNT,
+      ratePerMin: RATE,
+      holdAmount: HOLD_AMOUNT,
     });
   } catch (error) {
     console.error("chatStart error:", error.message);
@@ -164,12 +173,11 @@ exports.chatTick = async (req, res) => {
 
     const expert = await db.Expert.findOne({
       where: { id: Number(expertId) },
-      attributes: ["id", "userId", "name"],
+      attributes: ["id", "userId", "name", "rate_per_minute"],
     });
+    if (!expert) return res.status(404).json({ error: "Expert not found" });
 
-    if (!expert) {
-      return res.status(404).json({ error: "Expert not found" });
-    }
+    const RATE = expert.rate_per_minute || 10;
 
     const userTxns = await WalletTransaction.findAll({
       where: { user_id: Number(userId) },
@@ -184,40 +192,60 @@ exports.chatTick = async (req, res) => {
       }
     });
 
-    console.log("⏱️ Chat tick — user balance:", userBalance);
+    console.log("⏱️ Chat tick — user balance:", userBalance, "| rate:", RATE);
 
-    if (userBalance < CHAT_RATE_PER_MIN) {
+    if (userBalance < RATE) {
       return res.status(400).json({
-        error: "insufficient_balance",
+        error:   "insufficient_balance",
         message: "Insufficient balance. Chat will end.",
         balance: userBalance,
       });
     }
 
+    // Fetch Platform Fee Configuration
+    let platformFeeConfig = await db.PlatformFee.findOne();
+    let feePercent = platformFeeConfig ? platformFeeConfig.fee_percent : 10;
+    
+    // Calculate split
+    const feeAmount = (RATE * feePercent) / 100;
+    const expertCredit = RATE - feeAmount;
+
+    // Debit full rate from user
     await db.WalletTransaction.create({
-      user_id: Number(userId),
-      type: "debit",
-      amount: CHAT_RATE_PER_MIN,
+      user_id:  Number(userId),
+      type:     "debit",
+      amount:   RATE,
       currency: "INR",
-      ref_id: String(expertId),
+      ref_id:   String(expertId),
     });
 
+    // Log the platform fee taken dynamically
     await db.WalletTransaction.create({
-      user_id: Number(expert.userId),
-      type: "topup",
-      amount: CHAT_RATE_PER_MIN,
+      user_id:  Number(expert.userId),
+      type:     "platform_fee",
+      amount:   feeAmount,
       currency: "INR",
-      ref_id: String(userId),
+      ref_id:   String(userId),
     });
 
-    const newBalance = userBalance - CHAT_RATE_PER_MIN;
-    console.log("✅ Tick — debited ₹10 from user, credited ₹10 to expert. Balance:", newBalance);
+    // Credit remainder to expert
+    await db.WalletTransaction.create({
+      user_id:  Number(expert.userId),
+      type:     "topup",
+      amount:   expertCredit,
+      currency: "INR",
+      ref_id:   String(userId),
+    });
+
+    const newBalance = userBalance - RATE;
+    console.log(`✅ Tick — Debited ₹${RATE}. Platform Fee: ₹${feeAmount}. Expert Credited: ₹${expertCredit}. User Balance: ${newBalance}`);
 
     res.status(200).json({
-      success: true,
-      message: `₹${CHAT_RATE_PER_MIN} debited. Expert credited.`,
-      balance: newBalance,
-      ratePerMin: CHAT_RATE_PER_MIN,
+      success:    true,
+      message:    `₹${RATE} debited. Platform Fee ₹${feeAmount} collected. Expert credited ₹${expertCredit}.`,
+      balance:    newBalance,
+      ratePerMin: RATE,
+      feeTaken:   feeAmount
     });
   } catch (error) {
     console.error("chatTick error:", error.message);
@@ -234,29 +262,37 @@ exports.chatEnd = async (req, res) => {
       return res.status(400).json({ error: "userId and expertId required" });
     }
 
-    const mins = Number(minutesUsed) || 0;
-    const totalCharged = mins * CHAT_RATE_PER_MIN;
-    const releaseAmount = Math.max(0, CHAT_HOLD_AMOUNT - totalCharged);
+    // ✅ Fetch expert's rate for accurate billing
+    const expert = await db.Expert.findOne({
+      where: { id: Number(expertId) },
+      attributes: ["id", "rate_per_minute"],
+    });
+    const RATE        = expert?.rate_per_minute || 10;
+    const HOLD_AMOUNT = RATE * CHAT_HOLD_MULTIPLIER;
 
-    console.log(`📊 Chat ended — mins: ${mins}, charged: ₹${totalCharged}, releasing: ₹${releaseAmount}`);
+    const mins          = Number(minutesUsed) || 0;
+    const totalCharged  = mins * RATE;
+    const releaseAmount = Math.max(0, HOLD_AMOUNT - totalCharged);
+
+    console.log(`📊 Chat ended — mins: ${mins}, rate: ₹${RATE}, charged: ₹${totalCharged}, releasing: ₹${releaseAmount}`);
 
     if (releaseAmount > 0) {
       await db.WalletTransaction.create({
-        user_id: Number(userId),
-        type: "release",
-        amount: releaseAmount,
+        user_id:  Number(userId),
+        type:     "release",
+        amount:   releaseAmount,
         currency: "INR",
-        ref_id: String(expertId),
+        ref_id:   String(expertId),
       });
     }
 
     res.status(200).json({
-      success: true,
-      message: `Chat ended. ₹${releaseAmount} released back to wallet.`,
-      released: releaseAmount,
+      success:      true,
+      message:      `Chat ended. ₹${releaseAmount} released back to wallet.`,
+      released:     releaseAmount,
       totalCharged: totalCharged,
-      duration: mins,
-      ratePerMin: CHAT_RATE_PER_MIN,
+      duration:     mins,
+      ratePerMin:   RATE,
     });
   } catch (error) {
     console.error("chatEnd error:", error.message);

@@ -21,8 +21,7 @@ import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-
-const BASE_URL = "http://10.235.241.9:3000";
+import { BASE_URL } from "../../constants/config";
 
 // ── Domain-specific skills ───────────────────────────────────────────────────
 const DOMAIN_SKILLS_MAP = {
@@ -1320,6 +1319,7 @@ export default function ProfileScreen() {
     domain: "",
     customDomain: "",
     sub_domain: "",
+    rate_per_minute: "10",  // ✅ expert's chat rate (default ₹10/min)
   });
 
   const [selectedSkills, setSelectedSkills] = useState([]);
@@ -1434,6 +1434,11 @@ export default function ProfileScreen() {
           "Please upload your certificate — this is required to verify your domain expertise";
       if (formData.location === "Other" && !formData.customLocation.trim())
         e.customLocation = "Please specify your city";
+
+      // ✅ Validate rate
+      const rate = parseInt(formData.rate_per_minute, 10);
+      if (!formData.rate_per_minute || isNaN(rate) || rate < 5 || rate > 500)
+        e.rate_per_minute = "Rate must be between ₹5 and ₹500 per minute";
     }
     setErrors(e);
     return Object.keys(e).length === 0;
@@ -1507,6 +1512,11 @@ export default function ProfileScreen() {
           form.append(key, resolvedData[key]);
         }
       });
+
+      // ✅ Send rate_per_minute for experts
+      if (role === "Expert" && formData.rate_per_minute) {
+        form.append("rate_per_minute", parseInt(formData.rate_per_minute, 10));
+      }
 
       if (selectedSkills.length > 0)
         form.append("skills", selectedSkills.join(", "));
@@ -1972,6 +1982,36 @@ export default function ProfileScreen() {
                   value={formData.bio}
                   onChangeText={(v) => setField("bio", v)}
                 />
+
+                {/* ✅ RATE PER MINUTE — Expert sets their own chat rate */}
+                <Label text="Your Chat Rate (₹ per minute)" required />
+                <View
+                  style={[
+                    s.input,
+                    s.row,
+                    errors.rate_per_minute && s.inputErr,
+                    { paddingHorizontal: 14, alignItems: "center", gap: 8 },
+                  ]}
+                >
+                  <Text style={{ fontSize: 18, color: "#16a34a", fontWeight: "700" }}>₹</Text>
+                  <TextInput
+                    style={{ flex: 1, fontSize: 16, color: INK, fontWeight: "700" }}
+                    placeholder="e.g. 10"
+                    placeholderTextColor={MUTED2}
+                    keyboardType="number-pad"
+                    value={formData.rate_per_minute}
+                    onChangeText={(v) => {
+                      const num = v.replace(/[^0-9]/g, "");
+                      setField("rate_per_minute", num);
+                    }}
+                    maxLength={3}
+                  />
+                  <Text style={{ fontSize: 13, color: MUTED, fontWeight: "500" }}>/min</Text>
+                </View>
+                <Text style={{ fontSize: 11, color: MUTED, marginTop: 4, marginLeft: 2 }}>
+                  Users will be charged this amount per minute. Minimum ₹5, Maximum ₹500.
+                </Text>
+                <FieldError message={errors.rate_per_minute} />
               </Section>
             </>
           )}
@@ -2421,189 +2461,3 @@ const s = StyleSheet.create({
   },
 });
 
-// ── Validation Error Modal Styles ─────────────────────────────────────────────
-const ve = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  card: {
-    backgroundColor: WHITE,
-    borderRadius: 28,
-    paddingHorizontal: 28,
-    paddingTop: 72,
-    paddingBottom: 28,
-    width: "100%",
-    alignItems: "center",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  // Dot scatter sits at very top of card
-  dotsArea: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 70,
-  },
-  // Outer pale-red ring
-  badgeOuter: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: "rgba(220,38,38,0.10)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  // Mid ring
-  badgeMiddle: {
-    width: 76,
-    height: 76,
-    borderRadius: 38,
-    backgroundColor: "rgba(220,38,38,0.15)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  // Inner solid red circle with X icon
-  badgeInner: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    backgroundColor: RED,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#1a1a2e",
-    textAlign: "center",
-    marginBottom: 10,
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
-    lineHeight: 22,
-    marginBottom: 28,
-  },
-  btnRow: {
-    width: "100%",
-  },
-  fixBtn: {
-    width: "100%",
-    paddingVertical: 15,
-    borderRadius: 16,
-    backgroundColor: "#867795",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  fixBtnText: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: WHITE,
-  },
-});
-
-// ── Success Modal Styles ───────────────────────────────────────────────────────
-const sm = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 24,
-  },
-  card: {
-    backgroundColor: WHITE,
-    borderRadius: 24,
-    padding: 28,
-    width: "100%",
-    alignItems: "center",
-    overflow: "hidden",
-    position: "relative",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
-  },
-  confettiArea: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 130,
-  },
-  confettiDot: { position: "absolute" },
-  badgeOuter: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "rgba(134,119,149,0.12)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 18,
-    marginTop: 8,
-  },
-  badgeMiddle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    backgroundColor: "rgba(134,119,149,0.18)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  badgeInner: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: GREEN_SUC,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#1a1a2e",
-    textAlign: "center",
-    marginBottom: 10,
-    letterSpacing: -0.3,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#6b7280",
-    textAlign: "center",
-    lineHeight: 21,
-    marginBottom: 28,
-    paddingHorizontal: 8,
-  },
-  btnRow: { flexDirection: "row", gap: 12, width: "100%" },
-  keepBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: GREEN_LIGHT,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  keepBtnText: { fontSize: 14, fontWeight: "700", color: GREEN },
-  proceedBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: "#867795",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  proceedBtnText: { fontSize: 14, fontWeight: "700", color: WHITE },
-});

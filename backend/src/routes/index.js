@@ -12,8 +12,8 @@ const callRoutes = require('./call.routes');
 const notificationRoutes = require("./notification.routes"); // ADDED
 const walletRoutes = require("./wallet.routes");
 
-
-
+// ✅ Admin Routes
+const adminRoutes = require("./admin.routes");
 
 // ✅ Razorpay Payment Routes
 const paymentRoutes = require("./payment.routes");
@@ -40,6 +40,10 @@ router.use("/notifications", notificationRoutes); // ADDED
 
 
 router.use("/wallet", walletRoutes);
+
+// Admin routes
+// Example: /api/admin/stats
+router.use("/admin", adminRoutes);
 
 // Chat routes
 router.use("/chat", chatRoutes);

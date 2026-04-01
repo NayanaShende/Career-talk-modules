@@ -18,7 +18,7 @@ import axios from "axios";
 import { router, useFocusEffect } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { SOCKET_URL as BASE_URL } from "../../constants/config";
+import { BASE_URL } from "../../constants/config";
 const SCREEN_HEIGHT = Dimensions.get("window").height;
 
 // ── Design tokens ──────────────────────────────────────────────────────────
@@ -670,4 +670,25 @@ const lm = StyleSheet.create({
     fontWeight: "800",
     color: WHITE,
   },
+  closeBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: PAGE_BG,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  sectionHeading: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: TEXT_1,
+    marginBottom: 5,
+  },
+  sectionBody: {
+    fontSize: 14,
+    color: TEXT_2,
+    lineHeight: 22,
+  },
 });
+
+

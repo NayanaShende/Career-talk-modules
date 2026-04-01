@@ -1,10 +1,8 @@
 import axios from "axios";
- 
-const BASE_URL = "http://10.235.241.9:3000/api";
- 
+import { API_URL } from "../constants/config";
+
 const API = axios.create({
-  baseURL: BASE_URL,
-  timeout: 10000,
+  baseURL: API_URL, // ⚠️ change this
 });
  
 // ── Initiate Call (balance check happens on backend)

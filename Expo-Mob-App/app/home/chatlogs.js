@@ -19,7 +19,7 @@ import { Ionicons } from "@expo/vector-icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { useNotification } from "../../context/NotificationContext";
-import { SOCKET_URL as BASE_URL } from "../../constants/config";
+import { BASE_URL } from "../../constants/config";
 
 const API = axios.create({ baseURL: `${BASE_URL}/api`, timeout: 10000 });
 
@@ -709,30 +709,4 @@ const cm = StyleSheet.create({
     marginBottom: 8,
     letterSpacing: -0.3,
   },
-  subtitle: {
-    fontSize: 13,
-    color: TEXT_2,
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 16,
-    paddingHorizontal: 4,
-  },
-});
-
-const dm = StyleSheet.create({
-  optionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: "#fecaca",
-    backgroundColor: "#fff5f5",
-    width: "100%",
-  },
-  optionText: { flex: 1 },
-  optionTitle: { fontSize: 15, fontWeight: "700", color: DELETE_RED },
-  optionSub: { fontSize: 12, color: TEXT_2, marginTop: 2 },
 });

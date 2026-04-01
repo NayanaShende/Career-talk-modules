@@ -19,7 +19,7 @@ import { router } from "expo-router";
 
 console.log("🚀 NotificationContext.js FILE LOADED");
 
-const BASE_URL = "http://10.235.241.9:3000";
+import { BASE_URL } from "../constants/config";
 
 const NotificationContext = createContext({
   unreadCounts: {},
@@ -333,3 +333,4 @@ const styles = StyleSheet.create({
   bannerMsg: { fontSize: 13, color: "#ccc" },
   bannerClose: { fontSize: 16, color: "#fff", paddingLeft: 8 },
 });
+

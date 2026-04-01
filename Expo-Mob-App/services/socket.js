@@ -1,9 +1,7 @@
 import { io } from "socket.io-client";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { API_URL } from "../constants/config";
 
-const BASE_URL = "http://10.235.241.9:3000"; // ← removed /api (socket connects to root)
-
-const socket = io(BASE_URL, {
+const socket = io(API_URL, {
   transports: ["websocket"],
   reconnection: true,
   reconnectionAttempts: 5,
