@@ -17,7 +17,7 @@ import { io } from "socket.io-client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { router } from "expo-router";
 
-console.log("🚀 NotificationContext.js FILE LOADED");
+console.log("🚀 Notification sync");
 
 import { BASE_URL } from "../constants/config";
 
@@ -27,8 +27,9 @@ const NotificationContext = createContext({
   totalUnread: 0,
   currentUserId: null,
   socket: null,
-  // ✅ NEW: set/clear which chat is currently open
   setActiveChatUserId: () => {},
+  // ✅ NEW: exposed so incomingcall.js can read latest callType
+  getLatestCallType: () => "audio",
 });
 
 export function NotificationProvider({ children }) {
@@ -42,13 +43,20 @@ export function NotificationProvider({ children }) {
   const appState = useRef(AppState.currentState);
   const navReadyRef = useRef(false);
   const pendingCallRef = useRef(null);
-
-  // ✅ NEW: Track which sender's chat is currently open on screen
-  // When user is inside chatscreen with sender X, we skip unread++ for X
   const activeChatUserIdRef = useRef(null);
+
+  // ✅ KEY FIX: Store latest callType per callerId so incomingcall.js can read it
+  // Format: { "35": "video", "42": "audio" }
+  const latestCallTypeRef = useRef({});
 
   const setActiveChatUserId = (userId) => {
     activeChatUserIdRef.current = userId ? Number(userId) : null;
+  };
+
+  // ✅ Exposed via context — incomingcall.js calls this to get correct callType
+  const getLatestCallType = (callerId) => {
+    if (!callerId) return "audio";
+    return latestCallTypeRef.current[String(callerId)] || "audio";
   };
 
   useEffect(() => {
@@ -64,17 +72,32 @@ export function NotificationProvider({ children }) {
     return () => clearTimeout(timer);
   }, []);
 
+  const normaliseCallType = (raw) => {
+    if (!raw || raw === "undefined" || raw === "null") return "audio";
+    const s = raw.trim().toLowerCase();
+    if (s === "video") return "video";
+    return "audio"; // "voice", "audio", anything else → "audio"
+  };
+
   const navigateToIncomingCall = (data) => {
     const { callId, callerId, callType, callerName, callerImage } = data;
+    const normType = normaliseCallType(callType);
+
+    // ✅ Always store/update latest callType for this caller
+    latestCallTypeRef.current[String(callerId)] = normType;
+    console.log(
+      `📞 navigateToIncomingCall: callerId=${callerId} callType=${normType} (raw: ${callType})`
+    );
+
     try {
       router.push({
         pathname: "/incomingcall",
         params: {
-          callId: String(callId),
-          callerId: String(callerId),
-          callerName: callerName || "User",
+          callId:      String(callId),
+          callerId:    String(callerId),
+          callerName:  callerName || "User",
           callerImage: callerImage || "",
-          callType: callType || "voice",
+          callType:    normType,  // ✅ normalised: "audio" or "video"
         },
       });
       console.log(`📲 Navigated to /incomingcall for callId: ${callId}`);
@@ -98,7 +121,7 @@ export function NotificationProvider({ children }) {
               role = (u?.role || u?.userType || "user").toLowerCase();
               if (uid) {
                 console.log(
-                  `👤 NotificationContext found userId ${uid} in key "${key}"`,
+                  `👤 NotificationContext found userId ${uid} in key "${key}"`
                 );
                 break;
               }
@@ -164,7 +187,7 @@ export function NotificationProvider({ children }) {
         "🌐 Global socket connected:",
         socket.id,
         "for user:",
-        currentUserId,
+        currentUserId
       );
       socket.emit("joinRoom", { userId: currentUserId });
       console.log("🏠 Global joinRoom emitted for:", currentUserId);
@@ -173,24 +196,20 @@ export function NotificationProvider({ children }) {
     socket.on("reconnect", () => {
       console.log(
         "🔄 Global socket reconnected, rejoining room:",
-        currentUserId,
+        currentUserId
       );
       socket.emit("joinRoom", { userId: currentUserId });
     });
 
     socket.on("newNotification", (notif) => {
       console.log("🔔 Global newNotification received:", notif);
-
-      // ✅ Skip if this notification is from ourselves
       if (Number(notif.sender_id) === Number(currentUserId)) return;
 
-      // ✅ FIX: Skip unread increment if user is currently viewing this sender's chat
       const isViewingThisChat =
         activeChatUserIdRef.current !== null &&
         Number(activeChatUserIdRef.current) === Number(notif.sender_id);
 
       if (!isViewingThisChat) {
-        // Only show banner and increment if NOT currently in that chat
         showBanner(notif);
         setUnreadCounts((prev) => ({
           ...prev,
@@ -203,14 +222,39 @@ export function NotificationProvider({ children }) {
 
     socket.on("incoming-call", (data) => {
       console.log("📞 incoming-call received:", data);
-      const { receiverId } = data;
+      const { receiverId, callerId, callType } = data;
+
+      // ✅ Always update latestCallTypeRef even for duplicate events
+      // The second event (from call-invite relay) has the CORRECT callType ("video")
+      // so we always overwrite with the latest value
+      const normType = normaliseCallType(callType);
+      latestCallTypeRef.current[String(callerId)] = normType;
+      console.log(
+        `🔄 Updated latestCallType for caller ${callerId}: ${normType}`
+      );
+
+      // Only navigate for the intended receiver
       if (Number(receiverId) !== Number(currentUserId)) return;
+
       if (!navReadyRef.current) {
         console.log("⏳ Nav not ready yet, queuing call...");
-        pendingCallRef.current = data;
+        // ✅ Always overwrite pending with latest data (has correct callType)
+        pendingCallRef.current = { ...data, callType: normType };
         return;
       }
-      navigateToIncomingCall(data);
+
+      // ✅ First event (backend): navigate immediately with whatever callType we have
+      // ✅ Second event (call-invite relay): update latestCallTypeRef — 
+      //    incomingcall.js will read this on Accept via getLatestCallType()
+      if (!isScreenAlreadyOpen(callerId)) {
+        navigateToIncomingCall({ ...data, callType: normType });
+      } else {
+        // Screen is open — just update the stored callType
+        // incomingcall.js reads getLatestCallType() on Accept button press
+        console.log(
+          `🔄 IncomingCall screen already open, updated callType to: ${normType}`
+        );
+      }
     });
 
     socket.on("disconnect", (reason) => {
@@ -233,6 +277,23 @@ export function NotificationProvider({ children }) {
     };
   }, [currentUserId]);
 
+  // ✅ Track which callers have an open incomingcall screen
+  const openCallScreensRef = useRef(new Set());
+
+  const isScreenAlreadyOpen = (callerId) => {
+    return openCallScreensRef.current.has(String(callerId));
+  };
+
+  const markCallScreenOpen = (callerId) => {
+    openCallScreensRef.current.add(String(callerId));
+  };
+
+  const markCallScreenClosed = (callerId) => {
+    openCallScreensRef.current.delete(String(callerId));
+    // Clean up stored callType
+    delete latestCallTypeRef.current[String(callerId)];
+  };
+
   useEffect(() => {
     const subscription = AppState.addEventListener("change", (nextAppState) => {
       if (
@@ -241,7 +302,7 @@ export function NotificationProvider({ children }) {
       ) {
         console.log(
           "📱 App foregrounded, rejoining socket room:",
-          currentUserId,
+          currentUserId
         );
         if (socketRef.current?.connected && currentUserId) {
           socketRef.current.emit("joinRoom", { userId: currentUserId });
@@ -269,7 +330,11 @@ export function NotificationProvider({ children }) {
         currentUserId,
         userRole,
         socket: socketRef,
-        setActiveChatUserId, // ✅ exposed to chat screen
+        setActiveChatUserId,
+        // ✅ NEW: exposed for incomingcall.js
+        getLatestCallType,
+        markCallScreenOpen,
+        markCallScreenClosed,
       }}
     >
       {children}
@@ -333,4 +398,3 @@ const styles = StyleSheet.create({
   bannerMsg: { fontSize: 13, color: "#ccc" },
   bannerClose: { fontSize: 16, color: "#fff", paddingLeft: 8 },
 });
-

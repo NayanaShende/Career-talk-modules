@@ -1,16 +1,17 @@
 require("dotenv").config();
-var express = require("express");
-var logger = require("morgan");
+const express = require("express");
+const logger = require("morgan");
 const cors = require("cors");
 const http = require("http");
-const { initSocket } = require("./socket");
 const path = require("path");
 const helmet = require("helmet");
 
+const { initSocket } = require("./socket");
 const routes = require("./routes");
 const { sequelize } = require("./models");
 
-var app = express();
+// ✅ Create express app
+const app = express();
 
 /* ---------------- SECURITY MIDDLEWARE ---------------- */
 app.use(helmet());
@@ -38,18 +39,18 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 /* ---------------- DATABASE ---------------- */
-// ✅ Single database connection check
 sequelize
   .authenticate()
   .then(() => console.log("✅ Database connection successful"))
   .catch((err) => console.log("❌ Database connection error:", err));
 
-/* ---------------- API ROUTES ---------------- */
+/* ---------------- API REQUEST LOGGER ---------------- */
 app.use("/api", (req, res, next) => {
   console.log(`API Request: ${req.method} ${req.originalUrl}`);
   next();
 });
 
+/* ---------------- API ROUTES ---------------- */
 app.use("/api", routes);
 
 /* ---------------- HEALTH CHECK ---------------- */
@@ -77,9 +78,20 @@ app.use((err, req, res, next) => {
   });
 });
 
-/* ---------------- SERVER & SOCKET ---------------- */
+/* ---------------- HTTP SERVER + SOCKET ---------------- */
+// ✅ Create server here so bin/www can use it via { server }
 const server = http.createServer(app);
-const io = initSocket(server); // ✅ FIXED: get io from initSocket
-app.set("io", io);              // ✅ FIXED: set io on app so controllers can use req.app.get("io")
 
+// ✅ Init socket.io once, attached to this server
+const io = initSocket(server);
+
+// ✅ Make io accessible in controllers via req.app.get("io")
+app.set("io", io);
+
+// ✅ Handle unhandled promise rejections
+process.on("unhandledRejection", (err) => {
+  console.error("❌ Unhandled Rejection:", err.message);
+});
+
+// ✅ Export both app and server — bin/www uses { server }
 module.exports = { app, server };
