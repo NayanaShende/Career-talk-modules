@@ -20,6 +20,18 @@ import WalletModal from "../../home/WalletModal";
 
 import { BASE_URL } from "../../../constants/config";
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONSTANTS (moved to top so all components can access them)
+// ─────────────────────────────────────────────────────────────────────────────
+const TEAL = "#867795";
+const TEAL_LIGHT = "#efddff";
+const TEAL_TEXT = "#867795";
+const PAGE_BG = "#f5f6f8";
+const CARD_BG = "#FFFFFF";
+const TEXT_PRIMARY = "#1a1a2e";
+const TEXT_MUTED = "#888899";
+const BORDER = "#eff0f2";
+
 const SKILL_FILTERS = [
   "All",
   "React",
@@ -103,7 +115,7 @@ function ExpertDashboard({
   const getUserImageUri = (image, name) => {
     if (image) {
       if (image.startsWith("http://") || image.startsWith("https://")) {
-        return image; // ✅ already a Cloudinary URL
+        return image;
       }
       return `${BASE_URL}/uploads/${image}`;
     }
@@ -205,7 +217,7 @@ function ExpertDashboard({
         </View>
 
         {loadingOnline ? (
-          <ActivityIndicator color="#0B2D72" />
+          <ActivityIndicator color={TEAL} />
         ) : (
           <ScrollView
             horizontal
@@ -642,11 +654,9 @@ export default function Dashboard() {
 
   const getImageUri = (image, name) => {
     if (image) {
-      // ✅ If already a full Cloudinary or external URL, return as-is
       if (image.startsWith("http://") || image.startsWith("https://")) {
         return image;
       }
-      // ✅ Otherwise it's a local file, prepend base URL
       const cleanImage = image.replace(/^uploads\//, "");
       return `${BASE_URL}/uploads/${cleanImage}`;
     }
@@ -887,15 +897,6 @@ export default function Dashboard() {
 // ─────────────────────────────────────────────────────────────────────────────
 //  STYLES
 // ─────────────────────────────────────────────────────────────────────────────
-const TEAL = "#867795";
-const TEAL_LIGHT = "#efddff";
-const TEAL_TEXT = "#867795";
-const PAGE_BG = "#f5f6f8";
-const CARD_BG = "#FFFFFF";
-const TEXT_PRIMARY = "#1a1a2e";
-const TEXT_MUTED = "#888899";
-const BORDER = "#eff0f2";
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

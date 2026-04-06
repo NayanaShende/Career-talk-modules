@@ -3,6 +3,7 @@ const walletService = require("../services/wallet.service");
 const db = require("../models");
 
 const CHAT_HOLD_MULTIPLIER = 5;   // hold = 5× rate (e.g. rate=₹10 → hold=₹50)
+const DEFAULT_PLATFORM_FEE_PERCENT = 10; // ✅ fallback if PlatformFee table missing
 
 // TOPUP
 exports.topup = async (req, res) => {
@@ -202,12 +203,22 @@ exports.chatTick = async (req, res) => {
       });
     }
 
-    // Fetch Platform Fee Configuration
-    let platformFeeConfig = await db.PlatformFee.findOne();
-    let feePercent = platformFeeConfig ? platformFeeConfig.fee_percent : 10;
-    
+    // ✅ FIX: Safely fetch platform fee — fallback to DEFAULT if model missing or table not found
+    let feePercent = DEFAULT_PLATFORM_FEE_PERCENT;
+    try {
+      if (db.PlatformFee) {
+        const platformFeeConfig = await db.PlatformFee.findOne();
+        if (platformFeeConfig && platformFeeConfig.fee_percent != null) {
+          feePercent = platformFeeConfig.fee_percent;
+        }
+      }
+    } catch (feeErr) {
+      // Table doesn't exist yet — use default, don't crash
+      console.warn(`⚠️ PlatformFee table not found — using default ${DEFAULT_PLATFORM_FEE_PERCENT}% fee`);
+    }
+
     // Calculate split
-    const feeAmount = (RATE * feePercent) / 100;
+    const feeAmount    = (RATE * feePercent) / 100;
     const expertCredit = RATE - feeAmount;
 
     // Debit full rate from user
@@ -219,7 +230,7 @@ exports.chatTick = async (req, res) => {
       ref_id:   String(expertId),
     });
 
-    // Log the platform fee taken dynamically
+    // Log the platform fee taken
     await db.WalletTransaction.create({
       user_id:  Number(expert.userId),
       type:     "platform_fee",
@@ -245,7 +256,7 @@ exports.chatTick = async (req, res) => {
       message:    `₹${RATE} debited. Platform Fee ₹${feeAmount} collected. Expert credited ₹${expertCredit}.`,
       balance:    newBalance,
       ratePerMin: RATE,
-      feeTaken:   feeAmount
+      feeTaken:   feeAmount,
     });
   } catch (error) {
     console.error("chatTick error:", error.message);
@@ -336,8 +347,7 @@ exports.history = async (req, res) => {
           }
         }
 
-        // ✅ NEW: For topup — ref_id = userId who paid → fetch user name
-        // This handles expert earnings credited from chat sessions
+        // ✅ For topup — ref_id = userId who paid → fetch user name
         if (
           txData.type === "topup" &&
           txData.ref_id &&

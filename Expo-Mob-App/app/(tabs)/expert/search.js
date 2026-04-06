@@ -6,19 +6,18 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
-  SafeAreaView,
   Image,
   TouchableOpacity,
   ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context"; // ✅ FIXED import
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import axiosInstance from "../../../services/api";
-
 import { BASE_URL } from "../../../constants/config";
 
-// ── Design tokens ──────────────────────────────────────────────────────────
+// ── Design tokens
 const TEAL = "#867795";
 const TEAL_LIGHT = "#f6ebff";
 const TEAL_TEXT = "#867795";
@@ -28,7 +27,6 @@ const TEXT_1 = "#1a1a2e";
 const TEXT_2 = "#6b7280";
 const BORDER = "#eff0f2";
 
-// ── Search filter types ────────────────────────────────────────────────────
 const SEARCH_FILTERS = [
   { key: "All", icon: "apps-outline" },
   { key: "Name", icon: "person-outline" },
@@ -37,7 +35,6 @@ const SEARCH_FILTERS = [
   { key: "Skills", icon: "code-slash-outline" },
 ];
 
-// ── Skill quick-filter chips ───────────────────────────────────────────────
 const SKILL_CHIPS = [
   "All",
   "React",
@@ -54,7 +51,9 @@ const SKILL_CHIPS = [
   "Flutter",
 ];
 
-export default function Home() {
+const BG_CYCLE = ["#4a4869", "#2d6a5e", "#7a3d5e", "#1f5c8a", "#5e4a2d"];
+
+export default function SearchExpertsScreen() {
   const router = useRouter();
 
   const [experts, setExperts] = useState([]);
@@ -71,7 +70,6 @@ export default function Home() {
     try {
       const res = await axiosInstance.get("/experts");
       const raw = res?.data?.data || [];
-      // Normalize subdomain field — adjust key to match your API
       const normalized = raw.map((e) => ({
         ...e,
         subDomain: e.sub_domain ?? e.subdomain ?? e.subDomain ?? "",
@@ -85,37 +83,26 @@ export default function Home() {
   };
 
   const getImageUri = (image) => {
-    if (image) {
-      // ✅ If already a full Cloudinary or external URL, return as-is
-      if (image.startsWith("http://") || image.startsWith("https://")) {
-        return image;
-      }
-      // ✅ Otherwise it's a local file, prepend base URL
-      const cleanImage = image.replace(/^uploads\//, "");
-      return `${BASE_URL}/uploads/${cleanImage}`;
-    }
-    return null;
+    if (!image) return null;
+    if (image.startsWith("http://") || image.startsWith("https://"))
+      return image;
+    return `${BASE_URL}/uploads/${image.replace(/^uploads\//, "")}`;
   };
 
   const getExpertDomain = (item) => {
     if (item?.domain) return item.domain;
-    if (Array.isArray(item?.skills) && item.skills.length > 0) {
+    if (Array.isArray(item?.skills) && item.skills.length > 0)
       return item.skills[0].skill_name;
-    }
     return item?.role || "Expert";
   };
 
-  // ── Filtering Logic ────────────────────────────────────────────────────────
   const filteredExperts = experts.filter((e) => {
-    // Skill quick-filter chip
     const matchesSkillChip =
       selectedSkill === "All" ||
       (Array.isArray(e?.skills) &&
         e.skills.some(
           (s) => s.skill_name?.toLowerCase() === selectedSkill.toLowerCase(),
         ));
-
-    // Search bar filter
     const q = search.toLowerCase().trim();
     let matchesSearch = true;
     if (q) {
@@ -136,7 +123,6 @@ export default function Home() {
             Array.isArray(e?.skills) &&
             e.skills.some((s) => s.skill_name?.toLowerCase().includes(q));
           break;
-        case "All":
         default:
           matchesSearch =
             e?.name?.toLowerCase().includes(q) ||
@@ -147,7 +133,6 @@ export default function Home() {
               e.skills.some((s) => s.skill_name?.toLowerCase().includes(q)));
       }
     }
-
     return matchesSkillChip && matchesSearch;
   });
 
@@ -166,23 +151,16 @@ export default function Home() {
     }
   };
 
-  // ── Highlight matched text ─────────────────────────────────────────────────
   const HighlightText = ({ text, style, numberOfLines }) => {
     const q = search.trim();
     const shouldHighlight =
-      q &&
-      (searchFilter === "All" ||
-        searchFilter === "Name" ||
-        searchFilter === "Domain" ||
-        searchFilter === "Subdomain");
-
-    if (!shouldHighlight || !text) {
+      q && ["All", "Name", "Domain", "Subdomain"].includes(searchFilter);
+    if (!shouldHighlight || !text)
       return (
         <Text style={style} numberOfLines={numberOfLines}>
           {text}
         </Text>
       );
-    }
     const regex = new RegExp(
       `(${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`,
       "gi",
@@ -203,7 +181,6 @@ export default function Home() {
     );
   };
 
-  // ── Expert list card ───────────────────────────────────────────────────────
   const renderItem = ({ item, index }) => {
     const imageUri = getImageUri(item.image);
     const initials = item?.name
@@ -217,14 +194,10 @@ export default function Home() {
       : "EX";
     const rating = parseFloat(item?.rating) || 0;
     const stars = Math.round(rating);
-
-    const BG_CYCLE = ["#4a4869", "#2d6a5e", "#7a3d5e", "#1f5c8a", "#5e4a2d"];
     const avatarBg = BG_CYCLE[index % BG_CYCLE.length];
-
     const skillsList = Array.isArray(item?.skills)
       ? item.skills.map((s) => s.skill_name)
       : [];
-
     const q = search.toLowerCase().trim();
 
     return (
@@ -232,7 +205,7 @@ export default function Home() {
         style={styles.card}
         onPress={() => router.push(`/(tabs)/expert/${item.id}`)}
       >
-        {/* ── Avatar ── */}
+        {/* Avatar */}
         <View style={styles.avatarWrap}>
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.avatarImg} />
@@ -251,23 +224,19 @@ export default function Home() {
           />
         </View>
 
-        {/* ── Info ── */}
+        {/* Info */}
         <View style={styles.infoCol}>
-          {/* Name */}
           <HighlightText
             text={item?.name}
             style={styles.expertName}
             numberOfLines={1}
           />
-
-          {/* Domain */}
           <HighlightText
             text={getExpertDomain(item)}
             style={styles.expertRole}
             numberOfLines={1}
           />
 
-          {/* Subdomain — shown only if present */}
           {!!item.subDomain && (
             <View style={styles.subDomainRow}>
               <Ionicons name="git-branch-outline" size={10} color={TEXT_2} />
@@ -279,7 +248,6 @@ export default function Home() {
             </View>
           )}
 
-          {/* Skills chips */}
           {skillsList.length > 0 && (
             <View style={styles.skillsRow}>
               {skillsList.slice(0, 2).map((skill, i) => {
@@ -316,7 +284,6 @@ export default function Home() {
             </View>
           )}
 
-          {/* Stars + experience */}
           <View style={styles.metaRow}>
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((s) => (
@@ -337,7 +304,6 @@ export default function Home() {
             </View>
           </View>
 
-          {/* Availability badge */}
           <View
             style={[
               styles.availBadge,
@@ -361,7 +327,7 @@ export default function Home() {
           </View>
         </View>
 
-        {/* ── Action buttons ── */}
+        {/* Buttons */}
         <View style={styles.btnCol}>
           <TouchableOpacity
             style={styles.viewBtn}
@@ -369,7 +335,6 @@ export default function Home() {
           >
             <Text style={styles.viewBtnText}>View</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             style={styles.chatBtn}
             onPress={() =>
@@ -392,8 +357,8 @@ export default function Home() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      {/* Header */}
       <View style={styles.header}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={CARD_BG} />
@@ -410,7 +375,7 @@ export default function Home() {
         </Pressable>
       </View>
 
-      {/* ── SEARCH BAR ─────────────────────────────────────────────────── */}
+      {/* Search bar */}
       <View style={styles.searchWrap}>
         <View style={styles.searchBox}>
           <Ionicons name="search-outline" size={18} color="#AAAAAA" />
@@ -427,8 +392,6 @@ export default function Home() {
             </Pressable>
           )}
         </View>
-
-        {/* ── SEARCH FILTER CHIPS ── */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -469,13 +432,13 @@ export default function Home() {
         </ScrollView>
       </View>
 
-      {/* ── SKILL QUICK-FILTER ─────────────────────────────────────────── */}
+      {/* Skill chips */}
       <View style={styles.filterWrap}>
         <FlatList
           data={SKILL_CHIPS}
           horizontal
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item, i) => i.toString()}
           contentContainerStyle={styles.filterList}
           renderItem={({ item }) => (
             <TouchableOpacity
@@ -498,7 +461,7 @@ export default function Home() {
         />
       </View>
 
-      {/* ── RESULTS COUNT ──────────────────────────────────────────────── */}
+      {/* Results count */}
       {!loading && (
         <View style={styles.resultsRow}>
           <Text style={styles.resultsText}>
@@ -513,7 +476,7 @@ export default function Home() {
         </View>
       )}
 
-      {/* ── LIST ───────────────────────────────────────────────────────── */}
+      {/* List */}
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={TEAL} />
@@ -522,8 +485,8 @@ export default function Home() {
       ) : (
         <FlatList
           data={filteredExperts}
-          keyExtractor={(item, index) =>
-            item?.id ? item.id.toString() : index.toString()
+          keyExtractor={(item, i) =>
+            item?.id ? item.id.toString() : i.toString()
           }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
@@ -546,13 +509,11 @@ export default function Home() {
   );
 }
 
-// ── STYLES ──────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: PAGE_BG },
   center: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
   loadingText: { fontSize: 14, color: TEXT_2, fontWeight: "500" },
 
-  // ── Header ──
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -563,7 +524,6 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 6,
-    marginTop: 22,
   },
   backBtn: {
     width: 38,
@@ -606,7 +566,6 @@ const styles = StyleSheet.create({
     borderColor: TEAL,
   },
 
-  // ── Search ──
   searchWrap: {
     backgroundColor: CARD_BG,
     paddingHorizontal: 16,
@@ -626,13 +585,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   searchInput: { flex: 1, fontSize: 14, color: TEXT_1, fontWeight: "500" },
-
-  // ── Search filter chips ──
-  searchFilterRow: {
-    flexDirection: "row",
-    gap: 8,
-    paddingBottom: 2,
-  },
+  searchFilterRow: { flexDirection: "row", gap: 8, paddingBottom: 2 },
   searchFilterChip: {
     flexDirection: "row",
     alignItems: "center",
@@ -643,20 +596,10 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: "#D0D0D8",
   },
-  searchFilterChipActive: {
-    backgroundColor: TEAL,
-    borderColor: TEAL,
-  },
-  searchFilterText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: TEAL_TEXT,
-  },
-  searchFilterTextActive: {
-    color: "#fff",
-  },
+  searchFilterChipActive: { backgroundColor: TEAL, borderColor: TEAL },
+  searchFilterText: { fontSize: 12, fontWeight: "700", color: TEAL_TEXT },
+  searchFilterTextActive: { color: "#fff" },
 
-  // ── Skill quick-filter ──
   filterWrap: {
     backgroundColor: CARD_BG,
     paddingBottom: 12,
@@ -677,14 +620,10 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 13, fontWeight: "700", color: "#555" },
   filterChipTextActive: { color: "#fff" },
 
-  // ── Results count ──
   resultsRow: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 6 },
   resultsText: { fontSize: 13, color: TEXT_2, fontWeight: "600" },
-
-  // ── List ──
   listContent: { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 30 },
 
-  // ── Expert Card ──
   card: {
     flexDirection: "row",
     alignItems: "center",
@@ -695,8 +634,6 @@ const styles = StyleSheet.create({
     borderColor: BORDER,
     gap: 12,
   },
-
-  // ── Avatar ──
   avatarWrap: { position: "relative" },
   avatarImg: {
     width: 68,
@@ -724,7 +661,6 @@ const styles = StyleSheet.create({
     borderColor: CARD_BG,
   },
 
-  // ── Info ──
   infoCol: { flex: 1, gap: 3 },
   expertName: {
     fontSize: 15,
@@ -733,25 +669,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   expertRole: { fontSize: 13, color: TEXT_2, fontWeight: "500" },
-
   subDomainRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
     marginTop: 1,
   },
-  subDomainText: {
-    fontSize: 11,
-    color: TEXT_2,
-    fontWeight: "600",
-  },
-
-  skillsRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 4,
-    marginTop: 2,
-  },
+  subDomainText: { fontSize: 11, color: TEXT_2, fontWeight: "600" },
+  skillsRow: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 2 },
   skillChip: {
     backgroundColor: TEAL_LIGHT,
     paddingHorizontal: 7,
@@ -760,10 +685,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e0d0f0",
   },
-  skillChipMatched: {
-    backgroundColor: TEAL,
-    borderColor: TEAL,
-  },
+  skillChipMatched: { backgroundColor: TEAL, borderColor: TEAL },
   skillChipText: { fontSize: 10, color: TEAL_TEXT, fontWeight: "700" },
   skillChipTextMatched: { color: "#fff" },
   skillChipMore: {
@@ -774,19 +696,9 @@ const styles = StyleSheet.create({
   },
   skillChipMoreText: { fontSize: 10, color: "#fff", fontWeight: "700" },
 
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 2,
-  },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 2 },
   starsRow: { flexDirection: "row", alignItems: "center", gap: 2 },
-  ratingNum: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: TEXT_1,
-    marginLeft: 3,
-  },
+  ratingNum: { fontSize: 12, fontWeight: "700", color: TEXT_1, marginLeft: 3 },
   expPill: {
     flexDirection: "row",
     alignItems: "center",
@@ -797,7 +709,6 @@ const styles = StyleSheet.create({
     borderRadius: 50,
   },
   expPillText: { fontSize: 11, fontWeight: "700", color: TEAL_TEXT },
-
   availBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -811,7 +722,6 @@ const styles = StyleSheet.create({
   availDot: { width: 6, height: 6, borderRadius: 3 },
   availText: { fontSize: 11, fontWeight: "700" },
 
-  // ── Buttons ──
   btnCol: { flexDirection: "column", alignItems: "center", gap: 8 },
   viewBtn: {
     backgroundColor: TEAL,
@@ -836,14 +746,8 @@ const styles = StyleSheet.create({
   },
   chatBtnText: { color: TEAL_TEXT, fontWeight: "800", fontSize: 13 },
 
-  // ── Highlight ──
-  highlight: {
-    backgroundColor: "#FFE680",
-    color: "#6B4F00",
-    borderRadius: 3,
-  },
+  highlight: { backgroundColor: "#FFE680", color: "#6B4F00", borderRadius: 3 },
 
-  // ── Empty state ──
   emptyWrap: { alignItems: "center", paddingTop: 60, gap: 10 },
   emptyIcon: {
     width: 72,

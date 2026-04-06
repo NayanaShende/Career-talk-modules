@@ -1138,10 +1138,8 @@ function CertificateUpload({ domain, certFile, onPick, error }) {
   );
 }
 
-// ── Validation Error Modal ─────────────────────────────────────────────────────
-// Styled to match the success modal design: dots, badge, buttons
+// ── Validation Error Modal ────────────────────────────────────────────────────
 function ValidationErrorModal({ visible, onClose }) {
-  // Fixed pixel positions — RN does NOT support % for absolute top/left
   const dots = [
     [18, 24, "#f472b6", 8],
     [60, 12, "#fbbf24", 7],
@@ -1161,7 +1159,6 @@ function ValidationErrorModal({ visible, onClose }) {
     <Modal visible={visible} transparent animationType="fade">
       <View style={ve.overlay}>
         <View style={ve.card}>
-          {/* Scattered dots at top — fixed pixel coords */}
           <View style={ve.dotsArea} pointerEvents="none">
             {dots.map(([left, top, color, size], i) => (
               <View
@@ -1179,7 +1176,6 @@ function ValidationErrorModal({ visible, onClose }) {
             ))}
           </View>
 
-          {/* Red badge — outer ring + inner circle */}
           <View style={ve.badgeOuter}>
             <View style={ve.badgeMiddle}>
               <View style={ve.badgeInner}>
@@ -1188,12 +1184,11 @@ function ValidationErrorModal({ visible, onClose }) {
             </View>
           </View>
 
-          <Text style={ve.title}>Something Want Wrong !</Text>
+          <Text style={ve.title}>Something Went Wrong!</Text>
           <Text style={ve.subtitle}>
             Please fix the highlighted{"\n"}fields before submitting.
           </Text>
 
-          {/* Buttons */}
           <View style={ve.btnRow}>
             <TouchableOpacity
               style={ve.fixBtn}
@@ -1294,9 +1289,7 @@ export default function ProfileScreen() {
   const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
   const [errors, setErrors] = useState({});
-  // ── success modal state ──
   const [successVisible, setSuccessVisible] = useState(false);
-  // ── NEW: validation error modal state ──
   const [validationErrorVisible, setValidationErrorVisible] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -1319,7 +1312,7 @@ export default function ProfileScreen() {
     domain: "",
     customDomain: "",
     sub_domain: "",
-    rate_per_minute: "10",  // ✅ expert's chat rate (default ₹10/min)
+    rate_per_minute: "10",
   });
 
   const [selectedSkills, setSelectedSkills] = useState([]);
@@ -1398,7 +1391,6 @@ export default function ProfileScreen() {
     if (!result.canceled) setField("image", result.assets[0]);
   };
 
-  // ── Validation ───────────────────────────────────────────────────────────────
   const validate = () => {
     const e = {};
     if (!formData.fullName.trim() || formData.fullName.trim().length < 2)
@@ -1434,8 +1426,6 @@ export default function ProfileScreen() {
           "Please upload your certificate — this is required to verify your domain expertise";
       if (formData.location === "Other" && !formData.customLocation.trim())
         e.customLocation = "Please specify your city";
-
-      // ✅ Validate rate
       const rate = parseInt(formData.rate_per_minute, 10);
       if (!formData.rate_per_minute || isNaN(rate) || rate < 5 || rate > 500)
         e.rate_per_minute = "Rate must be between ₹5 and ₹500 per minute";
@@ -1444,10 +1434,8 @@ export default function ProfileScreen() {
     return Object.keys(e).length === 0;
   };
 
-  // ── Submit ───────────────────────────────────────────────────────────────────
   const submitProfile = async () => {
     if (!validate()) {
-      // ── Show custom validation error modal instead of Alert.alert ──
       setValidationErrorVisible(true);
       return;
     }
@@ -1513,7 +1501,6 @@ export default function ProfileScreen() {
         }
       });
 
-      // ✅ Send rate_per_minute for experts
       if (role === "Expert" && formData.rate_per_minute) {
         form.append("rate_per_minute", parseInt(formData.rate_per_minute, 10));
       }
@@ -1577,7 +1564,6 @@ export default function ProfileScreen() {
         }),
       );
 
-      // ── Show custom success modal instead of Alert ──
       setSuccessVisible(true);
     } catch (e) {
       console.log("Submit error:", e.response?.data || e.message);
@@ -1983,7 +1969,6 @@ export default function ProfileScreen() {
                   onChangeText={(v) => setField("bio", v)}
                 />
 
-                {/* ✅ RATE PER MINUTE — Expert sets their own chat rate */}
                 <Label text="Your Chat Rate (₹ per minute)" required />
                 <View
                   style={[
@@ -2054,7 +2039,7 @@ export default function ProfileScreen() {
   );
 }
 
-// ── Styles ────────────────────────────────────────────────────────────────────
+// ── Main Styles ───────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
   scroll: { paddingBottom: 40 },
   topBar: {
@@ -2461,3 +2446,187 @@ const s = StyleSheet.create({
   },
 });
 
+// ── Validation Error Modal Styles (ve) ✅ ADDED ───────────────────────────────
+const ve = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 28,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+    paddingTop: 20,
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  dotsArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  badgeOuter: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(220,38,38,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 50,
+    marginBottom: 16,
+  },
+  badgeMiddle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(220,38,38,0.18)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: RED,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1a1a2e",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 24,
+  },
+  btnRow: {
+    width: "100%",
+  },
+  fixBtn: {
+    backgroundColor: RED,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    width: "100%",
+  },
+  fixBtnText: {
+    color: WHITE,
+    fontSize: 15,
+    fontWeight: "800",
+  },
+});
+
+// ── Success Modal Styles (sm) ✅ ADDED ────────────────────────────────────────
+const sm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 28,
+    paddingHorizontal: 28,
+    paddingBottom: 28,
+    paddingTop: 20,
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden",
+  },
+  confettiArea: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  confettiDot: {
+    position: "absolute",
+  },
+  badgeOuter: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: "rgba(22,163,74,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  badgeMiddle: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: "rgba(22,163,74,0.18)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  badgeInner: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: GREEN_SUC,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1a1a2e",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#666",
+    textAlign: "center",
+    lineHeight: 21,
+    marginBottom: 24,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  keepBtn: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: BORDER,
+    backgroundColor: WHITE,
+  },
+  keepBtnText: {
+    color: INK,
+    fontSize: 14,
+    fontWeight: "700",
+  },
+  proceedBtn: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    backgroundColor: GREEN_SUC,
+  },
+  proceedBtnText: {
+    color: WHITE,
+    fontSize: 14,
+    fontWeight: "800",
+  },
+});

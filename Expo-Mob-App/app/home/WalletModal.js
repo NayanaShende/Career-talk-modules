@@ -117,7 +117,6 @@ function PaymentModal({ visible, amount, orderId, onSimulate, onCancel }) {
 
 // ── Custom Wallet Success Modal ────────────────────────────────────────────
 function WalletSuccessModal({ visible, amount, onClose }) {
-  // Confetti dots — fixed pixel positions
   const dots = [
     [22, 20, "#f472b6", 8],
     [68, 12, "#fbbf24", 7],
@@ -310,8 +309,27 @@ export default function WalletModal({ visible, onClose }) {
     }
   };
 
+  // ── ✅ FIXED: simulatePaymentSuccess — was missing, now defined ────────────
+  const simulatePaymentSuccess = async () => {
+    const amt = paymentModal.amount;
+    setPaymentModal({ visible: false, amount: 0, orderId: "" });
+    try {
+      setLoading(true);
+      await axiosInstance.post("/wallet/topup", { userId, amount: amt });
+      await fetchBalance(userId);
+      await fetchHistory(userId);
+      setAmount("");
+      setActiveTab("history");
+      setSuccessModal({ visible: true, amount: amt });
+    } catch (e) {
+      console.log("simulatePaymentSuccess error:", e);
+      Alert.alert("Error", "Failed to add money. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ── Add money / Razorpay SDK ───────────────────────────────────────────────
-  // UPDATED: Opens Razorpay native payment page directly
   const handleAddMoney = async () => {
     const amt = parseInt(amount);
     if (!amt || amt < 1) {
@@ -355,10 +373,10 @@ export default function WalletModal({ visible, onClose }) {
       // Step 2 — Open Razorpay native payment page directly
       const options = {
         description: "Career-Talk Wallet Topup",
-        image: "https://your-logo-url.com/logo.png", // ← Replace with your logo URL
+        image: "https://your-logo-url.com/logo.png",
         currency: "INR",
-        key: "rzp_test_SNSlvTnPShezAs", // ✅ Razorpay Key ID
-        amount: amt * 100, // Razorpay expects paise
+        key: "rzp_test_SNSlvTnPShezAs",
+        amount: amt * 100,
         name: "Career-Talk",
         order_id: order.id,
         prefill: {
@@ -388,12 +406,11 @@ export default function WalletModal({ visible, onClose }) {
         await fetchHistory(userId);
         setAmount("");
         setActiveTab("history");
-        Alert.alert("✅ Success", `₹${amt} added to your wallet!`);
+        setSuccessModal({ visible: true, amount: amt });
       } else {
         Alert.alert("Payment Failed", "Verification failed. Contact support.");
       }
     } catch (e) {
-      // Code 0 means user cancelled/closed Razorpay screen
       if (e?.code === 0) {
         Alert.alert("Cancelled", "Payment was cancelled.");
       } else {

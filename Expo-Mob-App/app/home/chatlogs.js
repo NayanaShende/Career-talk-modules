@@ -458,7 +458,7 @@ export default function ChatLogs() {
               {userRole !== "expert" && (
                 <TouchableOpacity
                   style={styles.emptyBtn}
-                  onPress={() => router.push("/(tabs)/search")}
+                  onPress={() => router.push("/expert/search")}
                 >
                   <Text style={styles.emptyBtnText}>Find an Expert</Text>
                 </TouchableOpacity>
@@ -708,5 +708,40 @@ const cm = StyleSheet.create({
     color: TEXT_1,
     marginBottom: 8,
     letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: TEXT_2,
+    textAlign: "center",
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+});
+
+// ── ✅ FIX: dm StyleSheet was missing — caused "Property 'dm' doesn't exist" error ──
+const dm = StyleSheet.create({
+  optionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    borderWidth: 1.5,
+    borderColor: "#fecaca",
+    backgroundColor: "#fef2f2",
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  optionText: {
+    flex: 1,
+  },
+  optionTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: DELETE_RED,
+    marginBottom: 2,
+  },
+  optionSub: {
+    fontSize: 12,
+    color: TEXT_2,
   },
 });

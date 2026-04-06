@@ -22,10 +22,10 @@ import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { BASE_URL } from "../../constants/config";
+
 // ── Design tokens ──────────────────────────────────────────────────────────
 const TEAL = "#867795";
 const TEAL_LIGHT = "#e9def5";
-const TEAL_MID = "#867795";
 const PAGE_BG = "#f5f6f8";
 const CARD_BG = "#ffffff";
 const TEXT_1 = "#1a1a2e";
@@ -357,265 +357,47 @@ const SKILL_OPTIONS = [
 
 // ── Subdomain → skill auto-suggestions ────────────────────────────────────
 const SUBDOMAIN_SKILLS_MAP = {
-  "Frontend Development": [
-    "React",
-    "Vue.js",
-    "Angular",
-    "Next.js",
-    "HTML/CSS",
-    "TypeScript",
-  ],
-  "Backend Development": [
-    "Node.js",
-    "Express.js",
-    "Django",
-    "FastAPI",
-    "Spring Boot",
-    "PostgreSQL",
-  ],
-  "Full Stack Development": [
-    "React",
-    "Node.js",
-    "Next.js",
-    "MongoDB",
-    "PostgreSQL",
-    "Docker",
-  ],
-  "Mobile App Development": [
-    "React Native",
-    "Flutter",
-    "Android (Kotlin)",
-    "iOS (Swift)",
-    "Expo",
-  ],
-  "System Design & Architecture": [
-    "System Design",
-    "Microservices",
-    "Docker",
-    "Kubernetes",
-    "Redis",
-  ],
-  "DevOps & CI/CD": [
-    "Docker",
-    "Kubernetes",
-    "AWS",
-    "Azure",
-    "GCP",
-    "Git & GitHub",
-  ],
-  "Cloud Computing": [
-    "AWS",
-    "Azure",
-    "GCP",
-    "Docker",
-    "Kubernetes",
-    "Terraform",
-  ],
-  Cybersecurity: [
-    "Cybersecurity",
-    "Ethical Hacking",
-    "Network Security",
-    "Pen Testing",
-  ],
-  "Blockchain Development": [
-    "Blockchain",
-    "Solidity",
-    "Web3.js",
-    "Ethereum",
-    "Smart Contracts",
-  ],
-  "Game Development": [
-    "Unity (Game Dev)",
-    "C#",
-    "Unreal Engine",
-    "C++",
-    "Blender",
-  ],
-  "API & Microservices": [
-    "Node.js",
-    "FastAPI",
-    "GraphQL",
-    "REST API",
-    "Microservices",
-    "Docker",
-  ],
-  "Machine Learning": [
-    "Python",
-    "Scikit-learn",
-    "TensorFlow",
-    "Feature Engineering",
-    "Statistics & Probability",
-  ],
+  "Frontend Development": ["React", "Vue.js", "Angular", "Next.js", "HTML/CSS", "TypeScript"],
+  "Backend Development": ["Node.js", "Express.js", "Django", "FastAPI", "Spring Boot", "PostgreSQL"],
+  "Full Stack Development": ["React", "Node.js", "Next.js", "MongoDB", "PostgreSQL", "Docker"],
+  "Mobile App Development": ["React Native", "Flutter", "Android (Kotlin)", "iOS (Swift)", "Expo"],
+  "System Design & Architecture": ["System Design", "Microservices", "Docker", "Kubernetes", "Redis"],
+  "DevOps & CI/CD": ["Docker", "Kubernetes", "AWS", "Azure", "GCP", "Git & GitHub"],
+  "Cloud Computing": ["AWS", "Azure", "GCP", "Docker", "Kubernetes", "Terraform"],
+  Cybersecurity: ["Cybersecurity", "Ethical Hacking", "Network Security", "Pen Testing"],
+  "Blockchain Development": ["Blockchain", "Solidity", "Web3.js", "Ethereum", "Smart Contracts"],
+  "Game Development": ["Unity (Game Dev)", "C#", "Unreal Engine", "C++", "Blender"],
+  "API & Microservices": ["Node.js", "FastAPI", "GraphQL", "REST API", "Microservices", "Docker"],
+  "Machine Learning": ["Python", "Scikit-learn", "TensorFlow", "Feature Engineering", "Statistics & Probability"],
   "Deep Learning": ["TensorFlow", "PyTorch", "Keras", "Python", "NumPy"],
-  "Natural Language Processing": [
-    "Python",
-    "LangChain",
-    "OpenAI API",
-    "Prompt Engineering",
-    "NLP",
-  ],
+  "Natural Language Processing": ["Python", "LangChain", "OpenAI API", "Prompt Engineering", "NLP"],
   "Computer Vision": ["Python", "OpenCV", "TensorFlow", "PyTorch", "YOLO"],
-  "Data Analytics": [
-    "Python",
-    "SQL",
-    "Power BI",
-    "Tableau",
-    "Excel (Advanced)",
-  ],
+  "Data Analytics": ["Python", "SQL", "Power BI", "Tableau", "Excel (Advanced)"],
   "Data Engineering": ["Python", "Spark", "Hadoop", "SQL", "Airflow"],
-  "Generative AI & LLMs": [
-    "OpenAI API",
-    "LangChain",
-    "Prompt Engineering",
-    "Python",
-    "Hugging Face",
-  ],
-  "Business Intelligence": [
-    "Power BI",
-    "Tableau",
-    "SQL",
-    "Excel (Advanced)",
-    "Data Visualization",
-  ],
-  "Stock Market & Trading": [
-    "Stock Analysis (Technical)",
-    "Stock Analysis (Fundamental)",
-    "Options & Futures",
-    "Crypto Trading",
-  ],
-  "Tax Planning & Filing": [
-    "Tax Planning",
-    "GST Filing",
-    "Income Tax Returns",
-    "Tally",
-    "Zoho Books",
-  ],
-  "Financial Modeling": [
-    "Financial Modeling (Excel)",
-    "Valuation",
-    "Excel (Advanced)",
-    "CA / CFA / CFP Knowledge",
-  ],
-  "Digital Marketing": [
-    "SEO",
-    "Google Ads",
-    "Meta Ads (Facebook/Instagram)",
-    "Google Analytics",
-    "HubSpot",
-  ],
-  "SEO & SEM": [
-    "SEO",
-    "Google Ads",
-    "Google Analytics",
-    "Content Writing",
-    "Keyword Research",
-  ],
-  "Social Media Marketing": [
-    "Meta Ads (Facebook/Instagram)",
-    "Canva",
-    "Content Writing",
-    "YouTube Marketing",
-    "Influencer Outreach",
-  ],
-  "Content Marketing": [
-    "Content Writing",
-    "Copywriting",
-    "SEO",
-    "Email Marketing",
-    "Canva",
-  ],
-  "Resume & LinkedIn Building": [
-    "Resume Writing",
-    "LinkedIn Optimization",
-    "Personal Branding",
-    "Cover Letter",
-  ],
-  "Interview Preparation": [
-    "Mock Interviews",
-    "Communication Skills",
-    "Body Language",
-    "Group Discussion",
-  ],
-  "Personality Development": [
-    "Soft Skills",
-    "Communication Skills",
-    "Body Language",
-    "Motivation & Mindset",
-  ],
-  Mathematics: [
-    "Mathematics (Class 8-12)",
-    "Vedic Maths",
-    "Abacus",
-    "Statistics & Probability",
-  ],
-  "Competitive Exams (JEE/NEET/UPSC)": [
-    "JEE Preparation",
-    "NEET Preparation",
-    "UPSC Preparation",
-    "Current Affairs",
-  ],
-  "Coding for Kids & Beginners": [
-    "Scratch (Kids Coding)",
-    "Python for Beginners",
-    "HTML/CSS",
-    "Abacus",
-  ],
-  "Nutrition & Dietetics": [
-    "Nutrition Planning",
-    "Diet Charting",
-    "Weight Management",
-    "Sports Nutrition",
-    "Child Nutrition",
-  ],
-  "Fitness & Personal Training": [
-    "CrossFit",
-    "Zumba",
-    "Weight Management",
-    "Sports Nutrition",
-  ],
-  "Yoga & Meditation": [
-    "Yoga",
-    "Pranayama",
-    "Meditation",
-    "Ayurvedic Consultation",
-  ],
-  "Talent Acquisition & Recruitment": [
-    "Recruitment & Sourcing",
-    "LinkedIn Hiring",
-    "ATS Tools (Naukri/LinkedIn)",
-    "HR Analytics",
-  ],
-  "HR Operations & Compliance": [
-    "HR Policies & Compliance",
-    "Payroll Management",
-    "HRMS Tools (Keka/Darwinbox/SAP)",
-    "Labor Law",
-  ],
-  "UI/UX Design": [
-    "Figma",
-    "Adobe XD",
-    "Wireframing & Prototyping",
-    "UI/UX Research",
-    "Adobe Illustrator",
-  ],
-  "Graphic Design": [
-    "Adobe Photoshop",
-    "Adobe Illustrator",
-    "Canva",
-    "Adobe InDesign",
-  ],
-  "Corporate & Company Law": [
-    "Contract Drafting",
-    "Company Incorporation",
-    "MCA Filings",
-    "Legal Research",
-  ],
-  "Tax & GST Law": [
-    "GST & Tax Law",
-    "GST Filing",
-    "Tax Planning",
-    "Legal Research",
-  ],
+  "Generative AI & LLMs": ["OpenAI API", "LangChain", "Prompt Engineering", "Python", "Hugging Face"],
+  "Business Intelligence": ["Power BI", "Tableau", "SQL", "Excel (Advanced)", "Data Visualization"],
+  "Stock Market & Trading": ["Stock Analysis (Technical)", "Stock Analysis (Fundamental)", "Options & Futures", "Crypto Trading"],
+  "Tax Planning & Filing": ["Tax Planning", "GST Filing", "Income Tax Returns", "Tally", "Zoho Books"],
+  "Financial Modeling": ["Financial Modeling (Excel)", "Valuation", "Excel (Advanced)", "CA / CFA / CFP Knowledge"],
+  "Digital Marketing": ["SEO", "Google Ads", "Meta Ads (Facebook/Instagram)", "Google Analytics", "HubSpot"],
+  "SEO & SEM": ["SEO", "Google Ads", "Google Analytics", "Content Writing", "Keyword Research"],
+  "Social Media Marketing": ["Meta Ads (Facebook/Instagram)", "Canva", "Content Writing", "YouTube Marketing", "Influencer Outreach"],
+  "Content Marketing": ["Content Writing", "Copywriting", "SEO", "Email Marketing", "Canva"],
+  "Resume & LinkedIn Building": ["Resume Writing", "LinkedIn Optimization", "Personal Branding", "Cover Letter"],
+  "Interview Preparation": ["Mock Interviews", "Communication Skills", "Body Language", "Group Discussion"],
+  "Personality Development": ["Soft Skills", "Communication Skills", "Body Language", "Motivation & Mindset"],
+  Mathematics: ["Mathematics (Class 8-12)", "Vedic Maths", "Abacus", "Statistics & Probability"],
+  "Competitive Exams (JEE/NEET/UPSC)": ["JEE Preparation", "NEET Preparation", "UPSC Preparation", "Current Affairs"],
+  "Coding for Kids & Beginners": ["Scratch (Kids Coding)", "Python for Beginners", "HTML/CSS", "Abacus"],
+  "Nutrition & Dietetics": ["Nutrition Planning", "Diet Charting", "Weight Management", "Sports Nutrition", "Child Nutrition"],
+  "Fitness & Personal Training": ["CrossFit", "Zumba", "Weight Management", "Sports Nutrition"],
+  "Yoga & Meditation": ["Yoga", "Pranayama", "Meditation", "Ayurvedic Consultation"],
+  "Talent Acquisition & Recruitment": ["Recruitment & Sourcing", "LinkedIn Hiring", "ATS Tools (Naukri/LinkedIn)", "HR Analytics"],
+  "HR Operations & Compliance": ["HR Policies & Compliance", "Payroll Management", "HRMS Tools (Keka/Darwinbox/SAP)", "Labor Law"],
+  "UI/UX Design": ["Figma", "Adobe XD", "Wireframing & Prototyping", "UI/UX Research", "Adobe Illustrator"],
+  "Graphic Design": ["Adobe Photoshop", "Adobe Illustrator", "Canva", "Adobe InDesign"],
+  "Corporate & Company Law": ["Contract Drafting", "Company Incorporation", "MCA Filings", "Legal Research"],
+  "Tax & GST Law": ["GST & Tax Law", "GST Filing", "Tax Planning", "Legal Research"],
 };
 
 const PREFERRED_JOB_OPTIONS = [
@@ -676,10 +458,7 @@ const DOMAIN_OPTIONS = [
   { label: "Business Strategy", value: "Business Strategy" },
   { label: "Education & Tutoring", value: "Education & Tutoring" },
   { label: "Human Resources", value: "Human Resources" },
-  {
-    label: "Civil Services & Government",
-    value: "Civil Services & Government",
-  },
+  { label: "Civil Services & Government", value: "Civil Services & Government" },
   { label: "Architecture & Design", value: "Architecture & Design" },
   { label: "Media & Journalism", value: "Media & Journalism" },
   { label: "Agriculture & Farming", value: "Agriculture & Farming" },
@@ -688,18 +467,12 @@ const DOMAIN_OPTIONS = [
 
 const SUBDOMAIN_MAP = {
   "Career Counseling": [
-    {
-      label: "Resume & LinkedIn Building",
-      value: "Resume & LinkedIn Building",
-    },
+    { label: "Resume & LinkedIn Building", value: "Resume & LinkedIn Building" },
     { label: "Interview Preparation", value: "Interview Preparation" },
     { label: "Career Switch Guidance", value: "Career Switch Guidance" },
     { label: "Job Search Strategy", value: "Job Search Strategy" },
     { label: "Salary Negotiation", value: "Salary Negotiation" },
-    {
-      label: "College Admission Counseling",
-      value: "College Admission Counseling",
-    },
+    { label: "College Admission Counseling", value: "College Admission Counseling" },
     { label: "Study Abroad Guidance", value: "Study Abroad Guidance" },
     { label: "Scholarship Guidance", value: "Scholarship Guidance" },
     { label: "Freshers Career Planning", value: "Freshers Career Planning" },
@@ -710,10 +483,7 @@ const SUBDOMAIN_MAP = {
     { label: "Backend Development", value: "Backend Development" },
     { label: "Full Stack Development", value: "Full Stack Development" },
     { label: "Mobile App Development", value: "Mobile App Development" },
-    {
-      label: "System Design & Architecture",
-      value: "System Design & Architecture",
-    },
+    { label: "System Design & Architecture", value: "System Design & Architecture" },
     { label: "DevOps & CI/CD", value: "DevOps & CI/CD" },
     { label: "Cloud Computing", value: "Cloud Computing" },
     { label: "Cybersecurity", value: "Cybersecurity" },
@@ -725,10 +495,7 @@ const SUBDOMAIN_MAP = {
   "Data Science & AI": [
     { label: "Machine Learning", value: "Machine Learning" },
     { label: "Deep Learning", value: "Deep Learning" },
-    {
-      label: "Natural Language Processing",
-      value: "Natural Language Processing",
-    },
+    { label: "Natural Language Processing", value: "Natural Language Processing" },
     { label: "Computer Vision", value: "Computer Vision" },
     { label: "Data Analytics", value: "Data Analytics" },
     { label: "Data Engineering", value: "Data Engineering" },
@@ -764,30 +531,18 @@ const SUBDOMAIN_MAP = {
     { label: "Video & YouTube Marketing", value: "Video & YouTube Marketing" },
     { label: "E-commerce Marketing", value: "E-commerce Marketing" },
     { label: "Public Relations", value: "Public Relations" },
-    {
-      label: "Market Research & Analytics",
-      value: "Market Research & Analytics",
-    },
+    { label: "Market Research & Analytics", value: "Market Research & Analytics" },
   ],
   "Health & Wellness": [
     { label: "Nutrition & Dietetics", value: "Nutrition & Dietetics" },
-    {
-      label: "Mental Health & Counseling",
-      value: "Mental Health & Counseling",
-    },
-    {
-      label: "Fitness & Personal Training",
-      value: "Fitness & Personal Training",
-    },
+    { label: "Mental Health & Counseling", value: "Mental Health & Counseling" },
+    { label: "Fitness & Personal Training", value: "Fitness & Personal Training" },
     { label: "Yoga & Meditation", value: "Yoga & Meditation" },
     { label: "Ayurveda", value: "Ayurveda" },
     { label: "Physiotherapy", value: "Physiotherapy" },
     { label: "Women's Health", value: "Women's Health" },
     { label: "Child & Pediatric Health", value: "Child & Pediatric Health" },
-    {
-      label: "Chronic Disease Management",
-      value: "Chronic Disease Management",
-    },
+    { label: "Chronic Disease Management", value: "Chronic Disease Management" },
     { label: "Sports Medicine", value: "Sports Medicine" },
     { label: "Homeopathy", value: "Homeopathy" },
     { label: "Naturopathy", value: "Naturopathy" },
@@ -798,10 +553,7 @@ const SUBDOMAIN_MAP = {
     { label: "Criminal Law", value: "Criminal Law" },
     { label: "Intellectual Property Law", value: "Intellectual Property Law" },
     { label: "Startup & Business Legal", value: "Startup & Business Legal" },
-    {
-      label: "Property & Real Estate Law",
-      value: "Property & Real Estate Law",
-    },
+    { label: "Property & Real Estate Law", value: "Property & Real Estate Law" },
     { label: "Cyber Law", value: "Cyber Law" },
     { label: "Labour & Employment Law", value: "Labour & Employment Law" },
     { label: "Tax & GST Law", value: "Tax & GST Law" },
@@ -811,40 +563,22 @@ const SUBDOMAIN_MAP = {
   "Business Strategy": [
     { label: "Startup Consulting", value: "Startup Consulting" },
     { label: "Operations Management", value: "Operations Management" },
-    {
-      label: "Product Strategy & Roadmap",
-      value: "Product Strategy & Roadmap",
-    },
+    { label: "Product Strategy & Roadmap", value: "Product Strategy & Roadmap" },
     { label: "Growth Hacking", value: "Growth Hacking" },
     { label: "Business Development", value: "Business Development" },
     { label: "Franchising & Licensing", value: "Franchising & Licensing" },
     { label: "Supply Chain Management", value: "Supply Chain Management" },
     { label: "Project Management", value: "Project Management" },
-    {
-      label: "Fundraising & Investor Pitch",
-      value: "Fundraising & Investor Pitch",
-    },
+    { label: "Fundraising & Investor Pitch", value: "Fundraising & Investor Pitch" },
     { label: "International Business", value: "International Business" },
     { label: "E-commerce Strategy", value: "E-commerce Strategy" },
   ],
   "Education & Tutoring": [
     { label: "Mathematics", value: "Mathematics" },
-    {
-      label: "Science (Physics/Chemistry/Biology)",
-      value: "Science (Physics/Chemistry/Biology)",
-    },
-    {
-      label: "English Language & Grammar",
-      value: "English Language & Grammar",
-    },
-    {
-      label: "Competitive Exams (JEE/NEET/UPSC)",
-      value: "Competitive Exams (JEE/NEET/UPSC)",
-    },
-    {
-      label: "Coding for Kids & Beginners",
-      value: "Coding for Kids & Beginners",
-    },
+    { label: "Science (Physics/Chemistry/Biology)", value: "Science (Physics/Chemistry/Biology)" },
+    { label: "English Language & Grammar", value: "English Language & Grammar" },
+    { label: "Competitive Exams (JEE/NEET/UPSC)", value: "Competitive Exams (JEE/NEET/UPSC)" },
+    { label: "Coding for Kids & Beginners", value: "Coding for Kids & Beginners" },
     { label: "History & Social Studies", value: "History & Social Studies" },
     { label: "Commerce & Accountancy", value: "Commerce & Accountancy" },
     { label: "Foreign Language Teaching", value: "Foreign Language Teaching" },
@@ -853,48 +587,24 @@ const SUBDOMAIN_MAP = {
     { label: "Sports Coaching", value: "Sports Coaching" },
   ],
   "Human Resources": [
-    {
-      label: "Talent Acquisition & Recruitment",
-      value: "Talent Acquisition & Recruitment",
-    },
-    {
-      label: "HR Operations & Compliance",
-      value: "HR Operations & Compliance",
-    },
-    {
-      label: "Learning & Development (L&D)",
-      value: "Learning & Development (L&D)",
-    },
+    { label: "Talent Acquisition & Recruitment", value: "Talent Acquisition & Recruitment" },
+    { label: "HR Operations & Compliance", value: "HR Operations & Compliance" },
+    { label: "Learning & Development (L&D)", value: "Learning & Development (L&D)" },
     { label: "Performance Management", value: "Performance Management" },
-    {
-      label: "Employee Relations & Engagement",
-      value: "Employee Relations & Engagement",
-    },
+    { label: "Employee Relations & Engagement", value: "Employee Relations & Engagement" },
     { label: "Payroll & Compensation", value: "Payroll & Compensation" },
     { label: "Diversity & Inclusion", value: "Diversity & Inclusion" },
     { label: "HR Analytics", value: "HR Analytics" },
-    {
-      label: "Organizational Development",
-      value: "Organizational Development",
-    },
+    { label: "Organizational Development", value: "Organizational Development" },
     { label: "Leadership Coaching", value: "Leadership Coaching" },
   ],
   "Civil Services & Government": [
-    {
-      label: "UPSC Civil Services (IAS/IPS/IFS)",
-      value: "UPSC Civil Services (IAS/IPS/IFS)",
-    },
+    { label: "UPSC Civil Services (IAS/IPS/IFS)", value: "UPSC Civil Services (IAS/IPS/IFS)" },
     { label: "State PSC Exams", value: "State PSC Exams" },
     { label: "Banking & Insurance Exams", value: "Banking & Insurance Exams" },
     { label: "SSC & Railway Exams", value: "SSC & Railway Exams" },
-    {
-      label: "Defence Services (NDA/CDS/CAPF)",
-      value: "Defence Services (NDA/CDS/CAPF)",
-    },
-    {
-      label: "Government Policy & Governance",
-      value: "Government Policy & Governance",
-    },
+    { label: "Defence Services (NDA/CDS/CAPF)", value: "Defence Services (NDA/CDS/CAPF)" },
+    { label: "Government Policy & Governance", value: "Government Policy & Governance" },
     { label: "Public Administration", value: "Public Administration" },
   ],
   "Architecture & Design": [
@@ -903,65 +613,35 @@ const SUBDOMAIN_MAP = {
     { label: "Urban & Landscape Design", value: "Urban & Landscape Design" },
     { label: "UI/UX Design", value: "UI/UX Design" },
     { label: "Graphic Design", value: "Graphic Design" },
-    {
-      label: "Product & Industrial Design",
-      value: "Product & Industrial Design",
-    },
+    { label: "Product & Industrial Design", value: "Product & Industrial Design" },
     { label: "Fashion Design", value: "Fashion Design" },
     { label: "3D Modeling & Rendering", value: "3D Modeling & Rendering" },
   ],
   "Media & Journalism": [
-    {
-      label: "Print & Digital Journalism",
-      value: "Print & Digital Journalism",
-    },
+    { label: "Print & Digital Journalism", value: "Print & Digital Journalism" },
     { label: "Broadcast & TV Journalism", value: "Broadcast & TV Journalism" },
     { label: "Photography & Videography", value: "Photography & Videography" },
     { label: "Film Making & Direction", value: "Film Making & Direction" },
-    {
-      label: "Podcast & Audio Production",
-      value: "Podcast & Audio Production",
-    },
-    {
-      label: "Content Writing & Copywriting",
-      value: "Content Writing & Copywriting",
-    },
-    {
-      label: "Social Media Content Creation",
-      value: "Social Media Content Creation",
-    },
+    { label: "Podcast & Audio Production", value: "Podcast & Audio Production" },
+    { label: "Content Writing & Copywriting", value: "Content Writing & Copywriting" },
+    { label: "Social Media Content Creation", value: "Social Media Content Creation" },
   ],
   "Agriculture & Farming": [
     { label: "Organic Farming", value: "Organic Farming" },
-    {
-      label: "Hydroponics & Vertical Farming",
-      value: "Hydroponics & Vertical Farming",
-    },
+    { label: "Hydroponics & Vertical Farming", value: "Hydroponics & Vertical Farming" },
     { label: "Agri Business & Marketing", value: "Agri Business & Marketing" },
     { label: "Animal Husbandry & Dairy", value: "Animal Husbandry & Dairy" },
-    {
-      label: "Horticulture & Floriculture",
-      value: "Horticulture & Floriculture",
-    },
+    { label: "Horticulture & Floriculture", value: "Horticulture & Floriculture" },
     { label: "Government Agri Schemes", value: "Government Agri Schemes" },
     { label: "Farm Management", value: "Farm Management" },
   ],
   "Hospitality & Tourism": [
     { label: "Hotel & Resort Management", value: "Hotel & Resort Management" },
     { label: "Travel & Tourism Planning", value: "Travel & Tourism Planning" },
-    {
-      label: "Food & Beverage Management",
-      value: "Food & Beverage Management",
-    },
-    {
-      label: "Event Planning & Management",
-      value: "Event Planning & Management",
-    },
+    { label: "Food & Beverage Management", value: "Food & Beverage Management" },
+    { label: "Event Planning & Management", value: "Event Planning & Management" },
     { label: "Culinary Arts & Cooking", value: "Culinary Arts & Cooking" },
-    {
-      label: "Airlines & Airport Operations",
-      value: "Airlines & Airport Operations",
-    },
+    { label: "Airlines & Airport Operations", value: "Airlines & Airport Operations" },
   ],
 };
 
@@ -1153,7 +833,7 @@ function SkillsPicker({ selectedSkills, onChange, domain, subDomain }) {
                 fontWeight: "600",
               }}
             >
-              💡 {suggestedLabel}
+              {"\uD83D\uDCA1"} {suggestedLabel}
             </Text>
           )}
           <Text style={modalStyles.subtitle}>
@@ -1346,49 +1026,10 @@ function LanguagesPicker({ selectedLanguages, onChange }) {
   );
 }
 
-const FieldLabel = ({ text }) => <Text style={styles.fieldLabel}>{text}</Text>;
-
-function InputField({
-  label,
-  value,
-  field,
-  setForm,
-  form,
-  keyboardType,
-  placeholder,
-  editable = true,
-}) {
-  return (
-    <View style={styles.fieldGroup}>
-      <FieldLabel text={label} />
-      <TextInput
-        value={value}
-        onChangeText={(text) => setForm({ ...form, [field]: text })}
-        style={[styles.input, !editable && styles.inputDisabled]}
-        keyboardType={keyboardType || "default"}
-        placeholder={placeholder || ""}
-        placeholderTextColor={TEXT_2}
-        editable={editable}
-      />
-    </View>
-  );
-}
-
-const SectionHeader = ({ icon, title }) => (
-  <View style={styles.sectionHeader}>
-    <View style={styles.sectionIconWrap}>
-      <Ionicons name={icon} size={16} color="#fff" />
-    </View>
-    <Text style={styles.sectionTitle}>{title}</Text>
-  </View>
-);
-
 // ── Status Modal (success + error) ───────────────────────────────────────
-// NOTE: confetti uses fixed pixel coords — RN does NOT support "%" for top/left on absolute elements
 function StatusModal({ visible, type, message, onClose }) {
   const isSuccess = type === "success";
 
-  // Confetti dots — only shown on success
   const dots = [
     [28, 26, "#f472b6", 9],
     [75, 14, "#fbbf24", 8],
@@ -1408,7 +1049,6 @@ function StatusModal({ visible, type, message, onClose }) {
     <Modal visible={visible} transparent animationType="fade">
       <View style={sm.overlay}>
         <View style={[sm.card, !isSuccess && { paddingTop: 36 }]}>
-          {/* ── Confetti — only on success ── */}
           {isSuccess && (
             <View style={sm.confettiWrap} pointerEvents="none">
               {dots.map(([left, top, color, size], i) => (
@@ -1428,7 +1068,6 @@ function StatusModal({ visible, type, message, onClose }) {
             </View>
           )}
 
-          {/* ── Badge ── */}
           <View style={[sm.ring, !isSuccess && { backgroundColor: "#fde8e8" }]}>
             <View
               style={[sm.circle, !isSuccess && { backgroundColor: "#DC2626" }]}
@@ -1441,9 +1080,8 @@ function StatusModal({ visible, type, message, onClose }) {
             </View>
           </View>
 
-          {/* ── Text ── */}
           <Text style={sm.title}>
-            {isSuccess ? "Profile Saved " : "Update Failed!"}
+            {isSuccess ? "Profile Saved" : "Update Failed!"}
           </Text>
           <Text style={sm.subtitle}>
             {isSuccess
@@ -1451,7 +1089,6 @@ function StatusModal({ visible, type, message, onClose }) {
               : message || "Something went wrong. Please try again."}
           </Text>
 
-          {/* ── Buttons ── */}
           {isSuccess ? (
             <View style={sm.btnRow}>
               <TouchableOpacity
@@ -1466,7 +1103,7 @@ function StatusModal({ visible, type, message, onClose }) {
                 onPress={onClose}
                 activeOpacity={0.8}
               >
-                <Text style={sm.proceedTxt}>OK </Text>
+                <Text style={sm.proceedTxt}>OK</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -1492,7 +1129,6 @@ const EditProfile = () => {
   const [isExpert, setIsExpert] = useState(false);
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [selectedLanguages, setSelectedLanguages] = useState([]);
-  // ── Status modal state (success + error) ──
   const [statusModal, setStatusModal] = useState({
     visible: false,
     type: "success",
@@ -1735,10 +1371,9 @@ const EditProfile = () => {
           },
         });
       }
-      // ── Show success modal ──
       setStatusModal({ visible: true, type: "success", message: "" });
     } catch (err) {
-      console.log("❌ Save error:", err.response?.data || err.message);
+      console.log("Save error:", err.response?.data || err.message);
       setStatusModal({
         visible: true,
         type: "error",
@@ -1783,26 +1418,31 @@ const EditProfile = () => {
         </TouchableOpacity>
 
         <Text style={styles.sectionTitle}>Basic Information</Text>
-        <InputField
-          label="Full Name"
+
+        <Text style={styles.label}>Full Name</Text>
+        <TextInput
           value={form.full_name}
-          field="full_name"
-          setForm={setForm}
-          form={form}
+          onChangeText={(text) => setForm((prev) => ({ ...prev, full_name: text }))}
+          style={styles.input}
+          placeholder="Enter your full name"
+          placeholderTextColor={TEXT_2}
         />
+
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={[styles.input, { color: "#999" }]}
           value={form.email}
           editable={false}
         />
-        <InputField
-          label="Mobile"
+
+        <Text style={styles.label}>Mobile</Text>
+        <TextInput
           value={form.mobile}
-          field="mobile"
-          setForm={setForm}
-          form={form}
+          onChangeText={(text) => setForm((prev) => ({ ...prev, mobile: text }))}
+          style={styles.input}
           keyboardType="phone-pad"
+          placeholder="Enter mobile number"
+          placeholderTextColor={TEXT_2}
         />
 
         <Text style={styles.label}>Domain</Text>
@@ -1841,13 +1481,13 @@ const EditProfile = () => {
           onChange={(v) => updateForm("experience", v)}
         />
 
-        <InputField
-          label="Date of Birth (YYYY-MM-DD)"
+        <Text style={styles.label}>Date of Birth (YYYY-MM-DD)</Text>
+        <TextInput
           value={form.dob}
-          field="dob"
-          setForm={setForm}
-          form={form}
+          onChangeText={(text) => setForm((prev) => ({ ...prev, dob: text }))}
+          style={styles.input}
           placeholder="e.g. 1995-06-15"
+          placeholderTextColor={TEXT_2}
         />
 
         <Text style={styles.label}>CV / Resume</Text>
@@ -1857,7 +1497,7 @@ const EditProfile = () => {
             {form.cv_file
               ? form.cv_file.name
               : form.existing_cv
-                ? "📄 CV Uploaded ✓"
+                ? "CV Uploaded"
                 : "Choose CV File"}
           </Text>
           {(form.cv_file || form.existing_cv) && (
@@ -1914,13 +1554,13 @@ const EditProfile = () => {
               options={LOCATION_OPTIONS}
               onChange={(v) => updateForm("location", v)}
             />
-            <InputField
-              label="Certification"
+            <Text style={styles.label}>Certification</Text>
+            <TextInput
               value={form.certification}
-              field="certification"
-              setForm={setForm}
-              form={form}
+              onChangeText={(text) => setForm((prev) => ({ ...prev, certification: text }))}
+              style={styles.input}
               placeholder="e.g. AWS, PMP, MBA"
+              placeholderTextColor={TEXT_2}
             />
             <Text style={styles.label}>Bio</Text>
             <TextInput
@@ -1955,7 +1595,7 @@ const EditProfile = () => {
         </TouchableOpacity>
       </ScrollView>
 
-      {/* ── STATUS MODAL (success + error) ── */}
+      {/* ── STATUS MODAL ── */}
       <StatusModal
         visible={statusModal.visible}
         type={statusModal.type}
@@ -2008,23 +1648,6 @@ const styles = StyleSheet.create({
     borderColor: "#fff",
   },
   changePhoto: { color: TEAL, fontSize: 13, fontWeight: "600", marginTop: 8 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: BORDER,
-  },
-  sectionIconWrap: {
-    width: 30,
-    height: 30,
-    borderRadius: 8,
-    backgroundColor: TEAL,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   sectionTitle: {
     fontSize: 15,
     fontWeight: "800",
@@ -2032,15 +1655,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.1,
     marginTop: 16,
     marginBottom: 8,
-  },
-  fieldGroup: { marginBottom: 14 },
-  fieldLabel: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: TEXT_2,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 6,
   },
   label: {
     fontSize: 13,
@@ -2060,7 +1674,6 @@ const styles = StyleSheet.create({
     color: TEXT_1,
     fontWeight: "500",
   },
-  inputDisabled: { backgroundColor: "#f0f0f0", color: TEXT_2 },
   dropdownBox: {
     backgroundColor: INPUT_BG,
     borderWidth: 1,
@@ -2084,18 +1697,6 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   uploadBtnText: { flex: 1, fontSize: 14, color: TEAL, fontWeight: "600" },
-  chipsWrap: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    backgroundColor: INPUT_BG,
-    borderWidth: 1,
-    borderColor: BORDER,
-    borderRadius: 12,
-    padding: 12,
-    minHeight: 48,
-  },
-  chipsEmpty: { color: TEXT_2, fontSize: 13 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
@@ -2105,21 +1706,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
   },
   chipText: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  addChipBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderWidth: 1.5,
-    borderColor: TEAL,
-    borderRadius: 12,
-    borderStyle: "dashed",
-    justifyContent: "center",
-    backgroundColor: TEAL_LIGHT,
-  },
-  addChipText: { color: TEAL, fontWeight: "700", fontSize: 13 },
   saveBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -2212,3 +1798,103 @@ const modalStyles = StyleSheet.create({
   doneBtnText: { color: "#fff", fontWeight: "800", fontSize: 15 },
 });
 
+// ── Status Modal styles (sm) ───────────────────────────────────────────────
+const sm = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  card: {
+    backgroundColor: WHITE,
+    borderRadius: 24,
+    padding: 28,
+    paddingTop: 60,
+    width: "100%",
+    alignItems: "center",
+    overflow: "hidden",
+    position: "relative",
+  },
+  confettiWrap: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 70,
+  },
+  ring: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: GREEN_SUC_L,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  circle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: GREEN_SUC,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: TEXT_1,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: TEXT_2,
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  btnRow: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  keepBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    alignItems: "center",
+  },
+  keepTxt: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: TEXT_2,
+  },
+  proceedBtn: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: GREEN_SUC,
+    alignItems: "center",
+  },
+  proceedTxt: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: WHITE,
+  },
+  retryBtn: {
+    width: "100%",
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: "#DC2626",
+    alignItems: "center",
+  },
+  retryTxt: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: WHITE,
+  },
+});
